@@ -12,6 +12,6 @@ export const typeOrmConfig = (configService: ConfigService<EnvironmentVariables>
   synchronize: configService.get('database.synchronize', { infer: true }),
   entities: ['dist/**/*.entity{.ts,.js}'],
   migrations: ['dist/migrations/*{.ts,.js}'],
-  migrationsRun: true,
+  migrationsRun: configService.get('database.migrationsRun', { infer: true }),
   autoLoadEntities: true,
 });

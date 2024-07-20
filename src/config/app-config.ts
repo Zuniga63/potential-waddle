@@ -16,6 +16,7 @@ export interface EnvironmentVariables {
     password: string;
     name: string;
     synchronize: boolean;
+    migrationsRun?: boolean;
   };
   cloudinary: {
     cloudName: string;
@@ -50,6 +51,7 @@ export const appConfig = (): EnvironmentVariables => ({
     password: process.env.DB_PASSWORD,
     name: process.env.DB_NAME,
     synchronize: process.env.DB_SYNCHRONIZE === 'true',
+    migrationsRun: process.env.DB_MIGRATIONS_RUN === 'true',
   },
   cloudinary: {
     cloudName: process.env.CLOUDINARY_CLOUD_NAME,

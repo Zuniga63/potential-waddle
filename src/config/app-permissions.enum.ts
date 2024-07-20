@@ -18,6 +18,20 @@ export enum AppPermissions {
   ADD_USER_ROLE = 'ADD_USER_ROLE',
   REMOVE_USER_ROLE = 'REMOVE_USER_ROLE',
   // ---------------------------------------------------------------
+  // MUNICIPALITY PERMISSIONS
+  // ---------------------------------------------------------------
+  CREATE_MUNICIPALITY = 'CREATE_MUNICIPALITY',
+  READ_MUNICIPALITY = 'READ_MUNICIPALITY',
+  UPDATE_MUNICIPALITY = 'UPDATE_MUNICIPALITY',
+  DELETE_MUNICIPALITY = 'DELETE_MUNICIPALITY',
+  // ---------------------------------------------------------------
+  // TOWN PERMISSIONS
+  // ---------------------------------------------------------------
+  CREATE_TOWN = 'CREATE_TOWN',
+  READ_TOWN = 'READ_TOWN',
+  UPDATE_TOWN = 'UPDATE_TOWN',
+  DELETE_TOWN = 'DELETE_TOWN',
+  // ---------------------------------------------------------------
   // SUPER ADMIN PERMISSIONS
   // ---------------------------------------------------------------
   INSTALL_CLOUDINARY_PRESETS = 'INSTALL_CLOUD_PRESETS',

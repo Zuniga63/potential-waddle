@@ -10,6 +10,7 @@ import { CloudinaryModule } from './modules/cloudinary/cloudinary.module';
 
 import { UsersModule } from './modules/users/users.module';
 import { RolesModule } from './modules/roles/roles.module';
+import { TownsModule } from './modules/towns/towns.module';
 
 @Module({
   imports: [
@@ -33,6 +34,8 @@ import { RolesModule } from './modules/roles/roles.module';
     RolesModule,
 
     CloudinaryModule,
+
+    TownsModule,
   ],
   controllers: [],
   providers: [],

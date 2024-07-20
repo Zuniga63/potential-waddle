@@ -26,7 +26,7 @@ async function bootstrap() {
 
   // Set Swagger
   const document = SwaggerModule.createDocument(app, swaggerConfig);
-  SwaggerModule.setup('api/docs', app, document);
+  SwaggerModule.setup('api/docs', app, document, { swaggerOptions: { docExpansion: 'none' } });
 
   await app.listen(http.port);
   logger.log(`Application listening on ${http.host}:${http.port}`);

@@ -4,4 +4,6 @@ export enum SwaggerTags {
   Users = 'Users',
   Roles = 'Roles',
   Cloudinary = 'Cloudinary',
+  Municipality = 'Municipality',
+  Town = 'Town',
 }

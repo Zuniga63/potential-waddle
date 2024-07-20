@@ -10,5 +10,7 @@ export const swaggerConfig = new DocumentBuilder()
   .addTag(SwaggerTags.Cloudinary, 'Route for cloudinary administration')
   .addTag(SwaggerTags.Users, 'Route for user administration')
   .addTag(SwaggerTags.Roles, 'Route for role administration')
+  .addTag(SwaggerTags.Municipality, 'Route for municipality administration')
+  .addTag(SwaggerTags.Town, 'Route for town administration')
   .addBearerAuth()
   .build();
