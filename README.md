@@ -66,10 +66,21 @@ Este proyecto tiene como objetivo proporcionar un punto de partida para el desar
 
 4. Establecer las variables de entorno tanto de la app como de la base de datos
 
-## Generar migraciones
+## Generar migraciones en desarrollo
 
-- npm run migration:create --name=your_migration_name
-- npm run migration:generate --name=your_migration_name
+1. Ejecuta el comando ```pnpm start:dev``` para crear o actualizar el folder "dist".
+2. Actualiza las entidades o crea nuevas.
+3. Detén el servicio de desarrollo.
+4. Ejecuta el comando ```npm run migration:generate --name=your_migration_name``` para generar la nueva migración.
+5. Ejecuta el comando ```npm run migration:run``` para aplicar la migración generada.
+
+## Revertir migraciones
+
+Para revertir una migración, es crucial que el servicio de la aplicación esté detenido.
+
+1. Detén la aplicación si está en ejecución.
+2. Ejecuta el comando ```npm run migration:revert``` tantas veces como sea necesario para revertir las migraciones deseadas.
+3. Elimina las migraciones revertidas.
 
 ## Correr la aplicación
 
