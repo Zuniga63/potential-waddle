@@ -6,4 +6,8 @@ export enum SwaggerTags {
   Cloudinary = 'Cloudinary',
   Municipality = 'Municipality',
   Town = 'Town',
+  Models = 'Models',
+  Facilities = 'Facilities',
+  Categories = 'Categories',
+  Images = 'Images',
 }
