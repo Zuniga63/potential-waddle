@@ -1,41 +1,32 @@
-import { Column, CreateDateColumn, Entity, ManyToMany, PrimaryGeneratedColumn } from 'typeorm';
-import { Model } from './model.entity';
-import { Place } from 'src/modules/places/entities';
+import { Column, CreateDateColumn, Entity, JoinColumn, OneToOne, PrimaryGeneratedColumn } from 'typeorm';
+import { Place } from './place.entity';
 
-@Entity({ name: 'facility' })
-export class Facility {
+@Entity({ name: 'place_location' })
+export class PlaceLocation {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
   // * ----------------------------------------------------------------------------------------------------------------
   // * RELATIONSHIPS
   // * ----------------------------------------------------------------------------------------------------------------
-  @ManyToMany(() => Model, model => model.facilities, { onDelete: 'CASCADE' })
-  models: Model[];
+  @OneToOne(() => Place, place => place.location, { onDelete: 'CASCADE' })
+  @JoinColumn({ name: 'place_id' })
+  place: Place;
 
-  @ManyToMany(() => Place, place => place.facilities)
-  places: Place[];
   // * ----------------------------------------------------------------------------------------------------------------
   // * MAIN FIELDS
   // * ----------------------------------------------------------------------------------------------------------------
+  @Column('decimal', { precision: 9, scale: 6 })
+  latitude: string;
 
-  @Column('text')
-  name: string;
+  @Column('decimal', { precision: 9, scale: 6 })
+  longitude: string;
 
-  @Column('text', { name: 'name_en', nullable: true })
-  name_en?: string;
-
-  @Column('text', { unique: true })
-  slug: string;
-
-  @Column('text', { name: 'slug_en', unique: true, nullable: true })
-  slug_en?: string;
+  @Column('smallint', { nullable: true })
+  temperature: string;
 
   @Column('text', { nullable: true })
-  description?: string;
-
-  @Column('text', { name: 'description_en', nullable: true })
-  description_en?: string;
+  reference?: string;
 
   @CreateDateColumn({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP', name: 'created_at' })
   createdAt: Date;

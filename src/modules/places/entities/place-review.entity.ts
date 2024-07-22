@@ -1,41 +1,37 @@
-import { Column, CreateDateColumn, Entity, ManyToMany, PrimaryGeneratedColumn } from 'typeorm';
-import { Model } from './model.entity';
-import { Place } from 'src/modules/places/entities';
+import { Column, CreateDateColumn, Entity, JoinColumn, ManyToOne, PrimaryGeneratedColumn } from 'typeorm';
+import { Place } from './place.entity';
+import { User } from 'src/modules/users/entities/user.entity';
+import { CloudinaryImage } from 'src/modules/cloudinary/interfaces';
 
-@Entity({ name: 'facility' })
-export class Facility {
+@Entity({ name: 'place_review' })
+export class PlaceReview {
   @PrimaryGeneratedColumn('uuid')
   id: string;
-
   // * ----------------------------------------------------------------------------------------------------------------
   // * RELATIONSHIPS
   // * ----------------------------------------------------------------------------------------------------------------
-  @ManyToMany(() => Model, model => model.facilities, { onDelete: 'CASCADE' })
-  models: Model[];
+  @ManyToOne(() => Place, place => place.reviews, { onDelete: 'CASCADE' })
+  @JoinColumn({ name: 'place_id' })
+  place: Place;
 
-  @ManyToMany(() => Place, place => place.facilities)
-  places: Place[];
+  @ManyToOne(() => User, user => user.placeRwviews, { onDelete: 'CASCADE' })
+  @JoinColumn({ name: 'user_id' })
+  user: User;
+
   // * ----------------------------------------------------------------------------------------------------------------
   // * MAIN FIELDS
   // * ----------------------------------------------------------------------------------------------------------------
+  @Column('smallint')
+  rating: number;
 
-  @Column('text')
-  name: string;
-
-  @Column('text', { name: 'name_en', nullable: true })
-  name_en?: string;
-
-  @Column('text', { unique: true })
-  slug: string;
-
-  @Column('text', { name: 'slug_en', unique: true, nullable: true })
-  slug_en?: string;
+  @Column('boolean', { default: true, name: 'is_public' })
+  isPublic: boolean;
 
   @Column('text', { nullable: true })
-  description?: string;
+  comment: string;
 
-  @Column('text', { name: 'description_en', nullable: true })
-  description_en?: string;
+  @Column('jsonb', { nullable: true })
+  images: CloudinaryImage[];
 
   @CreateDateColumn({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP', name: 'created_at' })
   createdAt: Date;

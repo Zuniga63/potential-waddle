@@ -1,17 +1,28 @@
-import { Column, CreateDateColumn, Entity, JoinColumn, ManyToOne, PrimaryGeneratedColumn } from 'typeorm';
+import { Column, CreateDateColumn, Entity, JoinColumn, ManyToOne, OneToMany, PrimaryGeneratedColumn } from 'typeorm';
 
 import { CloudinaryImage } from 'src/modules/cloudinary/interfaces';
 import { Municipality } from './municipality.entity';
+import { Place } from 'src/modules/places/entities';
 
 @Entity({ name: 'town' })
 export class Town {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
+  // * ----------------------------------------------------------------------------------------------------------------
+  // * RELATIONSHIPS
+  // * ----------------------------------------------------------------------------------------------------------------
+
   @ManyToOne(() => Municipality, municipality => municipality.towns, { nullable: true, onDelete: 'SET NULL' })
   @JoinColumn({ name: 'municipality_id' })
   municipality?: Municipality;
 
+  @OneToMany(() => Place, place => place.town)
+  place: Place;
+
+  // * ----------------------------------------------------------------------------------------------------------------
+  // * MAIN FIELDS
+  // * ----------------------------------------------------------------------------------------------------------------
   @Column('text', { unique: true, nullable: false })
   name: string;
 
