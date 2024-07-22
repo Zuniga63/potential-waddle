@@ -6,7 +6,7 @@ import { createSlug } from 'src/utils';
 import { bufferToStream } from './utils';
 import { CloudinaryPresets } from 'src/config';
 import { CloudinaryImage } from './interfaces';
-import { createProfilePhotosPreset } from './presets';
+import { createPlacePreset, createProfilePhotosPreset } from './presets';
 import { createCloudinaryImageAdapter } from './adapters';
 
 interface UploadImageProps {
@@ -61,7 +61,7 @@ export class CloudinaryService {
   }
 
   async createPresets() {
-    const promises = await Promise.all([createProfilePhotosPreset()]);
+    const promises = await Promise.all([createProfilePhotosPreset(), createPlacePreset()]);
     return promises;
   }
 
