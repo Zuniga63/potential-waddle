@@ -1,11 +1,23 @@
 import { Column, CreateDateColumn, Entity, ManyToMany, PrimaryGeneratedColumn } from 'typeorm';
 import { Model } from './model.entity';
+import { Place } from 'src/modules/places/entities';
 
 @Entity({ name: 'category' })
 export class Category {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
+  // * ----------------------------------------------------------------------------------------------------------------
+  // * RELATIONSHIPS
+  // * ----------------------------------------------------------------------------------------------------------------
+  @ManyToMany(() => Model, model => model.categories, { onDelete: 'CASCADE' })
+  models: Model[];
+
+  @ManyToMany(() => Place, place => place.categories)
+  places: Place[];
+  // * ----------------------------------------------------------------------------------------------------------------
+  // * MAIN FIELDS
+  // * ----------------------------------------------------------------------------------------------------------------
   @Column('text')
   name: string;
 
@@ -29,7 +41,4 @@ export class Category {
 
   @CreateDateColumn({ name: 'updated_at', default: () => 'CURRENT_TIMESTAMP', onUpdate: 'CURRENT_TIMESTAMP' })
   updatedAt: Date;
-
-  @ManyToMany(() => Model, model => model.categories, { onDelete: 'CASCADE' })
-  models: Model[];
 }
