@@ -6,3 +6,4 @@ export { swaggerConfig } from './swagger.config';
 export { SwaggerTags } from './swagger-tags.enum';
 export { typeOrmConfig } from './type-orm.config';
 export { CloudinaryPresets } from './cloudinary-presets.enum';
+export { ResourceProvider } from './resource-provider.enum';

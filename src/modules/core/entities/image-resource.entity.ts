@@ -1,14 +1,15 @@
+import { ResourceProvider } from 'src/config';
 import { Column, CreateDateColumn, Entity, PrimaryGeneratedColumn } from 'typeorm';
 
-@Entity({ name: 'image_asset' })
-export class ImageAsset {
+@Entity({ name: 'image_resource' })
+export class ImageResource {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
   @Column('text')
   url: string;
 
-  @Column('text', { name: 'file_name' })
+  @Column('text', { name: 'file_name', nullable: true })
   fileName: string;
 
   @Column('text', { nullable: true })
@@ -31,6 +32,9 @@ export class ImageAsset {
 
   @Column('text', { nullable: true, name: 'resource_type' })
   resourceType?: string;
+
+  @Column('enum', { enum: ResourceProvider, nullable: true })
+  provider?: ResourceProvider;
 
   @CreateDateColumn({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP', name: 'created_at' })
   createdAt: Date;
