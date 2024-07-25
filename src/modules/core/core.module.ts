@@ -1,12 +1,12 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { Category, Facility, ImageAsset, Model } from './entities';
-import { CategoriesService, FacilitiesService, ModelsService } from './services';
-import { CategoriesController, FacilitiesController, ModelsController } from './controllers';
+import { Category, Facility, ImageAsset, Language, Model } from './entities';
+import { CategoriesService, FacilitiesService, LanguagesService, ModelsService } from './services';
+import { CategoriesController, FacilitiesController, LanguagesController, ModelsController } from './controllers';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Model, Facility, Category, ImageAsset])],
-  controllers: [ModelsController, FacilitiesController, CategoriesController],
-  providers: [ModelsService, FacilitiesService, CategoriesService],
+  imports: [TypeOrmModule.forFeature([Model, Facility, Category, ImageAsset, Language])],
+  controllers: [ModelsController, FacilitiesController, CategoriesController, LanguagesController],
+  providers: [ModelsService, FacilitiesService, CategoriesService, LanguagesService],
 })
 export class CoreModule {}
