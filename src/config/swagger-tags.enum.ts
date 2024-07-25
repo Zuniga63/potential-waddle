@@ -9,5 +9,7 @@ export enum SwaggerTags {
   Models = 'Models',
   Facilities = 'Facilities',
   Categories = 'Categories',
+  Languages = 'Languages',
   Images = 'Images',
+  Places = 'Places',
 }
