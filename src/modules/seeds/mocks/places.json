@@ -1,0 +1,689 @@
+[
+  {
+    "id": 77,
+    "name": "El Tahurete",
+    "slug": "el-tahurete",
+    "description": "Un hermoso charco de aguas color verde esmeralda, situado en un lugar pintoresco. Es un destino perfecto para los amantes de la aventura, aunque se debe tener precaución debido a su profundidad considerable.",
+    "image": "https://storage.googleapis.com/revtur_uploaded_files/main_images/places/ab1e615a-b2aa-4c50-bdeb-6497a5ec036b.JPG",
+    "google_maps_link": "https://maps.app.goo.gl/dCViFopbwfX757bHA",
+    "longitude": "-75.077706",
+    "latitude": "6.283299",
+    "temperature": null,
+    "altitude": null,
+    "total_distance": 7500,
+    "rating": 5.0,
+    "difficult_level": 1,
+    "points": 90.0,
+    "reviews_count": 0,
+    "review_id": 77,
+    "history": null,
+    "capacity": 0,
+    "restrictions": null,
+    "recommendations": null,
+    "observations": null,
+    "how_to_get_there": "test",
+    "how_to_get_around": null,
+    "ref_to_get_there": null,
+    "min_age": null,
+    "max_age": null,
+    "max_depth": null,
+    "how_to_dress": null,
+    "tenant": {
+      "id": 3,
+      "name": "San Rafael"
+    },
+    "categories": [
+      {
+        "id": 2,
+        "name": "Río",
+        "icon": null
+      }
+    ],
+    "facilities": [
+      {
+        "id": 6,
+        "name": "Areas de picnic",
+        "icon": null
+      }
+    ]
+  },
+  {
+    "id": 76,
+    "name": "La Isleta",
+    "slug": "la-isleta",
+    "description": "La cascada La Isleta forma parte de la Quebrada Boquerón, destacándose por sus aguas cristalinas, la presencia abundante de peces y su acogedora atmósfera. Para llegar a esta hermosa cascada se debe tomar un sendero con una caminata de aproximadamente 20 minutos(1km) desde el charco o cascada La Cazuela.",
+    "image": "https://storage.googleapis.com/revtur_uploaded_files/main_images/places/d217d611-60fc-4f6d-86af-c3c268f11182.JPG",
+    "google_maps_link": "https://maps.app.goo.gl/MXe82C3mngdybtqE8",
+    "longitude": "-75.09024723655797",
+    "latitude": "6.299150688055924",
+    "temperature": null,
+    "altitude": null,
+    "total_distance": 9100,
+    "rating": 5.0,
+    "difficult_level": 2,
+    "points": 1000.0,
+    "reviews_count": 1,
+    "review_id": 38,
+    "history": null,
+    "capacity": 0,
+    "restrictions": null,
+    "recommendations": null,
+    "observations": null,
+    "how_to_get_there": "No tiene",
+    "how_to_get_around": null,
+    "ref_to_get_there": null,
+    "min_age": null,
+    "max_age": null,
+    "max_depth": null,
+    "how_to_dress": null,
+    "tenant": {
+      "id": 3,
+      "name": "San Rafael"
+    },
+    "categories": [
+      {
+        "id": 3,
+        "name": "Cascada",
+        "icon": null
+      }
+    ],
+    "facilities": [
+      {
+        "id": 7,
+        "name": "Zona de camping",
+        "icon": null
+      }
+    ]
+  },
+  {
+    "id": 75,
+    "name": "Cascada la Honda",
+    "slug": "cascada-la-honda",
+    "description": "La Cascada La Honda de San Rafael se destaca como una majestuosa caída de agua de 20 metros de altura, con un pozo natural que invita a refrescar tanto el cuerpo como el espíritu. El camino hacia este lugar no solo ofrece un acceso atractivo, sino también la oportunidad de contemplar paisajes sorprendentes por su belleza natural.",
+    "image": "https://storage.googleapis.com/revtur_uploaded_files/main_images/places/1fac3e52-a64d-4a4e-a0f5-206b8bc75769.JPG",
+    "google_maps_link": "https://maps.app.goo.gl/MqgrqLiQt2og52NJA",
+    "longitude": "-75.043398",
+    "latitude": "6.270989",
+    "temperature": null,
+    "altitude": null,
+    "total_distance": 1500,
+    "rating": 4.0,
+    "difficult_level": 3,
+    "points": 100.0,
+    "reviews_count": 1,
+    "review_id": 65,
+    "history": null,
+    "capacity": 50,
+    "restrictions": null,
+    "recommendations": "Es importante considerar algunas recomendaciones para asegurar una experiencia segura y agradable. Aquí tienes algunas sugerencias:\r\n\r\nVestimenta adecuada: Utiliza traje de baño, ropa ligera y calzado cómodo y resistente, especialmente si planeas caminar por terrenos irregulares.\r\n\r\nProtector solar: Aplica protector solar antes de la exposición al sol para protegerte de quemaduras solares. Reaplícalo según las indicaciones del producto.\r\n\r\nHidratación: Lleva suficiente agua para mantenerte hidratado durante tu visita, especialmente si planeas realizar actividades físicas.\r\n\r\nRepelente de insectos: En épocas del año con mayor presencia de insectos, considera llevar un repelente para protegerte de picaduras.\r\n\r\nCuidado con la corriente: Antes de ingresar al agua, evalúa la fuerza de la corriente. Si es fuerte, ten precaución y evita áreas peligrosas.\r\n\r\nConoce las normativas locales: Infórmate sobre las normativas locales, como la prohibición de ciertas actividades o la preservación de ciertas áreas.\r\n\r\nBasura: Lleva una bolsa para la basura y asegúrate de llevar tus desechos contigo. Respeta y conserva el entorno natural.\r\n\r\nCuidado con la flora y fauna: Evita dañar la flora y fauna local. Respeta el entorno natural y no molestes a los animales.\r\n\r\nAtención a señales de advertencia: Presta atención a las señales de advertencia y a las condiciones locales. Respeta cualquier restricción o advertencia de seguridad.\r\n\r\nEmergencias: Lleva contigo un kit básico de primeros auxilios y asegúrate de conocer la ubicación de instalaciones médicas cercanas.\r\n\r\nRecuerda que estas recomendaciones pueden variar según la época del año, las condiciones meteorológicas y las reglas específicas del lugar que visites. Siempre es bueno informarse previamente y tomar precauciones para garantizar una experiencia segura y respetuosa con el entorno.",
+    "observations": null,
+    "how_to_get_there": "Desde el municipio de San Rafael, dirígete hacia la cuenca del río Arenal. Al llegar al Estadero El Trocadero Vaqueto, desciende a mano derecha, cruza el Puente El Trocadero y atraviesa todo el sendero de bromelias en dirección a la Vereda La Honda. Antes de tomar el camino hacia el interior de la vereda La Honda, cruza una pequeña quebrada y continúa río arriba para llegar a la Playa del Río Arenal.",
+    "how_to_get_around": null,
+    "ref_to_get_there": "Vereda Bizcocho",
+    "min_age": 10,
+    "max_age": 65,
+    "max_depth": 1,
+    "how_to_dress": "Traje de baño: Usa un traje de baño cómodo si planeas nadar en el río o disfrutar de los charcos.  Ropa ligera: Opta por ropa ligera y fresca, como shorts y camisetas, para soportar el clima cálido de la región.  Calzado resistente: Lleva sandalias resistentes o zapatos cerrados que puedan mojarse y que ofrezcan buen agarre para caminar sobre terrenos irregulares.",
+    "tenant": {
+      "id": 3,
+      "name": "San Rafael"
+    },
+    "categories": [
+      {
+        "id": 3,
+        "name": "Cascada",
+        "icon": null
+      }
+    ],
+    "facilities": [
+      {
+        "id": 3,
+        "name": "Tienda",
+        "icon": null
+      },
+      {
+        "id": 9,
+        "name": "Cobertura movil (claro)",
+        "icon": null
+      }
+    ]
+  },
+  {
+    "id": 74,
+    "name": "El Trocadero 2",
+    "slug": "el-trocadero-2",
+    "description": "Es un lugar sumamente acogedor, destacado por sus aguas cristalinas y templadas.",
+    "image": "https://storage.googleapis.com/revtur_uploaded_files/main_images/places/22462c61-2b7d-42c4-ae26-db21add4995a.jpeg",
+    "google_maps_link": "https://maps.app.goo.gl/gR2iWpq7dRAakFjP9",
+    "longitude": "-75.033248",
+    "latitude": "6.279996",
+    "temperature": null,
+    "altitude": null,
+    "total_distance": 2000,
+    "rating": 5.0,
+    "difficult_level": 1,
+    "points": 1000.0,
+    "reviews_count": 1,
+    "review_id": 57,
+    "history": null,
+    "capacity": 0,
+    "restrictions": null,
+    "recommendations": null,
+    "observations": null,
+    "how_to_get_there": "...",
+    "how_to_get_around": null,
+    "ref_to_get_there": null,
+    "min_age": null,
+    "max_age": null,
+    "max_depth": null,
+    "how_to_dress": null,
+    "tenant": {
+      "id": 3,
+      "name": "San Rafael"
+    },
+    "categories": [
+      {
+        "id": 2,
+        "name": "Río",
+        "icon": null
+      }
+    ],
+    "facilities": [
+      {
+        "id": 9,
+        "name": "Cobertura movil (claro)",
+        "icon": null
+      }
+    ]
+  },
+  {
+    "id": 73,
+    "name": "Cascada del tesoro o salto del indio",
+    "slug": "cascada-del-tesoro-o-salto-del-indio",
+    "description": "La cascada y charco El Salto del Indio es uno de los lugares naturales de aguas cristalinas más reconocidos en San Rafael. Está ubicado en la vereda La Araña y es uno de los tantos charcos que forma el río Guatapé en su tránsito hacia este municipio",
+    "image": "https://storage.googleapis.com/revtur_uploaded_files/main_images/places/d9491528-8186-484b-874a-b144f9294a86.jpeg",
+    "google_maps_link": "https://maps.app.goo.gl/996CAwrbPZwEP8i79",
+    "longitude": "-75.106241",
+    "latitude": "6.270241",
+    "temperature": null,
+    "altitude": null,
+    "total_distance": 13700,
+    "rating": 5.0,
+    "difficult_level": 5,
+    "points": 100.0,
+    "reviews_count": 1,
+    "review_id": 61,
+    "history": null,
+    "capacity": 0,
+    "restrictions": null,
+    "recommendations": null,
+    "observations": null,
+    "how_to_get_there": "...",
+    "how_to_get_around": null,
+    "ref_to_get_there": null,
+    "min_age": null,
+    "max_age": null,
+    "max_depth": null,
+    "how_to_dress": null,
+    "tenant": {
+      "id": 3,
+      "name": "San Rafael"
+    },
+    "categories": [
+      {
+        "id": 3,
+        "name": "Cascada",
+        "icon": null
+      }
+    ],
+    "facilities": [
+      {
+        "id": 5,
+        "name": "Baños públicos",
+        "icon": null
+      }
+    ]
+  },
+  {
+    "id": 72,
+    "name": "Charco las Maruchas",
+    "slug": "charco-las-maruchas",
+    "description": "Aguas puras de color verde y azul cristalino, rodeados de roca natural y una espesa vegetación de bosque húmedo-tropical",
+    "image": "https://storage.googleapis.com/revtur_uploaded_files/main_images/places/48250f29-00b2-4d90-a6a5-736b7c9bfd83.JPG",
+    "google_maps_link": "https://maps.app.goo.gl/fCQVLWoKr8zzhNvKA",
+    "longitude": "-75.031922",
+    "latitude": "6.2709",
+    "temperature": null,
+    "altitude": null,
+    "total_distance": 3500,
+    "rating": 5.0,
+    "difficult_level": 1,
+    "points": 100.0,
+    "reviews_count": 1,
+    "review_id": 79,
+    "history": null,
+    "capacity": 0,
+    "restrictions": null,
+    "recommendations": null,
+    "observations": null,
+    "how_to_get_there": "...",
+    "how_to_get_around": null,
+    "ref_to_get_there": null,
+    "min_age": null,
+    "max_age": null,
+    "max_depth": null,
+    "how_to_dress": null,
+    "tenant": {
+      "id": 3,
+      "name": "San Rafael"
+    },
+    "categories": [
+      {
+        "id": 5,
+        "name": "Charco",
+        "icon": null
+      }
+    ],
+    "facilities": [
+      {
+        "id": 6,
+        "name": "Areas de picnic",
+        "icon": null
+      }
+    ]
+  },
+  {
+    "id": 71,
+    "name": ".Cascada Cuervos",
+    "slug": ".cascada-cuervos",
+    "description": "Un tranquilo rincón natural, que ofrece un apacible entorno con dos caídas de agua  y un hermoso charco; A pesar de su proximidad al área urbana, este lugar se distingue por su serenidad, convirtiéndolo en un destino ideal para disfrutar de sus aguas cristalinas y la exuberante vegetación que lo rodea.",
+    "image": "https://storage.googleapis.com/revtur_uploaded_files/main_images/places/12995361-7b4f-4009-b8d5-a7617a0afc04.jpeg",
+    "google_maps_link": "https://maps.app.goo.gl/4km9s5Axu8Lk8iWy5",
+    "longitude": "-75.03818",
+    "latitude": "6.297873",
+    "temperature": null,
+    "altitude": null,
+    "total_distance": 995,
+    "rating": 3.0,
+    "difficult_level": 3,
+    "points": 800.0,
+    "reviews_count": 1,
+    "review_id": 86,
+    "history": null,
+    "capacity": 0,
+    "restrictions": null,
+    "recommendations": null,
+    "observations": null,
+    "how_to_get_there": "...",
+    "how_to_get_around": null,
+    "ref_to_get_there": null,
+    "min_age": null,
+    "max_age": null,
+    "max_depth": null,
+    "how_to_dress": null,
+    "tenant": {
+      "id": 3,
+      "name": "San Rafael"
+    },
+    "categories": [
+      {
+        "id": 3,
+        "name": "Cascada",
+        "icon": null
+      }
+    ],
+    "facilities": [
+      {
+        "id": 6,
+        "name": "Areas de picnic",
+        "icon": null
+      }
+    ]
+  },
+  {
+    "id": 70,
+    "name": "Charco El Limón",
+    "slug": "charco-el-limon",
+    "description": "Charco El Limón, ubicado en esta región, es un atractivo destacado. Este entorno ofrece aguas cristalinas rodeadas de exuberante vegetación, creando un ambiente sereno y apacible. Los visitantes pueden disfrutar de la frescura del agua, explorar los alrededores verdes y sumergirse en la belleza natural que caracteriza a San Rafael.",
+    "image": "https://storage.googleapis.com/revtur_uploaded_files/main_images/places/ac7f7c75-1b98-40ec-83dd-a4dcbcb1d99c.JPG",
+    "google_maps_link": "https://maps.app.goo.gl/8wp2ehntvw6xsA7d6",
+    "longitude": "-75.07681",
+    "latitude": "6.30883",
+    "temperature": 45,
+    "altitude": 1200.0,
+    "total_distance": 7700,
+    "rating": 4.5,
+    "difficult_level": 2,
+    "points": 100.0,
+    "reviews_count": 1,
+    "review_id": 17,
+    "history": null,
+    "capacity": 0,
+    "restrictions": null,
+    "recommendations": null,
+    "observations": null,
+    "how_to_get_there": "...",
+    "how_to_get_around": null,
+    "ref_to_get_there": null,
+    "min_age": null,
+    "max_age": null,
+    "max_depth": null,
+    "how_to_dress": null,
+    "tenant": {
+      "id": 3,
+      "name": "San Rafael"
+    },
+    "categories": [
+      {
+        "id": 5,
+        "name": "Charco",
+        "icon": null
+      }
+    ],
+    "facilities": [
+      {
+        "id": 9,
+        "name": "Cobertura movil (claro)",
+        "icon": null
+      }
+    ]
+  },
+  {
+    "id": 69,
+    "name": "Charco el ahogado",
+    "slug": "charco-el-ahogado",
+    "description": "Un espectacular charco sobre el río bizcocho, con el particular color de este hermoso afluente de San Rafael, el lugar está ubicado al borde la vía hacia la vereda Bizcocho (vía a escuela bizcocho). El lugar cuenta con una pequeña playa al otro lado del río, y es un charco de una profundidad aproximada de 4 metros. Recomendado para personas que les gusta nadar.",
+    "image": "https://storage.googleapis.com/revtur_uploaded_files/main_images/places/5770a155-3088-45af-8330-1e4303bdc608.JPEG",
+    "google_maps_link": "https://www.google.com/maps/dir//6.2997828,-75.0695166/@6.299795,-75.0688097,181m/data=!3m1!1e3!4m2!4m1!3e0?entry=ttu",
+    "longitude": "-75.0695417630232",
+    "latitude": "6.299782427602581",
+    "temperature": null,
+    "altitude": 1300.0,
+    "total_distance": 6300,
+    "rating": 3.0,
+    "difficult_level": 1,
+    "points": 100.0,
+    "reviews_count": 1,
+    "review_id": 69,
+    "history": null,
+    "capacity": 200,
+    "restrictions": null,
+    "recommendations": "Charco con mucha profundidad y corriente en algunas zonas, se recomienda saber nadar. &Se recomienda usar protector solar.  &Se recomienda la supervisión para niños o adultos mayores. &Charco al lado de una vía terciaría. &Usar ropa fresca y de baño. &Llevar ropa de cambio. &Avistamiento de aves y animales silvestres",
+    "observations": null,
+    "how_to_get_there": "Desde el casco urbano de San Rafael, se debe tomar la vía hacia Guatape unos 5 kilometros hasta el puente de bizcocho, en el Puente de Bizcocho tomar la vía que conduce hacia la escuela de Bizcocho (Vía de la parte izquierda del puente de bizcocho), se debe continuar por esa vía veredal recorriendo unos 450 metros para llegar al lugar mágico.  ",
+    "how_to_get_around": "MOTOCARRO,CAMINANDO,VEHICULO,BICICLETA",
+    "ref_to_get_there": "Vereda Bizcocho",
+    "min_age": 2,
+    "max_age": 90,
+    "max_depth": 6,
+    "how_to_dress": null,
+    "tenant": {
+      "id": 3,
+      "name": "San Rafael"
+    },
+    "categories": [
+      {
+        "id": 5,
+        "name": "Charco",
+        "icon": null
+      }
+    ],
+    "facilities": [
+      {
+        "id": 6,
+        "name": "Areas de picnic",
+        "icon": null
+      }
+    ]
+  },
+  {
+    "id": 51,
+    "name": "Alto la chocha sr",
+    "slug": "alto-la-chocha-sr",
+    "description": "trónicos, quedando esencialmente igual al original. Fue popularizado en los 60s con la creación de las hojas \"Letraset\", las cuales contenian pasajes de Lorem Ipsum, y más recientemente con software de autoedición, como por ejemplo Aldus PageMaker, el cual incluye versiones de Lorem Ipsum.",
+    "image": "https://storage.googleapis.com/revtur_uploaded_files/main_images/places/9960137f-2fec-4cae-9845-949c61af6663.jpeg",
+    "google_maps_link": null,
+    "longitude": "0.323232",
+    "latitude": "0.323232",
+    "temperature": null,
+    "altitude": 0.0,
+    "total_distance": 1200,
+    "rating": 3.0,
+    "difficult_level": 4,
+    "points": 45.0,
+    "reviews_count": null,
+    "review_id": 84,
+    "history": null,
+    "capacity": 0,
+    "restrictions": null,
+    "recommendations": null,
+    "observations": null,
+    "how_to_get_there": "...",
+    "how_to_get_around": null,
+    "ref_to_get_there": null,
+    "min_age": null,
+    "max_age": null,
+    "max_depth": null,
+    "how_to_dress": null,
+    "tenant": {
+      "id": 3,
+      "name": "San Rafael"
+    },
+    "categories": [
+      {
+        "id": 2,
+        "name": "Río",
+        "icon": null
+      }
+    ],
+    "facilities": [
+      {
+        "id": 6,
+        "name": "Areas de picnic",
+        "icon": null
+      }
+    ]
+  },
+  {
+    "id": 50,
+    "name": "La Chocha",
+    "slug": "la-chocha-teked",
+    "description": ".....",
+    "image": "https://storage.googleapis.com/revtur_uploaded_files/main_images/places/b128a8f0-636d-40fd-b48f-474e1a3ea382.jpeg",
+    "google_maps_link": null,
+    "longitude": "-75.07681",
+    "latitude": "6.30883",
+    "temperature": null,
+    "altitude": 0.0,
+    "total_distance": 0,
+    "rating": 0.0,
+    "difficult_level": 4,
+    "points": 40.0,
+    "reviews_count": null,
+    "review_id": 29,
+    "history": null,
+    "capacity": 0,
+    "restrictions": null,
+    "recommendations": null,
+    "observations": null,
+    "how_to_get_there": "...",
+    "how_to_get_around": null,
+    "ref_to_get_there": null,
+    "min_age": null,
+    "max_age": null,
+    "max_depth": null,
+    "how_to_dress": null,
+    "tenant": {
+      "id": 3,
+      "name": "San Rafael"
+    },
+    "categories": [
+      {
+        "id": 2,
+        "name": "Río",
+        "icon": null
+      }
+    ],
+    "facilities": [
+      {
+        "id": 5,
+        "name": "Baños públicos",
+        "icon": null
+      },
+      {
+        "id": 9,
+        "name": "Cobertura movil (claro)",
+        "icon": null
+      }
+    ]
+  },
+  {
+    "id": 49,
+    "name": "Salto del Angel",
+    "slug": "salto-del-angel",
+    "description": "...",
+    "image": "https://storage.googleapis.com/revtur_uploaded_files/main_images/places/c13305bf-d8bc-4724-b29a-464a7cb918aa.jpeg",
+    "google_maps_link": null,
+    "longitude": "43",
+    "latitude": "34",
+    "temperature": null,
+    "altitude": 0.0,
+    "total_distance": 1234,
+    "rating": 0.0,
+    "difficult_level": 5,
+    "points": 45.0,
+    "reviews_count": null,
+    "review_id": 111,
+    "history": null,
+    "capacity": 0,
+    "restrictions": null,
+    "recommendations": null,
+    "observations": null,
+    "how_to_get_there": "...",
+    "how_to_get_around": null,
+    "ref_to_get_there": null,
+    "min_age": null,
+    "max_age": null,
+    "max_depth": null,
+    "how_to_dress": null,
+    "tenant": {
+      "id": 3,
+      "name": "San Rafael"
+    },
+    "categories": [
+      {
+        "id": 2,
+        "name": "Río",
+        "icon": null
+      },
+      {
+        "id": 3,
+        "name": "Cascada",
+        "icon": null
+      }
+    ],
+    "facilities": [
+      {
+        "id": 4,
+        "name": "Restaurantes",
+        "icon": null
+      }
+    ]
+  },
+  {
+    "id": 41,
+    "name": "Las Golondrinas",
+    "slug": "las-golondrinas-mtq4o",
+    "description": "...",
+    "image": "https://storage.googleapis.com/revtur_uploaded_files/main_images/places/cbe0c2de-6130-4236-868a-12dafb3a9848.blob",
+    "google_maps_link": null,
+    "longitude": "-75.07681",
+    "latitude": "6.30883",
+    "temperature": null,
+    "altitude": 0.0,
+    "total_distance": 4500,
+    "rating": 0.0,
+    "difficult_level": 5,
+    "points": 45.0,
+    "reviews_count": null,
+    "review_id": 94,
+    "history": null,
+    "capacity": 0,
+    "restrictions": null,
+    "recommendations": null,
+    "observations": null,
+    "how_to_get_there": "...",
+    "how_to_get_around": null,
+    "ref_to_get_there": null,
+    "min_age": null,
+    "max_age": null,
+    "max_depth": null,
+    "how_to_dress": null,
+    "tenant": {
+      "id": 3,
+      "name": "San Rafael"
+    },
+    "categories": [
+      {
+        "id": 5,
+        "name": "Charco",
+        "icon": null
+      }
+    ],
+    "facilities": [
+      {
+        "id": 2,
+        "name": "Parqueadero",
+        "icon": null
+      }
+    ]
+  },
+  {
+    "id": 40,
+    "name": "Los Saltoss",
+    "slug": "los-saltoss-vey4b",
+    "description": ".....",
+    "image": "https://storage.googleapis.com/revtur_uploaded_files/main_images/places/40ddd26d-029f-4d8a-9ba4-f2f6d7d9c5cf.blob",
+    "google_maps_link": null,
+    "longitude": "-75.07681",
+    "latitude": "6.30883",
+    "temperature": null,
+    "altitude": 0.0,
+    "total_distance": 45,
+    "rating": 0.0,
+    "difficult_level": null,
+    "points": 45.0,
+    "reviews_count": null,
+    "review_id": 37,
+    "history": null,
+    "capacity": 0,
+    "restrictions": null,
+    "recommendations": null,
+    "observations": null,
+    "how_to_get_there": "...",
+    "how_to_get_around": null,
+    "ref_to_get_there": null,
+    "min_age": null,
+    "max_age": null,
+    "max_depth": null,
+    "how_to_dress": null,
+    "tenant": {
+      "id": 3,
+      "name": "San Rafael"
+    },
+    "categories": [
+      {
+        "id": 3,
+        "name": "Cascada",
+        "icon": null
+      }
+    ],
+    "facilities": [
+      {
+        "id": 7,
+        "name": "Zona de camping",
+        "icon": null
+      }
+    ]
+  }
+]

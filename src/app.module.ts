@@ -12,6 +12,8 @@ import { UsersModule } from './modules/users/users.module';
 import { RolesModule } from './modules/roles/roles.module';
 import { TownsModule } from './modules/towns/towns.module';
 import { CoreModule } from './modules/core/core.module';
+import { PlacesModule } from './modules/places/places.module';
+import { SeedsModule } from './modules/seeds/seeds.module';
 
 @Module({
   imports: [
@@ -39,6 +41,10 @@ import { CoreModule } from './modules/core/core.module';
     TownsModule,
 
     CoreModule,
+
+    PlacesModule,
+
+    SeedsModule,
   ],
   controllers: [],
   providers: [],

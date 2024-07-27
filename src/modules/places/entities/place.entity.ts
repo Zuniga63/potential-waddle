@@ -4,15 +4,15 @@ import {
   Column,
   CreateDateColumn,
   Entity,
-  Geometry,
   Index,
   JoinColumn,
   JoinTable,
   ManyToMany,
+  ManyToOne,
   OneToMany,
+  Point,
   PrimaryGeneratedColumn,
 } from 'typeorm';
-import { CloudinaryImage } from 'src/modules/cloudinary/interfaces';
 import { PlaceImage } from './place-image.entity';
 
 @Entity({ name: 'place' })
@@ -23,7 +23,7 @@ export class Place {
   // * ----------------------------------------------------------------------------------------------------------------
   // * RELATIONSHIPS
   // * ----------------------------------------------------------------------------------------------------------------
-  @ManyToMany(() => Town, town => town.place, { nullable: true, onDelete: 'SET NULL' })
+  @ManyToOne(() => Town, town => town.places, { nullable: true, onDelete: 'SET NULL' })
   @JoinColumn({ name: 'town_id' })
   town: Town;
 
@@ -48,9 +48,6 @@ export class Place {
   @Column('text')
   name: string;
 
-  @Column('jsonb', { nullable: false })
-  image: CloudinaryImage;
-
   @Column('text', { unique: true })
   slug: string;
 
@@ -71,7 +68,7 @@ export class Place {
 
   @Column('geometry', { spatialFeatureType: 'Point', srid: 4326 })
   @Index({ spatial: true })
-  location: Geometry;
+  location: Point;
 
   @Column('smallint', { name: 'urbar_center_distance', default: 0 })
   urbarCenterDistance: number;
@@ -84,7 +81,7 @@ export class Place {
   history?: string;
 
   @Column('smallint', { nullable: true })
-  temperature: string;
+  temperature: number;
 
   @Column('smallint', { name: 'max_depth', nullable: true })
   maxDepth?: number;

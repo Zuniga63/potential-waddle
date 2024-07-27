@@ -18,7 +18,7 @@ export class Town {
   municipality?: Municipality;
 
   @OneToMany(() => Place, place => place.town)
-  place: Place;
+  places: Place[];
 
   // * ----------------------------------------------------------------------------------------------------------------
   // * MAIN FIELDS
