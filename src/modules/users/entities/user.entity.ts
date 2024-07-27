@@ -13,7 +13,6 @@ import {
 import { Role } from 'src/modules/roles/entities/role.entity';
 import { CloudinaryImage } from 'src/modules/cloudinary/interfaces';
 import { Session } from 'src/modules/auth/entities';
-import { PlaceReview } from 'src/modules/places/entities';
 
 @Entity({ name: 'users' })
 export class User {
@@ -26,9 +25,6 @@ export class User {
   @ManyToOne(() => Role, role => role.users, { nullable: true, onDelete: 'SET NULL' })
   @JoinColumn({ name: 'role_id' })
   role: Role;
-
-  @OneToMany(() => PlaceReview, placeReview => placeReview.user)
-  placeRwviews: PlaceReview[];
 
   // * ----------------------------------------------------------------------------------------------------------------
   // * MAIN FIELDS

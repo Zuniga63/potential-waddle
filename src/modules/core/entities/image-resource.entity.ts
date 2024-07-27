@@ -1,11 +1,21 @@
 import { ResourceProvider } from 'src/config';
-import { Column, CreateDateColumn, Entity, PrimaryGeneratedColumn } from 'typeorm';
+import { PlaceImage } from 'src/modules/places/entities';
+import { Column, CreateDateColumn, Entity, OneToMany, PrimaryGeneratedColumn } from 'typeorm';
 
 @Entity({ name: 'image_resource' })
 export class ImageResource {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
+  // * ----------------------------------------------------------------------------------------------------------------
+  // * RELATIONSHIPS
+  // * ----------------------------------------------------------------------------------------------------------------
+  @OneToMany(() => PlaceImage, placeImage => placeImage.image)
+  placeImages: PlaceImage[];
+
+  // * ----------------------------------------------------------------------------------------------------------------
+  // * MAIN FIELDS
+  // * ----------------------------------------------------------------------------------------------------------------
   @Column('text')
   url: string;
 
@@ -36,6 +46,9 @@ export class ImageResource {
   @Column('enum', { enum: ResourceProvider, nullable: true })
   provider?: ResourceProvider;
 
+  // * ----------------------------------------------------------------------------------------------------------------
+  // * DATES
+  // * ----------------------------------------------------------------------------------------------------------------
   @CreateDateColumn({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP', name: 'created_at' })
   createdAt: Date;
 

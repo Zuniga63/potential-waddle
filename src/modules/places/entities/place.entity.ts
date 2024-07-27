@@ -4,16 +4,14 @@ import {
   Column,
   CreateDateColumn,
   Entity,
+  Geometry,
+  Index,
   JoinColumn,
   JoinTable,
   ManyToMany,
   OneToMany,
-  OneToOne,
   PrimaryGeneratedColumn,
 } from 'typeorm';
-import { PlaceInfo } from './place-info.entity';
-import { PlaceLocation } from './place-location.entity';
-import { PlaceReview } from './place-review.entity';
 import { CloudinaryImage } from 'src/modules/cloudinary/interfaces';
 import { PlaceImage } from './place-image.entity';
 
@@ -29,12 +27,6 @@ export class Place {
   @JoinColumn({ name: 'town_id' })
   town: Town;
 
-  @OneToOne(() => PlaceInfo, { nullable: true, onDelete: 'SET NULL' })
-  info?: PlaceInfo;
-
-  @OneToOne(() => PlaceLocation, { nullable: true, onDelete: 'SET NULL' })
-  location: PlaceLocation;
-
   @ManyToMany(() => Facility, facility => facility.places)
   @JoinTable({ name: 'place_facility' })
   facilities: Facility[];
@@ -44,15 +36,11 @@ export class Place {
   categories: Category[];
 
   @OneToMany(() => PlaceImage, image => image.place)
-  @JoinTable({
-    name: 'place_image',
-    joinColumn: { name: 'place_id', referencedColumnName: 'id' },
-    inverseJoinColumn: { name: 'image_id', referencedColumnName: 'id' },
-  })
+  @JoinTable({ name: 'place_image' })
   images: PlaceImage[];
 
-  @OneToMany(() => PlaceReview, review => review.place)
-  reviews: PlaceReview[];
+  // @OneToMany(() => PlaceReview, review => review.place)
+  // reviews: PlaceReview[];
 
   // * ----------------------------------------------------------------------------------------------------------------
   // * MAIN FIELDS
@@ -81,7 +69,64 @@ export class Place {
   @Column('integer', { name: 'review_count', default: 0 })
   reviewCount: number;
 
-  @Column('boolean', { default: true })
+  @Column('geometry', { spatialFeatureType: 'Point', srid: 4326 })
+  @Index({ spatial: true })
+  location: Geometry;
+
+  @Column('smallint', { name: 'urbar_center_distance', default: 0 })
+  urbarCenterDistance: number;
+
+  @Column('text', { name: 'google_maps_url', nullable: true })
+  googleMapsUrl: string;
+
+  // * ----------------------------------------------------------------------------------------------------------------
+  @Column('text', { nullable: true })
+  history?: string;
+
+  @Column('smallint', { nullable: true })
+  temperature: string;
+
+  @Column('smallint', { name: 'max_depth', nullable: true })
+  maxDepth?: number;
+
+  @Column('smallint', { nullable: true })
+  altitude?: number;
+
+  @Column('smallint', { nullable: true })
+  capacity?: number;
+
+  @Column('smallint', { name: 'min_age', nullable: true })
+  minAge?: number;
+
+  @Column('smallint', { name: 'max_age', nullable: true })
+  maxAge?: number;
+
+  @Column('text', { name: 'how_to_get_there', nullable: true })
+  howToGetThere?: string;
+
+  @Column('text', { name: 'transport_reference', nullable: true })
+  transportReference?: string;
+
+  @Column('text', { name: 'local_transport_options', nullable: true })
+  localTransportOptions?: string;
+
+  @Column('text', { name: 'arrival_reference', nullable: true })
+  arrivalReference?: string;
+
+  @Column('text', { nullable: true })
+  recommendations?: string;
+
+  @Column('text', { name: 'how_to_dress', nullable: true })
+  howToDress?: string;
+
+  @Column('text', { name: 'restrictions', nullable: true })
+  restrictions?: string;
+
+  @Column('text', { name: 'observations', nullable: true })
+  observations?: string;
+
+  // * ----------------------------------------------------------------------------------------------------------------
+  @Column('boolean', { name: 'state_db', default: true })
   stateDB: boolean;
 
   @Column('boolean', { default: true, name: 'is_public' })
@@ -92,16 +137,4 @@ export class Place {
 
   @CreateDateColumn({ name: 'updated_at', default: () => 'CURRENT_TIMESTAMP', onUpdate: 'CURRENT_TIMESTAMP' })
   updatedAt: Date;
-
-  // * ----------------------------------------------------------------------------------------------------------------
-  // * ENGLISH FIELDS
-  // * ----------------------------------------------------------------------------------------------------------------
-  @Column('text', { nullable: true })
-  name_en?: string;
-
-  @Column('text', { unique: true, nullable: true })
-  slug_en?: string;
-
-  @Column('text', { nullable: true })
-  description_en?: string;
 }

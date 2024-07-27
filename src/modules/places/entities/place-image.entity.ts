@@ -1,6 +1,6 @@
-import { CloudinaryImage } from 'src/modules/cloudinary/interfaces';
-import { Place } from './place.entity';
+import { ImageResource } from 'src/modules/core/entities';
 import { Column, CreateDateColumn, Entity, JoinColumn, ManyToOne, PrimaryGeneratedColumn } from 'typeorm';
+import { Place } from './place.entity';
 
 @Entity({ name: 'place_image' })
 export class PlaceImage {
@@ -10,16 +10,17 @@ export class PlaceImage {
   // * ----------------------------------------------------------------------------------------------------------------
   // * RELATIONSHIPS
   // * ----------------------------------------------------------------------------------------------------------------
-  @ManyToOne(() => Place, place => place.images)
+  @ManyToOne(() => Place, place => place.images, { onDelete: 'RESTRICT' })
   @JoinColumn({ name: 'place_id' })
   place: Place;
+
+  @ManyToOne(() => ImageResource, image => image.placeImages, { onDelete: 'RESTRICT' })
+  @JoinColumn({ name: 'image_resource_id' })
+  image: ImageResource;
 
   // * ----------------------------------------------------------------------------------------------------------------
   // * MAIN FIELDS
   // * ----------------------------------------------------------------------------------------------------------------
-  @Column('jsonb', { nullable: false })
-  image: CloudinaryImage;
-
   @Column('smallint')
   order: number;
 
