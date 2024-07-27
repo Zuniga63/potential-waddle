@@ -41,7 +41,7 @@ Este proyecto tiene como objetivo proporcionar un punto de partida para el desar
 
 3.  Precargar la imagen de postgres
     ```bash
-      docker pull postgres:14.3
+      docker pull postgis/postgis:16-3.4-alpine
     ```
 
 ## Instalación en Entorno Local
