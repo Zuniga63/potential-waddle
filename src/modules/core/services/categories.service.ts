@@ -31,7 +31,7 @@ export class CategoriesService {
   // * GET ALL CATEGORY
   // * -------------------------------------------------------------------------------------------------------------
   async findAll({ modelId }: { modelId?: string } = {}) {
-    if (!modelId) return this.categoriesRepository.find({ order: { name: 'ASC' } });
+    if (!modelId) return this.categoriesRepository.find({ order: { name: 'ASC' }, relations: { models: true } });
 
     const [modelCategories, generalCategories] = await Promise.all([
       this.categoriesRepository
