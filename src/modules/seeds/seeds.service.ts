@@ -1,6 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { InjectDataSource, InjectRepository } from '@nestjs/typeorm';
-import { Municipality, Town } from '../towns/entities';
+import { Department, Town } from '../towns/entities';
 import { DataSource, Repository } from 'typeorm';
 import { Category, Facility, Language, Model } from '../core/entities';
 import { CATEGORIES, FACILITIES, MODELS } from './constants';
@@ -10,8 +10,8 @@ export class SeedsService {
   private readonly logger = new Logger('SeedsService');
 
   constructor(
-    @InjectRepository(Municipality)
-    private readonly municipalityRepository: Repository<Municipality>,
+    @InjectRepository(Department)
+    private readonly municipalityRepository: Repository<Department>,
 
     @InjectRepository(Town)
     private readonly townRepository: Repository<Town>,
@@ -92,14 +92,12 @@ export class SeedsService {
     const municipality = this.municipalityRepository.create({
       name: 'Antioquia',
       capital: 'Medellín',
-      callingCode: '604',
-      postalCode: '050001',
     });
     await this.municipalityRepository.save(municipality);
 
     const town = this.townRepository.create({
       name: 'San Rafael',
-      municipality,
+      department: municipality,
       description:
         'San Rafael es un municipio de Colombia, localizado en la subregión Nordeste del departamento de Antioquia. Limita por el norte con el municipio de San Carlos, por el este con el municipio de San Roque, por el sur con el municipio de Concepción y por el oeste con el municipio de San Carlos.',
     });

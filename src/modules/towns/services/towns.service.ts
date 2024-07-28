@@ -2,7 +2,7 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 
-import { Municipality, Town } from '../entities';
+import { Department, Town } from '../entities';
 import { CreateTownDto, UpdateTownDto } from '../dto';
 
 @Injectable()
@@ -10,8 +10,8 @@ export class TownsService {
   constructor(
     @InjectRepository(Town)
     private readonly townRepository: Repository<Town>,
-    @InjectRepository(Municipality)
-    private readonly municipalityRepository: Repository<Municipality>,
+    @InjectRepository(Department)
+    private readonly municipalityRepository: Repository<Department>,
   ) {}
 
   async create(createTownDto: CreateTownDto) {
@@ -19,11 +19,10 @@ export class TownsService {
     const town = this.townRepository.create({ ...res });
 
     if (lang === 'es') town.description = description;
-    else if (lang === 'en') town.description_en = description;
 
     if (municipalityId) {
       const municipality = await this.municipalityRepository.findOne({ where: { id: municipalityId } });
-      if (municipality) town.municipality = municipality;
+      if (municipality) town.department = municipality;
     }
 
     return this.townRepository.save(town);
@@ -45,11 +44,10 @@ export class TownsService {
 
     const town = await this.findOne(id);
     if (lang === 'es') town.description = description;
-    else if (lang === 'en') town.description_en = description;
 
     if (municipalityId) {
       const municipality = await this.municipalityRepository.findOne({ where: { id: municipalityId } });
-      if (municipality) town.municipality = municipality;
+      if (municipality) town.department = municipality;
     }
 
     this.townRepository.merge(town, res);

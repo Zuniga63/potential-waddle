@@ -2,12 +2,12 @@ import { Column, CreateDateColumn, Entity, OneToMany, PrimaryGeneratedColumn } f
 
 import { Town } from './town.entity';
 
-@Entity({ name: 'municipality' })
-export class Municipality {
+@Entity({ name: 'department' })
+export class Department {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @OneToMany(() => Town, town => town.municipality, { cascade: true })
+  @OneToMany(() => Town, town => town.department, { cascade: true })
   towns: Town[];
 
   @Column('text', { unique: true })
@@ -15,12 +15,6 @@ export class Municipality {
 
   @Column('text', { nullable: true })
   capital?: string;
-
-  @Column('text', { name: 'calling_code', nullable: true })
-  callingCode: string;
-
-  @Column('text', { name: 'postal_code', nullable: true })
-  postalCode?: string;
 
   @CreateDateColumn({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP', name: 'created_at' })
   createdAt?: Date;

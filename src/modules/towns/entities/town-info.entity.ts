@@ -1,40 +1,44 @@
-import { Column, CreateDateColumn, Entity, JoinColumn, ManyToMany, ManyToOne, PrimaryGeneratedColumn } from 'typeorm';
-import { Model } from './model.entity';
-import { Place } from 'src/modules/places/entities';
-import { AppIcon } from './app-icon.entity';
+import { Column, CreateDateColumn, Entity, JoinColumn, OneToOne, PrimaryGeneratedColumn } from 'typeorm';
+import { Town } from './town.entity';
 
-@Entity({ name: 'facility' })
-export class Facility {
+@Entity({ name: 'town_info' })
+export class TownInfo {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
   // * ----------------------------------------------------------------------------------------------------------------
   // * RELATIONSHIPS
   // * ----------------------------------------------------------------------------------------------------------------
-  @ManyToMany(() => Model, model => model.facilities, { onDelete: 'CASCADE' })
-  models: Model[];
+  @OneToOne(() => Town, town => town.info, { onDelete: 'CASCADE' })
+  @JoinColumn({ name: 'town_id' })
+  town: Town;
 
-  @ManyToOne(() => AppIcon, icon => icon.facilities, { nullable: true, onDelete: 'SET NULL' })
-  @JoinColumn({ name: 'icon_id' })
-  icon?: AppIcon;
-
-  @ManyToMany(() => Place, place => place.facilities)
-  places: Place[];
   // * ----------------------------------------------------------------------------------------------------------------
   // * MAIN FIELDS
   // * ----------------------------------------------------------------------------------------------------------------
-
-  @Column('text')
-  name: string;
-
-  @Column('text', { unique: true })
-  slug: string;
+  @Column('date', { nullable: true })
+  fundation?: Date;
 
   @Column('text', { nullable: true })
-  description?: string;
+  history?: string;
 
-  @Column('boolean', { name: 'is_enabled', default: false })
-  isEnabled: boolean;
+  @Column('text', { nullable: true })
+  culture?: string;
+
+  @Column('text', { nullable: true })
+  economic?: string;
+
+  @Column('smallint', { nullable: true })
+  altitude?: number;
+
+  @Column('text', { name: 'postal_code', nullable: true })
+  postalCode?: string;
+
+  @Column('text', { name: 'calling_code', nullable: true })
+  callingCode?: string;
+
+  @Column('smallint', { nullable: true })
+  temperature?: number;
 
   @CreateDateColumn({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP', name: 'created_at' })
   createdAt: Date;

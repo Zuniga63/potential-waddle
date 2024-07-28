@@ -1,8 +1,20 @@
-import { Column, CreateDateColumn, Entity, JoinColumn, ManyToOne, OneToMany, PrimaryGeneratedColumn } from 'typeorm';
+import {
+  Column,
+  CreateDateColumn,
+  Entity,
+  Index,
+  JoinColumn,
+  ManyToOne,
+  OneToMany,
+  OneToOne,
+  Point,
+  PrimaryGeneratedColumn,
+} from 'typeorm';
 
-import { CloudinaryImage } from 'src/modules/cloudinary/interfaces';
-import { Municipality } from './municipality.entity';
+import { Department } from './municipality.entity';
 import { Place } from 'src/modules/places/entities';
+import { TownInfo } from './town-info.entity';
+import { TownFestivity } from './town-festivity.entity';
 
 @Entity({ name: 'town' })
 export class Town {
@@ -13,9 +25,15 @@ export class Town {
   // * RELATIONSHIPS
   // * ----------------------------------------------------------------------------------------------------------------
 
-  @ManyToOne(() => Municipality, municipality => municipality.towns, { nullable: true, onDelete: 'SET NULL' })
-  @JoinColumn({ name: 'municipality_id' })
-  municipality?: Municipality;
+  @OneToOne(() => TownInfo, townInfo => townInfo.town, { nullable: true })
+  info?: TownInfo;
+
+  @OneToOne(() => TownFestivity, townFestivity => townFestivity.town, { nullable: true })
+  festivity?: TownFestivity;
+
+  @ManyToOne(() => Department, department => department.towns, { nullable: true, onDelete: 'SET NULL' })
+  @JoinColumn({ name: 'department_id' })
+  department?: Department;
 
   @OneToMany(() => Place, place => place.town)
   places: Place[];
@@ -29,27 +47,16 @@ export class Town {
   @Column('text', { nullable: true })
   description?: string;
 
-  @Column('text', { name: 'description_en', nullable: true })
-  description_en?: string;
-
-  @Column('jsonb', { nullable: true })
-  flag?: CloudinaryImage;
-
-  @Column('jsonb', { nullable: true })
-  shield?: CloudinaryImage;
-
-  @Column('jsonb', { nullable: true })
-  image?: CloudinaryImage;
-
-  @Column('text', { name: 'postal_code', nullable: true })
-  postalCode?: string;
-
   @Column('text', { nullable: true })
   url?: string;
 
+  @Column('geometry', { spatialFeatureType: 'Point', srid: 4326, nullable: true })
+  @Index({ spatial: true })
+  location?: Point;
+
   @CreateDateColumn({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP', name: 'created_at' })
-  createdAt?: Date;
+  createdAt: Date;
 
   @CreateDateColumn({ name: 'updated_at', default: () => 'CURRENT_TIMESTAMP', onUpdate: 'CURRENT_TIMESTAMP' })
-  updatedAt?: Date;
+  updatedAt: Date;
 }

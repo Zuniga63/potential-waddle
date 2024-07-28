@@ -84,13 +84,9 @@ export class TownDto {
     if (!town) return;
 
     this.id = town.id;
-    this.municipality = new MunicipalityDto(town.municipality);
+    this.municipality = new MunicipalityDto(town.department);
     this.name = town.name;
     this.description = town.description;
-    this.flag = town.flag?.url;
-    this.shield = town.shield?.url;
-    this.image = town.image?.url;
-    this.postalCode = town.postalCode;
     this.url = town.url;
     this.createdAt = town.createdAt;
     this.updatedAt = town.updatedAt;

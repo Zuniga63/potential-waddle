@@ -149,7 +149,7 @@ export class PlaceDto {
     this.description = place.description;
     this.longitud = place.location?.coordinates[0];
     this.latitude = place.location?.coordinates[1];
-    this.images = place.images?.map(image => image.image?.url);
+    this.images = place.images?.map(image => image.imageResource?.url);
     this.categories = place.categories?.map(category => new CategoryDto(category));
     this.facilities = place.facilities?.map(facility => new FacilityDto(facility));
     this.difficultyLevel = place.difficultyLevel;

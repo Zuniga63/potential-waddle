@@ -1,31 +1,32 @@
-import { ImageResource } from 'src/modules/core/entities';
-import { Column, CreateDateColumn, Entity, JoinColumn, ManyToOne, PrimaryGeneratedColumn } from 'typeorm';
-import { Place } from './place.entity';
+import { Column, CreateDateColumn, Entity, JoinColumn, OneToOne, PrimaryGeneratedColumn } from 'typeorm';
+import { Town } from './town.entity';
 
-@Entity({ name: 'place_image' })
-export class PlaceImage {
+@Entity({ name: 'town_festivity' })
+export class TownFestivity {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
   // * ----------------------------------------------------------------------------------------------------------------
   // * RELATIONSHIPS
   // * ----------------------------------------------------------------------------------------------------------------
-  @ManyToOne(() => Place, place => place.images, { onDelete: 'RESTRICT' })
-  @JoinColumn({ name: 'place_id' })
-  place: Place;
-
-  @ManyToOne(() => ImageResource, image => image.placeImages, { onDelete: 'RESTRICT' })
-  @JoinColumn({ name: 'image_resource_id' })
-  imageResource: ImageResource;
+  @OneToOne(() => Town, town => town.festivity, { onDelete: 'CASCADE' })
+  @JoinColumn({ name: 'town_id' })
+  town: Town;
 
   // * ----------------------------------------------------------------------------------------------------------------
   // * MAIN FIELDS
   // * ----------------------------------------------------------------------------------------------------------------
-  @Column('smallint')
-  order: number;
+  @Column('text')
+  name: string;
 
-  @Column('boolean', { default: true, name: 'is_public' })
-  isPublic: boolean;
+  @Column('text')
+  description: string;
+
+  @Column('date')
+  startDate: Date;
+
+  @Column('date')
+  endDate: Date;
 
   @CreateDateColumn({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP', name: 'created_at' })
   createdAt: Date;

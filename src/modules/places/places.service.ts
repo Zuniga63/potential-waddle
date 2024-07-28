@@ -71,7 +71,7 @@ export class PlacesService {
     await this.imageResourceRepo.save(image);
 
     const placeImage = this.placeImageRepo.create({
-      image,
+      imageResource: image,
       place,
       order: 1,
     });
@@ -85,7 +85,7 @@ export class PlacesService {
 
   async findAll() {
     const places = await this.placeRepo.find({
-      relations: { town: { municipality: true }, categories: true, facilities: true, images: { image: true } },
+      relations: { town: { department: true }, categories: true, facilities: true, images: { imageResource: true } },
     });
 
     // return places;

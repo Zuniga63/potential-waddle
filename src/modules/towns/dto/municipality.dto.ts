@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { Municipality } from '../entities';
+import { Department } from '../entities';
 
 export class MunicipalityDto {
   @ApiProperty({
@@ -49,14 +49,12 @@ export class MunicipalityDto {
   })
   updatedAt: Date;
 
-  constructor(municipality?: Municipality) {
+  constructor(municipality?: Department) {
     if (!municipality) return;
 
     this.id = municipality.id;
     this.name = municipality.name;
     this.capital = municipality.capital;
-    this.callingCode = municipality.callingCode;
-    this.postalCode = municipality.postalCode;
     this.createdAt = municipality.createdAt;
     this.updatedAt = municipality.updatedAt;
   }

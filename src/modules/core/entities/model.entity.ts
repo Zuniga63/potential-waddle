@@ -7,6 +7,20 @@ export class Model {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
+  // * ----------------------------------------------------------------------------------------------------------------
+  // * RELATIONSHIPS
+  // * ----------------------------------------------------------------------------------------------------------------
+  @ManyToMany(() => Category, category => category.models, { onDelete: 'CASCADE' })
+  @JoinTable({ name: 'model_category' })
+  categories: Category[];
+
+  @ManyToMany(() => Facility, facility => facility.models, { onDelete: 'CASCADE' })
+  @JoinTable({ name: 'model_facility' })
+  facilities: Facility[];
+
+  // * ----------------------------------------------------------------------------------------------------------------
+  // * MAIN FIELDS
+  // * ----------------------------------------------------------------------------------------------------------------
   @Column('text')
   name: string;
 
@@ -15,12 +29,4 @@ export class Model {
 
   @CreateDateColumn({ name: 'updated_at', default: () => 'CURRENT_TIMESTAMP', onUpdate: 'CURRENT_TIMESTAMP' })
   updatedAt: Date;
-
-  @ManyToMany(() => Category, category => category.models, { onDelete: 'CASCADE' })
-  @JoinTable({ name: 'model_category' })
-  categories: Category[];
-
-  @ManyToMany(() => Facility, facility => facility.models, { onDelete: 'CASCADE' })
-  @JoinTable({ name: 'model_facility' })
-  facilities: Facility[];
 }
