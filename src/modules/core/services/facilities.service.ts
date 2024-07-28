@@ -31,7 +31,7 @@ export class FacilitiesService {
   // * GET ALL FACILITY
   // * -------------------------------------------------------------------------------------------------------------
   async findAll({ modelId }: { modelId?: string } = {}) {
-    if (!modelId) return this.facilitiesRepository.find({ order: { name: 'ASC' } });
+    if (!modelId) return this.facilitiesRepository.find({ order: { name: 'ASC' }, relations: { models: true } });
 
     const [modelFacilities, generalFacilities] = await Promise.all([
       this.facilitiesRepository
