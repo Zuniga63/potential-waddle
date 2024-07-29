@@ -68,8 +68,7 @@ export class CloudinaryService {
   async destroyFile(publicId: string) {
     try {
       const cloudRes = await cloudinary.uploader.destroy(publicId);
-      this.logger.log(cloudRes);
-      return true;
+      return cloudRes.result === 'ok';
     } catch (error) {
       this.logger.error(error);
     }

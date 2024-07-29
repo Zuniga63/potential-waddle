@@ -1,6 +1,6 @@
 [
   {
-    "id": 77,
+    "id": "5208a08f-0810-445f-9b20-aeb8f8c409a7",
     "name": "El Tahurete",
     "slug": "el-tahurete",
     "description": "Un hermoso charco de aguas color verde esmeralda, situado en un lugar pintoresco. Es un destino perfecto para los amantes de la aventura, aunque se debe tener precaución debido a su profundidad considerable.",
@@ -42,13 +42,19 @@
     "facilities": [
       {
         "id": 6,
-        "name": "Areas de picnic",
+        "name": "Áreas de picnic",
         "icon": null
       }
+    ],
+    "images": [
+      "https://storage.googleapis.com/revtur_uploaded_files/place_media/500092be-8c86-4646-acaf-77109b71528c.JPG",
+      "https://storage.googleapis.com/revtur_uploaded_files/place_media/2bcc7eef-afa4-4d67-88e0-d78757b31716.JPG",
+      "https://storage.googleapis.com/revtur_uploaded_files/place_media/5a7685c4-3cda-44fe-9ba4-10244dd6ad8c.JPG",
+      "https://storage.googleapis.com/revtur_uploaded_files/place_media/46ed2b94-e4cf-451c-9201-ecaf5f146904.jpeg"
     ]
   },
   {
-    "id": 76,
+    "id": "5b512246-325f-462f-9584-19081329176f",
     "name": "La Isleta",
     "slug": "la-isleta",
     "description": "La cascada La Isleta forma parte de la Quebrada Boquerón, destacándose por sus aguas cristalinas, la presencia abundante de peces y su acogedora atmósfera. Para llegar a esta hermosa cascada se debe tomar un sendero con una caminata de aproximadamente 20 minutos(1km) desde el charco o cascada La Cazuela.",
@@ -93,10 +99,14 @@
         "name": "Zona de camping",
         "icon": null
       }
+    ],
+    "images": [
+      "https://storage.googleapis.com/revtur_uploaded_files/place_media/5d1b401f-9a8a-42e3-9524-85d87d49d75c.jpeg",
+      "https://storage.googleapis.com/revtur_uploaded_files/place_media/fe3accb1-f377-4a47-a789-98b54e47ae7f.JPG"
     ]
   },
   {
-    "id": 75,
+    "id": "e12a9f81-2807-4d01-a10c-ebb99aed9274",
     "name": "Cascada la Honda",
     "slug": "cascada-la-honda",
     "description": "La Cascada La Honda de San Rafael se destaca como una majestuosa caída de agua de 20 metros de altura, con un pozo natural que invita a refrescar tanto el cuerpo como el espíritu. El camino hacia este lugar no solo ofrece un acceso atractivo, sino también la oportunidad de contemplar paisajes sorprendentes por su belleza natural.",
@@ -138,18 +148,24 @@
     "facilities": [
       {
         "id": 3,
-        "name": "Tienda",
+        "name": "Tiendas",
         "icon": null
       },
       {
         "id": 9,
-        "name": "Cobertura movil (claro)",
+        "name": "Cobertura móvil (Claro)",
         "icon": null
       }
+    ],
+    "images": [
+      "https://storage.googleapis.com/revtur_uploaded_files/place_media/92a94eb6-e152-4d9b-a4fc-307b6da0c5a7.JPG",
+      "https://storage.googleapis.com/revtur_uploaded_files/place_media/fe26c1aa-ece9-407d-8bbc-f75876b2ef46.jpeg",
+      "https://storage.googleapis.com/revtur_uploaded_files/place_media/408d5f10-1726-4d81-8f24-8d9cf973cbdb.jpeg",
+      "https://storage.googleapis.com/revtur_uploaded_files/place_media/b4ad5ab3-224f-430c-a368-f16922ca5ebe.jpeg"
     ]
   },
   {
-    "id": 74,
+    "id": "3c141c64-4896-4ef8-a5f8-61d47c50c0f1",
     "name": "El Trocadero 2",
     "slug": "el-trocadero-2",
     "description": "Es un lugar sumamente acogedor, destacado por sus aguas cristalinas y templadas.",
@@ -191,13 +207,20 @@
     "facilities": [
       {
         "id": 9,
-        "name": "Cobertura movil (claro)",
+        "name": "Cobertura móvil (Claro)",
         "icon": null
       }
+    ],
+    "images": [
+      "https://storage.googleapis.com/revtur_uploaded_files/place_media/69539f0a-4aab-4c35-98e2-f7f4566a43e4.jpeg",
+      "https://storage.googleapis.com/revtur_uploaded_files/place_media/2179e626-1cfa-4786-a79b-fe9616180357.jpeg",
+      "https://storage.googleapis.com/revtur_uploaded_files/place_media/bb595cab-c604-4b73-ba40-6321eecae675.jpeg",
+      "https://storage.googleapis.com/revtur_uploaded_files/place_media/220350e7-a2a5-4494-b2e0-b090feaf7070.jpeg",
+      "https://storage.googleapis.com/revtur_uploaded_files/place_media/ef99b89a-2c52-415a-b39a-8f31fe415281.jpeg"
     ]
   },
   {
-    "id": 73,
+    "id": "b42bf30a-c0fd-4b85-b308-8e90f06fe26b",
     "name": "Cascada del tesoro o salto del indio",
     "slug": "cascada-del-tesoro-o-salto-del-indio",
     "description": "La cascada y charco El Salto del Indio es uno de los lugares naturales de aguas cristalinas más reconocidos en San Rafael. Está ubicado en la vereda La Araña y es uno de los tantos charcos que forma el río Guatapé en su tránsito hacia este municipio",
@@ -242,10 +265,16 @@
         "name": "Baños públicos",
         "icon": null
       }
+    ],
+    "images": [
+      "https://storage.googleapis.com/revtur_uploaded_files/place_media/fab219e0-dad3-4e50-8af5-084a5a01666c.JPG",
+      "https://storage.googleapis.com/revtur_uploaded_files/place_media/a5ab4bf9-4944-47b9-b728-18ba6bc84ce8.JPG",
+      "https://storage.googleapis.com/revtur_uploaded_files/place_media/1c340d44-cce5-450a-89c8-fb955fe0c9a3.JPG",
+      "https://storage.googleapis.com/revtur_uploaded_files/place_media/08b4a9c5-fab0-4e96-b9f7-7c4d3c6f5a10.JPG"
     ]
   },
   {
-    "id": 72,
+    "id": "2f83f05a-7ad9-4c9b-a9d5-a20b1584b881",
     "name": "Charco las Maruchas",
     "slug": "charco-las-maruchas",
     "description": "Aguas puras de color verde y azul cristalino, rodeados de roca natural y una espesa vegetación de bosque húmedo-tropical",
@@ -287,15 +316,20 @@
     "facilities": [
       {
         "id": 6,
-        "name": "Areas de picnic",
+        "name": "Áreas de picnic",
         "icon": null
       }
+    ],
+    "images": [
+      "https://storage.googleapis.com/revtur_uploaded_files/place_media/a301f429-01fe-4c5d-9a8c-5ff53e706b0c.JPG",
+      "https://storage.googleapis.com/revtur_uploaded_files/place_media/d4ef1c1f-1d18-4bef-ac80-a24cb3a1eab0.JPG",
+      "https://storage.googleapis.com/revtur_uploaded_files/place_media/afb69b45-20a3-4b66-9137-ae9a124fef1f.JPG"
     ]
   },
   {
-    "id": 71,
-    "name": ".Cascada Cuervos",
-    "slug": ".cascada-cuervos",
+    "id": "6f31b3d1-73e0-47a9-8aed-8a29c3103ede",
+    "name": "Cascada Cuervos",
+    "slug": "cascada-cuervos",
     "description": "Un tranquilo rincón natural, que ofrece un apacible entorno con dos caídas de agua  y un hermoso charco; A pesar de su proximidad al área urbana, este lugar se distingue por su serenidad, convirtiéndolo en un destino ideal para disfrutar de sus aguas cristalinas y la exuberante vegetación que lo rodea.",
     "image": "https://storage.googleapis.com/revtur_uploaded_files/main_images/places/12995361-7b4f-4009-b8d5-a7617a0afc04.jpeg",
     "google_maps_link": "https://maps.app.goo.gl/4km9s5Axu8Lk8iWy5",
@@ -335,13 +369,19 @@
     "facilities": [
       {
         "id": 6,
-        "name": "Areas de picnic",
+        "name": "Áreas de picnic",
         "icon": null
       }
+    ],
+    "images": [
+      "https://storage.googleapis.com/revtur_uploaded_files/place_media/e53752b0-274c-4dcc-ab7b-de82c23da6cd.jpeg",
+      "https://storage.googleapis.com/revtur_uploaded_files/place_media/4914e477-4651-4b99-906b-10075a84bbef.jpeg",
+      "https://storage.googleapis.com/revtur_uploaded_files/place_media/25ed66a4-0ca9-4123-9e59-bd26887bfc9f.jpeg",
+      "https://storage.googleapis.com/revtur_uploaded_files/place_media/c1b7a55f-e443-4bc2-9f2c-69ac88c51e8a.jpeg"
     ]
   },
   {
-    "id": 70,
+    "id": "3dac9c06-70ec-442d-93d2-929a3c0ed2ed",
     "name": "Charco El Limón",
     "slug": "charco-el-limon",
     "description": "Charco El Limón, ubicado en esta región, es un atractivo destacado. Este entorno ofrece aguas cristalinas rodeadas de exuberante vegetación, creando un ambiente sereno y apacible. Los visitantes pueden disfrutar de la frescura del agua, explorar los alrededores verdes y sumergirse en la belleza natural que caracteriza a San Rafael.",
@@ -383,13 +423,19 @@
     "facilities": [
       {
         "id": 9,
-        "name": "Cobertura movil (claro)",
+        "name": "Cobertura móvil (Claro)",
         "icon": null
       }
+    ],
+    "images": [
+      "https://storage.googleapis.com/revtur_uploaded_files/place_media/510cdea6-ad4e-464c-b316-b49d7beca33c.JPG",
+      "https://storage.googleapis.com/revtur_uploaded_files/place_media/809016cf-5411-48fb-b678-762abdc1d5d0.JPG",
+      "https://storage.googleapis.com/revtur_uploaded_files/place_media/170a1de3-3b08-41e7-a758-aba8f222edd5.JPG",
+      "https://storage.googleapis.com/revtur_uploaded_files/place_media/14cfacbd-d72f-4070-afd4-2a8d1b207338.JPG"
     ]
   },
   {
-    "id": 69,
+    "id": "1e8aff8e-9ea1-4357-9f51-749701bc8757",
     "name": "Charco el ahogado",
     "slug": "charco-el-ahogado",
     "description": "Un espectacular charco sobre el río bizcocho, con el particular color de este hermoso afluente de San Rafael, el lugar está ubicado al borde la vía hacia la vereda Bizcocho (vía a escuela bizcocho). El lugar cuenta con una pequeña playa al otro lado del río, y es un charco de una profundidad aproximada de 4 metros. Recomendado para personas que les gusta nadar.",
@@ -431,13 +477,21 @@
     "facilities": [
       {
         "id": 6,
-        "name": "Areas de picnic",
+        "name": "Áreas de picnic",
         "icon": null
       }
+    ],
+    "images": [
+      "https://storage.googleapis.com/revtur_uploaded_files/place_media/ea6fc60b-3720-4462-829d-0b014684e5a6.JPEG",
+      "https://storage.googleapis.com/revtur_uploaded_files/place_media/482a1dd5-3758-4f06-9ac7-f2446176051c.JPEG",
+      "https://storage.googleapis.com/revtur_uploaded_files/place_media/b371e41e-a524-4681-af06-1f2222a2d7fe.JPEG",
+      "https://storage.googleapis.com/revtur_uploaded_files/place_media/1569bfa1-da28-44a1-98e6-c0c224a0f4d0.JPEG",
+      "https://storage.googleapis.com/revtur_uploaded_files/place_media/ad93f608-8fba-4824-8504-67febf8efbd4.JPEG",
+      "https://storage.googleapis.com/revtur_uploaded_files/place_media/b83daa0c-1444-47f1-95ca-eff43343ec52.JPEG"
     ]
   },
   {
-    "id": 51,
+    "id": "82abb86d-13df-4568-9247-739652c4be14",
     "name": "Alto la chocha sr",
     "slug": "alto-la-chocha-sr",
     "description": "trónicos, quedando esencialmente igual al original. Fue popularizado en los 60s con la creación de las hojas \"Letraset\", las cuales contenian pasajes de Lorem Ipsum, y más recientemente con software de autoedición, como por ejemplo Aldus PageMaker, el cual incluye versiones de Lorem Ipsum.",
@@ -479,13 +533,16 @@
     "facilities": [
       {
         "id": 6,
-        "name": "Areas de picnic",
+        "name": "Áreas de picnic",
         "icon": null
       }
+    ],
+    "images": [
+      "https://storage.googleapis.com/revtur_uploaded_files/place_media/ab0324aa-52fb-4f51-bb67-bc66364a79e1.jpg"
     ]
   },
   {
-    "id": 50,
+    "id": "cd1bddbd-ba2e-4951-bcf6-6bc0ca554676",
     "name": "La Chocha",
     "slug": "la-chocha-teked",
     "description": ".....",
@@ -532,13 +589,17 @@
       },
       {
         "id": 9,
-        "name": "Cobertura movil (claro)",
+        "name": "Cobertura móvil (Claro)",
         "icon": null
       }
+    ],
+    "images": [
+      "https://storage.googleapis.com/revtur_uploaded_files/place_media/350f83dc-2d3e-4517-9267-5de938ce29b6.jpeg",
+      "https://storage.googleapis.com/revtur_uploaded_files/place_media/a4f7793e-ed45-4f29-8c83-d5789c5d21b8.jpg"
     ]
   },
   {
-    "id": 49,
+    "id": "8d9e7ac4-a881-4350-b4e0-d46b1fbaed83",
     "name": "Salto del Angel",
     "slug": "salto-del-angel",
     "description": "...",
@@ -588,10 +649,11 @@
         "name": "Restaurantes",
         "icon": null
       }
-    ]
+    ],
+    "images": []
   },
   {
-    "id": 41,
+    "id": "b4f767b7-4fe3-4371-b0a9-fa5ecd3235d3",
     "name": "Las Golondrinas",
     "slug": "las-golondrinas-mtq4o",
     "description": "...",
@@ -636,10 +698,11 @@
         "name": "Parqueadero",
         "icon": null
       }
-    ]
+    ],
+    "images": []
   },
   {
-    "id": 40,
+    "id": "67dbc9e7-efb6-45ac-92bf-c521e7d43046",
     "name": "Los Saltoss",
     "slug": "los-saltoss-vey4b",
     "description": ".....",
@@ -684,6 +747,334 @@
         "name": "Zona de camping",
         "icon": null
       }
+    ],
+    "images": []
+  },
+  {
+    "id": "31ac1464-d32b-4cbc-88e5-cec7d75729c9",
+    "name": "La chorrera",
+    "slug": "la-chorrera-l_rix",
+    "description": "....",
+    "image": "https://storage.googleapis.com/revtur_uploaded_files/main_images/places/66872497-a468-49e8-835d-8ce19868ab50.blob",
+    "google_maps_link": null,
+    "longitude": "-75.07681",
+    "latitude": "6.30883",
+    "temperature": null,
+    "altitude": 0.0,
+    "total_distance": 45,
+    "rating": 3.0,
+    "difficult_level": null,
+    "points": 111.0,
+    "reviews_count": null,
+    "review_id": 55,
+    "history": null,
+    "capacity": 0,
+    "restrictions": null,
+    "recommendations": null,
+    "observations": null,
+    "how_to_get_there": "...",
+    "how_to_get_around": null,
+    "ref_to_get_there": null,
+    "min_age": null,
+    "max_age": null,
+    "max_depth": null,
+    "how_to_dress": null,
+    "tenant": {
+      "id": 3,
+      "name": "San Rafael"
+    },
+    "categories": [
+      {
+        "id": 2,
+        "name": "Río",
+        "icon": null
+      }
+    ],
+    "facilities": [
+      {
+        "id": 8,
+        "name": "Cobertura móvil (Tigo)",
+        "icon": null
+      }
+    ],
+    "images": []
+  },
+  {
+    "id": "b5a1859c-50c6-4dad-bcee-f610cff7de1f",
+    "name": "El Gallo",
+    "slug": "el-gallo",
+    "description": "....",
+    "image": "https://storage.googleapis.com/revtur_uploaded_files/main_images/places/dd625c4e-d798-4143-abb0-64d6c34a0796.blob",
+    "google_maps_link": null,
+    "longitude": "-75.07681",
+    "latitude": "6.30883",
+    "temperature": null,
+    "altitude": 0.0,
+    "total_distance": 0,
+    "rating": 0.0,
+    "difficult_level": 5,
+    "points": 500.0,
+    "reviews_count": null,
+    "review_id": 22,
+    "history": null,
+    "capacity": 0,
+    "restrictions": null,
+    "recommendations": null,
+    "observations": null,
+    "how_to_get_there": "...",
+    "how_to_get_around": null,
+    "ref_to_get_there": null,
+    "min_age": null,
+    "max_age": null,
+    "max_depth": null,
+    "how_to_dress": null,
+    "tenant": {
+      "id": 3,
+      "name": "San Rafael"
+    },
+    "categories": [
+      {
+        "id": 2,
+        "name": "Río",
+        "icon": null
+      }
+    ],
+    "facilities": [
+      {
+        "id": 10,
+        "name": "Cobertura móvil (Movistar)",
+        "icon": null
+      }
+    ],
+    "images": [
+      "https://storage.googleapis.com/revtur_uploaded_files/place_media/19323f01-0f5f-4004-a234-e91deed1d1a0.jpg"
+    ]
+  },
+  {
+    "id": "a7efbba9-0cf2-4204-9964-3a06bf5a3714",
+    "name": "Cascada Boqueron",
+    "slug": "cascada-boqueron",
+    "description": "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Eu sem integer vitae justo eget magna fermentum iaculis. Risus ultricies tristique nulla aliquet enim tortor at auctor urna. Dolor sit amet consectetur adipiscing. Id aliquet risus feugiat in ante metus. Amet est placerat in egestas erat imperdiet. Mauris vitae ultricies leo integer malesuada. Elit at imperdiet dui accumsan sit amet nulla. Non arcu risus quis varius quam. Libero nunc consequat interdum varius sit amet.\r\n\r\nDiam quis enim lobortis scelerisque fermentum dui faucibus in ornare. Mauris rhoncus aenean vel elit scelerisque mauris pellentesque pulvinar pellentesque. Sit amet luctus venenatis lectus magna. Vel pretium lectus quam id leo in vitae turpis massa. Tristique senectus et netus et malesuada fames ac turpis. Adipiscing commodo elit at imperdiet. Lacus sed turpis tincidunt id aliquet risus feugiat in ante. Viverra orci sagittis eu volutpat. Ornare aenean euismod elementum nisi quis eleifend quam adipiscing. Nisi scelerisque eu ultrices vitae auctor eu augue ut lectus. Nisl nisi scelerisque eu ultrices vitae. Consequat semper viverra nam libero justo. Ut sem viverra aliquet eget sit amet tellus cras adipiscing. Et tortor consequat id porta nibh venenatis cras sed felis. Volutpat maecenas volutpat blandit aliquam. Ac odio tempor orci dapibus ultrices in iaculis nunc sed.\r\n\r\nMorbi leo urna molestie at elementum eu facilisis. Risus nec feugiat in fermentum. Sit amet cursus sit amet dictum sit amet. Suscipit tellus mauris a diam maecenas sed enim. Sem et tortor consequat id. Dolor sit amet consectetur adipiscing elit ut. Aliquam sem fringilla ut morbi tincidunt augue interdum velit euismod. Metus vulputate eu scelerisque felis imperdiet. Adipiscing at in tellus integer feugiat scelerisque varius morbi. Sit amet tellus cras adipiscing enim eu turpis egestas. Nunc mi ipsum faucibus vitae aliquet nec ullamcorper.\r\n\r\nAuctor urna nunc id cursus metus aliquam eleifend mi in. Leo vel fringilla est ullamcorper eget nulla facilisi etiam. Blandit cursus risus at ultrices mi tempus. Tincidunt lobortis feugiat vivamus at augue. Lorem ipsum dolor sit amet. Leo vel fringilla est ullamcorper. Fringilla est ullamcorper eget nulla facilisi etiam dignissim diam quis. Mi proin sed libero enim sed faucibus. Egestas congue quisque egestas diam in arcu cursus euismod quis. Habitasse platea dictumst vestibulum rhoncus est pellentesque elit. Sem fringilla ut morbi tincidunt. Habitant morbi tristique senectus et netus. Tempus imperdiet nulla malesuada pellentesque elit eget gravida cum sociis. Volutpat lacus laoreet non curabitur gravida. Tristique senectus et netus et malesuada. Consequat interdum varius sit amet mattis vulputate enim nulla. Ultricies lacus sed turpis tincidunt id aliquet risus feugiat. Tristique risus nec feugiat in fermentum.\r\n\r\nVenenatis urna cursus eget nunc scelerisque viverra. Id venenatis a condimentum vitae sapien pellentesque habitant morbi tristique. Urna nec tincidunt praesent semper feugiat nibh sed pulvinar. Ligula ullamcorper malesuada proin libero nunc. Sapien faucibus et molestie ac feugiat sed lectus vestibulum. Dolor morbi non arcu risus quis varius quam. Risus nullam eget felis eget nunc lobortis. Interdum velit euismod in pellentesque massa placerat duis. Nisl nunc mi ipsum faucibus. Nisl vel pretium lectus quam id leo. Tellus in metus vulputate eu. Facilisis gravida neque convallis a cras semper auctor neque vitae. Vulputate enim nulla aliquet porttitor lacus. Interdum posuere lorem ipsum dolor sit amet.",
+    "image": "https://storage.googleapis.com/revtur_uploaded_files/main_images/places/4c8a6a24-9510-4d1f-94ee-40849a3b3d36.blob",
+    "google_maps_link": null,
+    "longitude": "-75.07681",
+    "latitude": "6.30883",
+    "temperature": null,
+    "altitude": 0.0,
+    "total_distance": 0,
+    "rating": 0.0,
+    "difficult_level": 5,
+    "points": 100.0,
+    "reviews_count": null,
+    "review_id": 96,
+    "history": null,
+    "capacity": 0,
+    "restrictions": null,
+    "recommendations": null,
+    "observations": null,
+    "how_to_get_there": "...",
+    "how_to_get_around": null,
+    "ref_to_get_there": null,
+    "min_age": null,
+    "max_age": null,
+    "max_depth": null,
+    "how_to_dress": null,
+    "tenant": {
+      "id": 3,
+      "name": "San Rafael"
+    },
+    "categories": [
+      {
+        "id": 3,
+        "name": "Cascada",
+        "icon": null
+      }
+    ],
+    "facilities": [
+      {
+        "id": 5,
+        "name": "Baños públicos",
+        "icon": null
+      }
+    ],
+    "images": [
+      "https://storage.googleapis.com/revtur_uploaded_files/place_media/60a38c5b-d7ab-477d-b793-b64aa397add2.jpg",
+      "https://storage.googleapis.com/revtur_uploaded_files/place_media/14db2514-fc9e-4957-a75f-ff6f6434134c.jpg"
+    ]
+  },
+  {
+    "id": "a694a4a0-cd33-46cb-9871-18cb819f59a9",
+    "name": "Los Simios",
+    "slug": "los-simios-etdzr",
+    "description": "...",
+    "image": "https://storage.googleapis.com/revtur_uploaded_files/main_images/places/e9e85acd-2c97-4c63-8b0a-3638ea7bd3f1.blob",
+    "google_maps_link": null,
+    "longitude": "-75.07681",
+    "latitude": "6.30883",
+    "temperature": null,
+    "altitude": 0.0,
+    "total_distance": 5900,
+    "rating": 0.0,
+    "difficult_level": 5,
+    "points": 100.0,
+    "reviews_count": null,
+    "review_id": 81,
+    "history": null,
+    "capacity": 0,
+    "restrictions": null,
+    "recommendations": null,
+    "observations": null,
+    "how_to_get_there": "...",
+    "how_to_get_around": null,
+    "ref_to_get_there": null,
+    "min_age": null,
+    "max_age": null,
+    "max_depth": null,
+    "how_to_dress": null,
+    "tenant": {
+      "id": 3,
+      "name": "San Rafael"
+    },
+    "categories": [
+      {
+        "id": 3,
+        "name": "Cascada",
+        "icon": null
+      }
+    ],
+    "facilities": [
+      {
+        "id": 4,
+        "name": "Restaurantes",
+        "icon": null
+      }
+    ],
+    "images": [
+      "https://storage.googleapis.com/revtur_uploaded_files/place_media/6775ee0a-0cd3-4e8f-997a-e3a8b4d04065.jpeg",
+      "https://storage.googleapis.com/revtur_uploaded_files/place_media/81aa32df-ffdb-4f6f-8695-8c795b7591d3.png"
+    ]
+  },
+  {
+    "id": "aebc6bca-ac6f-4227-a22e-0db21ef62073",
+    "name": "El Churimo",
+    "slug": "el-churimo",
+    "description": "....",
+    "image": "https://storage.googleapis.com/revtur_uploaded_files/main_images/places/902843c6-2480-408f-9dbd-6015761983b0.blob",
+    "google_maps_link": null,
+    "longitude": "-75.07681",
+    "latitude": "6.30883",
+    "temperature": null,
+    "altitude": 0.0,
+    "total_distance": 0,
+    "rating": 0.0,
+    "difficult_level": null,
+    "points": 434.0,
+    "reviews_count": null,
+    "review_id": 6,
+    "history": null,
+    "capacity": 0,
+    "restrictions": null,
+    "recommendations": null,
+    "observations": null,
+    "how_to_get_there": "...",
+    "how_to_get_around": null,
+    "ref_to_get_there": null,
+    "min_age": null,
+    "max_age": null,
+    "max_depth": null,
+    "how_to_dress": null,
+    "tenant": {
+      "id": 3,
+      "name": "San Rafael"
+    },
+    "categories": [
+      {
+        "id": 4,
+        "name": "Balneario",
+        "icon": null
+      }
+    ],
+    "facilities": [
+      {
+        "id": 9,
+        "name": "Cobertura móvil (Claro)",
+        "icon": null
+      }
+    ],
+    "images": []
+  },
+  {
+    "id": "841c7502-66d3-4b65-9cbb-87117fe4425d",
+    "name": "La Cazuela",
+    "slug": "la-cazuela",
+    "description": "La cazuela es conocida por sus aguas cristalinas y entorno natural pintoresco. sus orillas están rodeada de exuberante vegetación, creando un paisaje sereno y atractivo. este río ofrece a los visitantes la oportunidad de disfrutar de actividades acuáticas y de relajarse en un entorno tranquilo haciendo de San Rafael un destino popular para aquellos que buscan contacto con la naturaleza",
+    "image": "https://storage.googleapis.com/revtur_uploaded_files/main_images/places/c0b7cdd6-bb8d-4a14-9b8d-57d9cb124c43.JPG",
+    "google_maps_link": "https://maps.app.goo.gl/SznrXQkxZLKdunFDA",
+    "longitude": "-75.083307",
+    "latitude": "6.299805",
+    "temperature": 45,
+    "altitude": 1000.0,
+    "total_distance": 8100,
+    "rating": 5.0,
+    "difficult_level": 2,
+    "points": 900.0,
+    "reviews_count": 4,
+    "review_id": 31,
+    "history": null,
+    "capacity": 0,
+    "restrictions": null,
+    "recommendations": null,
+    "observations": null,
+    "how_to_get_there": "...",
+    "how_to_get_around": null,
+    "ref_to_get_there": null,
+    "min_age": null,
+    "max_age": null,
+    "max_depth": null,
+    "how_to_dress": null,
+    "tenant": {
+      "id": 3,
+      "name": "San Rafael"
+    },
+    "categories": [
+      {
+        "id": 3,
+        "name": "Cascada",
+        "icon": null
+      }
+    ],
+    "facilities": [
+      {
+        "id": 10,
+        "name": "Cobertura móvil (Movistar)",
+        "icon": null
+      },
+      {
+        "id": 8,
+        "name": "Cobertura móvil (Tigo)",
+        "icon": null
+      },
+      {
+        "id": 9,
+        "name": "Cobertura móvil (Claro)",
+        "icon": null
+      },
+      {
+        "id": 5,
+        "name": "Baños públicos",
+        "icon": null
+      },
+      {
+        "id": 6,
+        "name": "Áreas de picnic",
+        "icon": null
+      }
+    ],
+    "images": [
+      "https://storage.googleapis.com/revtur_uploaded_files/place_media/b9be86a4-4f9e-4f2b-a875-c6778093759c.JPG",
+      "https://storage.googleapis.com/revtur_uploaded_files/place_media/71f9aeb0-a430-4980-86b4-ca9d747dfc12.JPG",
+      "https://storage.googleapis.com/revtur_uploaded_files/place_media/ce6c3175-f88f-4820-ac97-924eadc99e53.jpeg",
+      "https://storage.googleapis.com/revtur_uploaded_files/place_media/8ba8f827-dac8-4a37-a9b7-628bb1c1c888.JPG"
     ]
   }
 ]
