@@ -1,7 +1,7 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { Department } from '../entities';
 
-export class MunicipalityDto {
+export class DepartmentDto {
   @ApiProperty({
     example: '624013aa-9555-4a69-bf08-30cf990c56dd',
     description: 'The UUID of the municipality',

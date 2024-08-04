@@ -42,7 +42,7 @@ export class PlaceDto {
     readOnly: true,
     required: false,
   })
-  longitud: number;
+  longitude: number;
 
   @ApiProperty({
     example: 6.2,
@@ -147,7 +147,7 @@ export class PlaceDto {
     this.name = place.name;
     this.slug = place.slug;
     this.description = place.description;
-    this.longitud = place.location?.coordinates[0];
+    this.longitude = place.location?.coordinates[0];
     this.latitude = place.location?.coordinates[1];
     this.images = place.images?.map(image => image.imageResource?.url);
     this.categories = place.categories?.map(category => new CategoryDto(category));

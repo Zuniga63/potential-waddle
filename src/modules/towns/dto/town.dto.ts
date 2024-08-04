@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { MunicipalityDto } from './municipality.dto';
+import { DepartmentDto } from './department.dto';
 import { Town } from '../entities';
 
 export class TownDto {
@@ -11,9 +11,9 @@ export class TownDto {
   id: string;
 
   @ApiProperty({
-    type: MunicipalityDto,
+    type: DepartmentDto,
   })
-  municipality: MunicipalityDto;
+  department: DepartmentDto;
 
   @ApiProperty({
     example: 'San Rafael',
@@ -84,7 +84,7 @@ export class TownDto {
     if (!town) return;
 
     this.id = town.id;
-    this.municipality = new MunicipalityDto(town.department);
+    this.department = new DepartmentDto(town.department);
     this.name = town.name;
     this.description = town.description;
     this.url = town.url;

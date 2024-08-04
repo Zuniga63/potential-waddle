@@ -34,18 +34,8 @@ export class CategoriesService {
     if (!modelId) return this.categoriesRepository.find({ order: { name: 'ASC' }, relations: { models: true } });
 
     const [modelCategories, generalCategories] = await Promise.all([
-      this.categoriesRepository
-        .createQueryBuilder('category')
-        .leftJoin('category.models', 'model')
-        .where('model.id = :modelId', { modelId })
-        .orderBy('category.name', 'ASC')
-        .getMany(),
-      this.categoriesRepository
-        .createQueryBuilder('category')
-        .leftJoin('category.models', 'model')
-        .where('model IS NULL')
-        .orderBy('category.name', 'ASC')
-        .getMany(),
+      this.categoriesRepository.find({ where: { models: { id: modelId }, isEnabled: true }, order: { name: 'ASC' } }),
+      this.categoriesRepository.find({ where: { models: { id: null }, isEnabled: true }, order: { name: 'ASC' } }),
     ]);
 
     const categoryMap = new Map<string, Category>();

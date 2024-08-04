@@ -1,7 +1,7 @@
-import { BadGatewayException, Injectable } from '@nestjs/common';
+import { BadGatewayException, Injectable, NotFoundException } from '@nestjs/common';
 import { CreatePlaceDto } from './dto/create-place.dto';
 import { UpdatePlaceDto } from './dto/update-place.dto';
-import { Geometry, In, Repository } from 'typeorm';
+import { FindOptionsRelations, Geometry, In, Repository } from 'typeorm';
 import { CloudinaryService } from '../cloudinary/cloudinary.service';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Place, PlaceImage } from './entities';
@@ -92,8 +92,21 @@ export class PlacesService {
     return places.map(place => new PlaceDto(place));
   }
 
-  findOne(id: number) {
-    return `This action returns a #${id} place`;
+  async findOne(identifier: string) {
+    const relations: FindOptionsRelations<Place> = {
+      categories: true,
+      facilities: true,
+      town: { department: true },
+      images: { imageResource: true },
+    };
+
+    const placeBySlug = await this.placeRepo.findOne({ where: { slug: identifier }, relations });
+    if (placeBySlug) return new PlaceDto(placeBySlug);
+
+    const placeById = await this.placeRepo.findOne({ where: { id: identifier }, relations });
+    if (placeById) return new PlaceDto(placeById);
+
+    throw new NotFoundException('Place not found');
   }
 
   update(id: number, updatePlaceDto: UpdatePlaceDto) {
