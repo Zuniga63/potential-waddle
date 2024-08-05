@@ -57,7 +57,7 @@ export class Place {
   @Column('smallint', { name: 'difficulty_level', default: 1 })
   difficultyLevel: number;
 
-  @Column('smallint', { default: 0 })
+  @Column('float', { default: 0 })
   rating: number;
 
   @Column('smallint', { default: 0 })
