@@ -1,13 +1,16 @@
+import { InjectRepository } from '@nestjs/typeorm';
+import { FindOptionsRelations, Geometry, In, Repository } from 'typeorm';
 import { BadGatewayException, Injectable, NotFoundException } from '@nestjs/common';
+
+import { PlaceDto } from './dto';
+import { CloudinaryPresets } from 'src/config';
+import { Place, PlaceImage } from './entities';
+import { generatePlaceQueryFilters } from './utils';
 import { CreatePlaceDto } from './dto/create-place.dto';
 import { UpdatePlaceDto } from './dto/update-place.dto';
-import { FindOptionsRelations, Geometry, In, Repository } from 'typeorm';
-import { CloudinaryService } from '../cloudinary/cloudinary.service';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Place, PlaceImage } from './entities';
+import { PlaceFiltersDto } from './dto/place-filters.dto';
 import { Category, Facility, ImageResource } from '../core/entities';
-import { CloudinaryPresets } from 'src/config';
-import { PlaceDto } from './dto';
+import { CloudinaryService } from '../cloudinary/cloudinary.service';
 
 @Injectable()
 export class PlacesService {
@@ -83,12 +86,15 @@ export class PlacesService {
     return this.placeRepo.save(place);
   }
 
-  async findAll() {
-    const places = await this.placeRepo.find({
-      relations: { town: { department: true }, categories: true, facilities: true, images: { imageResource: true } },
-    });
+  async findAll(filters: PlaceFiltersDto = {}) {
+    const { where, order } = generatePlaceQueryFilters(filters);
+    const relations: FindOptionsRelations<Place> = {
+      town: { department: true },
+      categories: true,
+      images: { imageResource: true },
+    };
 
-    // return places;
+    const places = await this.placeRepo.find({ relations, order, where });
     return places.map(place => new PlaceDto(place));
   }
 
