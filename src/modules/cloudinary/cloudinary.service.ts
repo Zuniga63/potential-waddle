@@ -24,7 +24,6 @@ export class CloudinaryService {
     fileName,
     preset = CloudinaryPresets.DEFAULT,
   }: UploadImageProps): Promise<CloudinaryImage | undefined> {
-    console.log(file);
     const { mimetype } = file;
     const [fileType] = mimetype.split('/') as ['image' | 'video' | 'raw' | 'auto' | undefined];
     const options: UploadApiOptions = { upload_preset: preset, resource_type: fileType };
