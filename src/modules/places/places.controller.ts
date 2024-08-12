@@ -12,12 +12,11 @@ import {
   NotImplementedException,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
-import { ApiConsumes, ApiOkResponse, ApiOperation, ApiQuery, ApiTags } from '@nestjs/swagger';
+import { ApiConsumes, ApiOkResponse, ApiOperation, ApiTags } from '@nestjs/swagger';
 
 import { PlaceDto } from './dto';
 import { SwaggerTags } from 'src/config';
-import { PlaceFilters } from './decorators';
-import { PlaceSortByEnum } from './constants';
+import { PlaceFilters, PlaceListQueryDocsGroup } from './decorators';
 import { PlacesService } from './places.service';
 import { CreatePlaceDto } from './dto/create-place.dto';
 import { UpdatePlaceDto } from './dto/update-place.dto';
@@ -48,20 +47,7 @@ export class PlacesController {
   // * GET ALL PLACES
   // * ----------------------------------------------------------------------------------------------------------------
   @Get()
-  @ApiQuery({ name: 'search', required: false, type: String })
-  @ApiQuery({
-    name: 'sortBy',
-    required: false,
-    description: `Valid values are: ${Object.values(PlaceSortByEnum)
-      .map(value => `-${value}, ${value}`)
-      .join(', ')}`,
-  })
-  @ApiQuery({ name: 'townId', required: false, type: String })
-  @ApiQuery({ name: 'categories', required: false, type: [String] })
-  @ApiQuery({ name: 'facilities', required: false, type: [String] })
-  @ApiQuery({ name: 'ratings', required: false, type: [Number] })
-  @ApiQuery({ name: 'difficulties', required: false, type: [Number] })
-  @ApiQuery({ name: 'distanceRanges', required: false, type: [String] })
+  @PlaceListQueryDocsGroup()
   findAll(@PlaceFilters() filters: PlaceFiltersDto) {
     return this.placesService.findAll(filters);
   }
