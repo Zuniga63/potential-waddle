@@ -8,11 +8,10 @@ import { Session } from './entities';
 import { EnvironmentVariables } from 'src/config';
 import { AuthController } from './auth.controller';
 import { UsersModule } from '../users/users.module';
-import { LocalStrategy, JwtStrategy } from './strategies';
+import { LocalStrategy, JwtStrategy, GoogleStrategy, OptionalJwtStrategy } from './strategies';
 import { ProfileController } from './profile.controller';
 
 import { AuthService, SessionService } from './services';
-import { GoogleStrategy } from './strategies/google.strategy';
 
 @Module({
   imports: [
@@ -30,7 +29,7 @@ import { GoogleStrategy } from './strategies/google.strategy';
 
     TypeOrmModule.forFeature([Session]),
   ],
-  providers: [AuthService, SessionService, LocalStrategy, JwtStrategy, GoogleStrategy],
+  providers: [AuthService, SessionService, LocalStrategy, JwtStrategy, GoogleStrategy, OptionalJwtStrategy],
   controllers: [AuthController, ProfileController],
 })
 export class AuthModule {}

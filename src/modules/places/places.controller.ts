@@ -22,6 +22,8 @@ import { CreatePlaceDto } from './dto/create-place.dto';
 import { UpdatePlaceDto } from './dto/update-place.dto';
 import { ImageFileValidationPipe } from '../common/pipes';
 import { PlaceFiltersDto } from './dto/place-filters.dto';
+import { GetUser } from '../common/decorators';
+import { OptionalAuth } from '../auth/decorators';
 
 @Controller('places')
 @ApiTags(SwaggerTags.Places)
@@ -48,7 +50,9 @@ export class PlacesController {
   // * ----------------------------------------------------------------------------------------------------------------
   @Get()
   @PlaceListQueryDocsGroup()
-  findAll(@PlaceFilters() filters: PlaceFiltersDto) {
+  @OptionalAuth()
+  findAll(@PlaceFilters() filters: PlaceFiltersDto, @GetUser() user: any) {
+    console.log(user);
     return this.placesService.findAll(filters);
   }
 
