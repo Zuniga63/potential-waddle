@@ -120,12 +120,12 @@ export class PlaceDto {
   urbanCenterDistance: number;
 
   @ApiProperty({
-    example: true,
-    description: 'Indicates if the place has reviews',
+    description: 'Indicates if the current user has reviews',
+    example: 'uuid of the review',
     readOnly: true,
     required: false,
   })
-  hasReviews: boolean;
+  userReview?: string;
 
   @ApiProperty({
     format: 'date-time',
@@ -139,7 +139,7 @@ export class PlaceDto {
   })
   updatedAt: Date;
 
-  constructor(place?: Place) {
+  constructor(place?: Place, userReview?: string) {
     if (!place) return;
 
     this.id = place.id;
@@ -157,7 +157,7 @@ export class PlaceDto {
     this.points = place.points;
     this.reviewCount = place.reviewCount;
     this.urbanCenterDistance = place.urbarCenterDistance;
-    this.hasReviews = place.reviewCount > 0;
+    this.userReview = userReview;
     this.createdAt = place.createdAt;
     this.updatedAt = place.updatedAt;
   }

@@ -14,6 +14,7 @@ import { TownsModule } from './modules/towns/towns.module';
 import { CoreModule } from './modules/core/core.module';
 import { PlacesModule } from './modules/places/places.module';
 import { SeedsModule } from './modules/seeds/seeds.module';
+import { ReviewsModule } from './modules/reviews/reviews.module';
 
 @Module({
   imports: [
@@ -45,6 +46,8 @@ import { SeedsModule } from './modules/seeds/seeds.module';
     PlacesModule,
 
     SeedsModule,
+
+    ReviewsModule,
   ],
   controllers: [],
   providers: [],

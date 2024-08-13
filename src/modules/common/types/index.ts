@@ -1,1 +1,1 @@
-export * from './filters.type';
+export * from './common.type';

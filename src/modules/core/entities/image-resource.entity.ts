@@ -1,6 +1,7 @@
 import { ResourceProvider } from 'src/config';
 import { PlaceImage } from 'src/modules/places/entities';
-import { Column, CreateDateColumn, Entity, OneToMany, PrimaryGeneratedColumn } from 'typeorm';
+import { Review } from 'src/modules/reviews/entities';
+import { Column, CreateDateColumn, Entity, ManyToMany, OneToMany, PrimaryGeneratedColumn } from 'typeorm';
 
 @Entity({ name: 'image_resource' })
 export class ImageResource {
@@ -12,6 +13,9 @@ export class ImageResource {
   // * ----------------------------------------------------------------------------------------------------------------
   @OneToMany(() => PlaceImage, placeImage => placeImage.imageResource)
   placeImages: PlaceImage[];
+
+  @ManyToMany(() => Review, review => review.images)
+  review?: Review;
 
   // * ----------------------------------------------------------------------------------------------------------------
   // * MAIN FIELDS

@@ -5,9 +5,14 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { Place, PlaceImage } from './entities';
 import { CloudinaryModule } from '../cloudinary/cloudinary.module';
 import { Category, Facility, ImageResource } from '../core/entities';
+import { ReviewsModule } from '../reviews/reviews.module';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Place, Category, Facility, ImageResource, PlaceImage]), CloudinaryModule],
+  imports: [
+    TypeOrmModule.forFeature([Place, Category, Facility, ImageResource, PlaceImage]),
+    CloudinaryModule,
+    ReviewsModule,
+  ],
   controllers: [PlacesController],
   providers: [PlacesService],
 })

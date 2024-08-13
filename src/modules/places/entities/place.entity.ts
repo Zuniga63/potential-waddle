@@ -14,6 +14,7 @@ import {
   PrimaryGeneratedColumn,
 } from 'typeorm';
 import { PlaceImage } from './place-image.entity';
+import { Review } from 'src/modules/reviews/entities';
 
 @Entity({ name: 'place' })
 export class Place {
@@ -39,8 +40,8 @@ export class Place {
   @JoinTable({ name: 'place_image' })
   images: PlaceImage[];
 
-  // @OneToMany(() => PlaceReview, review => review.place)
-  // reviews: PlaceReview[];
+  @OneToMany(() => Review, review => review.place)
+  reviews: Review[];
 
   // * ----------------------------------------------------------------------------------------------------------------
   // * MAIN FIELDS

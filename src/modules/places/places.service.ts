@@ -11,6 +11,9 @@ import { UpdatePlaceDto } from './dto/update-place.dto';
 import { PlaceFiltersDto } from './dto/place-filters.dto';
 import { Category, Facility, ImageResource } from '../core/entities';
 import { CloudinaryService } from '../cloudinary/cloudinary.service';
+import { User } from '../users/entities/user.entity';
+import { Review } from '../reviews/entities';
+import { PlaceReviewsService } from '../reviews/services';
 
 @Injectable()
 export class PlacesService {
@@ -31,6 +34,8 @@ export class PlacesService {
     private readonly placeImageRepo: Repository<PlaceImage>,
 
     private readonly cloudinaryService: CloudinaryService,
+
+    private readonly reviewService: PlaceReviewsService,
   ) {}
 
   async create(createPlaceDto: CreatePlaceDto) {
@@ -86,16 +91,24 @@ export class PlacesService {
     return this.placeRepo.save(place);
   }
 
-  async findAll(filters: PlaceFiltersDto = {}) {
+  async findAll(filters: PlaceFiltersDto = {}, user: User | null = null) {
     const { where, order } = generatePlaceQueryFilters(filters);
     const relations: FindOptionsRelations<Place> = {
       town: { department: true },
+      reviews: true,
       categories: true,
       images: { imageResource: true },
     };
 
-    const places = await this.placeRepo.find({ relations, order, where });
-    return places.map(place => new PlaceDto(place));
+    const [places, reviews] = await Promise.all([
+      this.placeRepo.find({ relations, order, where }),
+      user ? this.reviewService.getUserReviews({ userId: user.id }) : Promise.resolve<Review[]>([]),
+    ]);
+
+    return places.map(place => {
+      const review = reviews.find(r => r.place.id === place.id);
+      return new PlaceDto(place, review?.id);
+    });
   }
 
   async findOne(identifier: string) {

@@ -23,12 +23,18 @@ import { UpdatePlaceDto } from './dto/update-place.dto';
 import { ImageFileValidationPipe } from '../common/pipes';
 import { PlaceFiltersDto } from './dto/place-filters.dto';
 import { GetUser } from '../common/decorators';
-import { OptionalAuth } from '../auth/decorators';
+import { Auth, OptionalAuth } from '../auth/decorators';
+import { User } from '../users/entities/user.entity';
+import { CreateReviewDto, UpdateReviewDto } from '../reviews/dto';
+import { PlaceReviewsService } from '../reviews/services';
 
 @Controller('places')
 @ApiTags(SwaggerTags.Places)
 export class PlacesController {
-  constructor(private readonly placesService: PlacesService) {}
+  constructor(
+    private readonly placesService: PlacesService,
+    private readonly placeReviewsService: PlaceReviewsService,
+  ) {}
 
   // * ----------------------------------------------------------------------------------------------------------------
   // * CREATE PLACE
@@ -51,9 +57,8 @@ export class PlacesController {
   @Get()
   @PlaceListQueryDocsGroup()
   @OptionalAuth()
-  findAll(@PlaceFilters() filters: PlaceFiltersDto, @GetUser() user: any) {
-    console.log(user);
-    return this.placesService.findAll(filters);
+  findAll(@PlaceFilters() filters: PlaceFiltersDto, @GetUser() user: User | null) {
+    return this.placesService.findAll(filters, user);
   }
 
   // * ----------------------------------------------------------------------------------------------------------------
@@ -107,9 +112,9 @@ export class PlacesController {
   // * PLACE REVIEWS
   // * ----------------------------------------------------------------------------------------------------------------
   @Post(':id/reviews')
-  createReview(@Param('id') id: string, @Body() review: string) {
-    console.log(id, review);
-    throw new NotImplementedException('This action creates a new place review');
+  @Auth()
+  createReview(@Param('id') id: string, @Body() reviewDto: CreateReviewDto, @GetUser() user: User) {
+    return this.placeReviewsService.create({ placeId: id, user, reviewDto });
   }
 
   // * ----------------------------------------------------------------------------------------------------------------
@@ -122,11 +127,36 @@ export class PlacesController {
   }
 
   // * ----------------------------------------------------------------------------------------------------------------
-  // * DELETE PLACE REVIEW
+  // * GET PLACE REVIEW
+  // * ----------------------------------------------------------------------------------------------------------------
+  @Get(':id/reviews/:reviewId')
+  @Auth()
+  @ApiOperation({ summary: 'Get a review of a user for a place' })
+  getReview(@Param('id') placeId: string, @Param('reviewId') reviewId: string, @GetUser() user: User) {
+    return this.placeReviewsService.findOne(reviewId, user.id, placeId);
+  }
+
+  // * ----------------------------------------------------------------------------------------------------------------
+  // * UPDATE PLACE REVIEW
   // * ----------------------------------------------------------------------------------------------------------------
   @Patch(':id/reviews/:reviewId')
-  updateReview(@Param('id') id: string, @Param('reviewId') reviewId: string, @Body() review: string) {
-    console.log(id, reviewId, review);
-    throw new NotImplementedException('This action updates a place review');
+  @Auth()
+  @ApiOperation({ summary: 'Update a review of a user for a place' })
+  updateReview(
+    @Param('id') id: string,
+    @Param('reviewId') reviewId: string,
+    @Body() review: UpdateReviewDto,
+    @GetUser() user: User,
+  ) {
+    return this.placeReviewsService.update({ reviewId, userId: user.id, placeId: id, reviewDto: review });
+  }
+  // * ----------------------------------------------------------------------------------------------------------------
+  // * DELETE PLACE REVIEW
+  // * ----------------------------------------------------------------------------------------------------------------
+  @Delete(':id/reviews/:reviewId')
+  @Auth()
+  @ApiOperation({ summary: 'Delete a review of a user for a place' })
+  removeReview(@Param('id') id: string, @Param('reviewId') reviewId: string, @GetUser() user: User) {
+    return this.placeReviewsService.remove({ reviewId, userId: user.id, placeId: id });
   }
 }
