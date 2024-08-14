@@ -1,8 +1,20 @@
-import { Body, Controller, Delete, Get, HttpStatus, ParseUUIDPipe, Patch, Post, Query } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  HttpStatus,
+  ParseEnumPipe,
+  ParseUUIDPipe,
+  Patch,
+  Post,
+  Query,
+} from '@nestjs/common';
 import { ApiOperation, ApiQuery, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { SwaggerTags } from 'src/config';
 import { CreateFacilityDto } from '../dto';
 import { FacilitiesService } from '../services';
+import { ModelsEnum } from '../enums';
 
 @Controller('facilities')
 @ApiTags(SwaggerTags.Facilities)
@@ -20,8 +32,18 @@ export class FacilitiesController {
   // * -------------------------------------------------------------------------------------------------------------
   @Get()
   @ApiQuery({ name: 'modelId', required: false })
-  findAll(@Query('modelId', new ParseUUIDPipe({ optional: true })) modelId?: string) {
-    return this.facilitiesService.findAll({ modelId });
+  @ApiQuery({
+    name: 'inner-join',
+    required: false,
+    enum: ModelsEnum,
+    description:
+      'Si el id del modelo es enviado, este parametro se encarga de enviar solamente las categorías que tengan una asociación.',
+  })
+  findAll(
+    @Query('modelId', new ParseUUIDPipe({ optional: true })) modelId?: string,
+    @Query('inner-join', new ParseEnumPipe(ModelsEnum, { optional: true })) innerJoin?: ModelsEnum,
+  ) {
+    return this.facilitiesService.findAll({ modelId, innerJoin });
   }
   // * -------------------------------------------------------------------------------------------------------------
   // * GET FACILITY BY ID

@@ -1,8 +1,9 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Facility, Model } from '../entities';
-import { In, Repository } from 'typeorm';
+import { FindOptionsOrder, FindOptionsWhere, In, IsNull, Not, Repository } from 'typeorm';
 import { CreateFacilityDto } from '../dto';
+import { ModelsEnum } from '../enums';
 
 @Injectable()
 export class FacilitiesService {
@@ -30,22 +31,23 @@ export class FacilitiesService {
   // * -------------------------------------------------------------------------------------------------------------
   // * GET ALL FACILITY
   // * -------------------------------------------------------------------------------------------------------------
-  async findAll({ modelId }: { modelId?: string } = {}) {
-    if (!modelId) return this.facilitiesRepository.find({ order: { name: 'ASC' }, relations: { models: true } });
+  async findAll({ modelId, innerJoin }: { modelId?: string; innerJoin?: ModelsEnum } = {}) {
+    const where: FindOptionsWhere<Facility> = { isEnabled: true };
+    const order: FindOptionsOrder<Facility> = { name: 'ASC' };
+
+    if (!modelId) return this.facilitiesRepository.find({ order, relations: { models: true } });
+
+    where.models = { id: modelId };
+    if (innerJoin) {
+      if (innerJoin === ModelsEnum.Places) where.places = { id: Not(IsNull()) };
+      // if (innerJoin === ModelsEnum.Restaurants) where.restaurants = { id: Not(IsNull()) };
+      // if (innerJoin === ModelsEnum.Lodgings) where.lodgings = { id: Not(IsNull()) };
+      // if (innerJoin === ModelsEnum.Experiences) where.experiences = { id: Not(IsNull()) };
+    }
 
     const [modelFacilities, generalFacilities] = await Promise.all([
-      this.facilitiesRepository
-        .createQueryBuilder('facility')
-        .leftJoin('facility.models', 'model')
-        .where('model.id = :modelId', { modelId })
-        .orderBy('facility.name', 'ASC')
-        .getMany(),
-      this.facilitiesRepository
-        .createQueryBuilder('facility')
-        .leftJoin('facility.models', 'model')
-        .where('model IS NULL')
-        .orderBy('facility.name', 'ASC')
-        .getMany(),
+      this.facilitiesRepository.find({ where, order }),
+      this.facilitiesRepository.find({ where: { ...where, models: { id: IsNull() } }, order }),
     ]);
 
     const facilityMap = new Map<string, Facility>();
