@@ -35,7 +35,7 @@ export class PlacesService {
 
     private readonly cloudinaryService: CloudinaryService,
 
-    private readonly reviewService: PlaceReviewsService,
+    private readonly placeReviewService: PlaceReviewsService,
   ) {}
 
   async create(createPlaceDto: CreatePlaceDto) {
@@ -102,7 +102,7 @@ export class PlacesService {
 
     const [places, reviews] = await Promise.all([
       this.placeRepo.find({ relations, order, where }),
-      user ? this.reviewService.getUserReviews({ userId: user.id }) : Promise.resolve<Review[]>([]),
+      user ? this.placeReviewService.getUserReviews({ userId: user.id }) : Promise.resolve<Review[]>([]),
     ]);
 
     return places.map(place => {
@@ -111,7 +111,7 @@ export class PlacesService {
     });
   }
 
-  async findOne(identifier: string) {
+  async findOne(identifier: string, user: User | null = null) {
     const relations: FindOptionsRelations<Place> = {
       categories: true,
       facilities: true,
@@ -119,13 +119,12 @@ export class PlacesService {
       images: { imageResource: true },
     };
 
-    const placeBySlug = await this.placeRepo.findOne({ where: { slug: identifier }, relations });
-    if (placeBySlug) return new PlaceDto(placeBySlug);
+    let place = await this.placeRepo.findOne({ where: { slug: identifier }, relations });
+    if (!place) place = await this.placeRepo.findOne({ where: { id: identifier }, relations });
+    if (!place) throw new NotFoundException('Place not found');
 
-    const placeById = await this.placeRepo.findOne({ where: { id: identifier }, relations });
-    if (placeById) return new PlaceDto(placeById);
-
-    throw new NotFoundException('Place not found');
+    const review = user ? await this.placeReviewService.findUserReview({ userId: user.id, placeId: place.id }) : null;
+    return new PlaceDto(place, review?.id);
   }
 
   update(id: number, updatePlaceDto: UpdatePlaceDto) {

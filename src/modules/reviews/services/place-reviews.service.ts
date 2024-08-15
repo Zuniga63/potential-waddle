@@ -91,6 +91,10 @@ export class PlaceReviewsService {
     return review;
   }
 
+  async findUserReview({ userId, placeId }: { userId: string; placeId: string }): Promise<Review | null> {
+    return this.reviewRepository.findOne({ where: { user: { id: userId }, place: { id: placeId } } });
+  }
+
   // * ----------------------------------------------------------------------------------------------------------------
   // * UPDATE REVIEW
   // * ----------------------------------------------------------------------------------------------------------------

@@ -65,8 +65,9 @@ export class PlacesController {
   // * GET PLACE BY ID
   // * ----------------------------------------------------------------------------------------------------------------
   @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.placesService.findOne(id);
+  @OptionalAuth()
+  findOne(@Param('id') id: string, @GetUser() user: User | null) {
+    return this.placesService.findOne(id, user);
   }
 
   // * ----------------------------------------------------------------------------------------------------------------
