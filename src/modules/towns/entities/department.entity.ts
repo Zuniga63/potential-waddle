@@ -10,7 +10,7 @@ export class Department {
   @OneToMany(() => Town, town => town.department, { cascade: true })
   towns: Town[];
 
-  @Column('text', { unique: true })
+  @Column('text')
   name: string;
 
   @Column('text', { nullable: true })
