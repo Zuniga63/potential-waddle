@@ -24,6 +24,9 @@ export class Model {
   @Column('text')
   name: string;
 
+  @Column('text', { unique: true, nullable: true })
+  slug?: string;
+
   @CreateDateColumn({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP', name: 'created_at' })
   createdAt: Date;
 
