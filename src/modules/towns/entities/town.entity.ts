@@ -11,7 +11,7 @@ import {
   PrimaryGeneratedColumn,
 } from 'typeorm';
 
-import { Department } from './municipality.entity';
+import { Department } from './department.entity';
 import { Place } from 'src/modules/places/entities';
 import { TownInfo } from './town-info.entity';
 import { TownFestivity } from './town-festivity.entity';
@@ -41,7 +41,7 @@ export class Town {
   // * ----------------------------------------------------------------------------------------------------------------
   // * MAIN FIELDS
   // * ----------------------------------------------------------------------------------------------------------------
-  @Column('text', { unique: true, nullable: false })
+  @Column('text', { nullable: false })
   name: string;
 
   @Column('text', { nullable: true })
