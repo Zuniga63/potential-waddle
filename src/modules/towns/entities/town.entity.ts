@@ -54,6 +54,9 @@ export class Town {
   @Index({ spatial: true })
   location?: Point;
 
+  @Column('boolean', { nullable: false, default: false, name: 'is_enable' })
+  isEnable: boolean;
+
   @CreateDateColumn({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP', name: 'created_at' })
   createdAt: Date;
 
