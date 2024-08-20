@@ -12,4 +12,5 @@ export enum SwaggerTags {
   Languages = 'Languages',
   Images = 'Images',
   Places = 'Places',
+  Seeds = 'Seeds',
 }
