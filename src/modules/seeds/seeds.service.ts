@@ -1,13 +1,27 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { InjectDataSource, InjectRepository } from '@nestjs/typeorm';
-import { Department, Town } from '../towns/entities';
+import { read, utils, WorkBook } from 'xlsx';
 import { DataSource, Repository } from 'typeorm';
+
+import { Department, Town } from '../towns/entities';
 import { Category, Facility, ImageResource, Language, Model } from '../core/entities';
 import { CATEGORIES, DEPARTMENTS, FACILITIES, LANGUAGES, MODELS, TOWNS } from './constants';
 import * as placeListData from './mocks/places.json';
 import { Place, PlaceImage } from '../places/entities';
 import { CloudinaryService } from '../cloudinary/cloudinary.service';
 import { CloudinaryPresets, ResourceProvider } from 'src/config';
+import { FileSheetsEnum } from './enums/file-sheets.enum';
+import {
+  SheetCategory,
+  SheetDepartment,
+  SheetFacility,
+  SheetIcon,
+  SheetLanguages,
+  SheetModel,
+  SheetPlace,
+  SheetTown,
+} from './interfaces';
+import { isUUID } from 'class-validator';
 
 @Injectable()
 export class SeedsService {
@@ -67,16 +81,13 @@ export class SeedsService {
     await queryRunner.connect();
     await queryRunner.startTransaction();
 
-    const images = await this.imageResourceRepository.find();
-    images.forEach(image => {
-      this.cloudinaryService.destroyFile(image.publicId);
-    });
-
     try {
       // Desactivar temporalmente las restricciones de clave foránea en Postgres
+      this.logger.log('Disabling foreign key constraints');
       await queryRunner.query('SET session_replication_role = replica;');
 
       // Recupero todas la tablas de la base de datos omitiendo la tabla de migraciones
+      this.logger.log('Getting all tables from the database');
       const tables = await queryRunner.query(
         `SELECT table_name
          FROM information_schema.tables
@@ -85,11 +96,19 @@ export class SeedsService {
          AND table_name != 'migrations';`,
       );
 
+      // Get images before truncating the tables
+      this.logger.log('Getting all images from the database before truncating the tables');
+      const images = await this.imageResourceRepository.find();
+
       // Truncar todas las tablas y reiniciar las secuencias
       for (const { table_name } of tables) {
         this.logger.log(`Truncating table ${table_name}`);
         await queryRunner.query(`TRUNCATE TABLE "${table_name}" RESTART IDENTITY CASCADE;`);
       }
+
+      // Destroy all images from Cloudinary
+      this.logger.log(`Destroying ${images.length} images from Cloudinary`);
+      images.forEach(image => this.cloudinaryService.destroyFile(image.publicId));
 
       // reactivar las claves foraneas y confirmar la transacción
       await queryRunner.query('SET session_replication_role = DEFAULT;');
@@ -106,7 +125,7 @@ export class SeedsService {
   private async createModels() {
     this.logger.log('Creating models...');
 
-    const models: unknown[] = [];
+    const models: Model[] = [];
 
     for (const model of Object.values(MODELS)) {
       const existingModel = await this.modelRepository.exists({ where: { id: model.id } });
@@ -133,7 +152,7 @@ export class SeedsService {
       await this.departmentRepository.save(DEPARTMENTS.antioquia);
     }
 
-    const towns: unknown[] = [];
+    const towns: Town[] = [];
 
     for (const town of TOWNS) {
       const existingTown = await this.townRepository.exists({ where: { id: town.id } });
@@ -151,7 +170,7 @@ export class SeedsService {
   private async createLanguages() {
     this.logger.log('Creating languages...');
 
-    const languages: unknown[] = [];
+    const languages: Language[] = [];
 
     for (const language of LANGUAGES) {
       const existingLanguage = await this.languageRepository.exists({ where: { id: language.id } });
@@ -169,7 +188,7 @@ export class SeedsService {
 
   private async createFacilities() {
     this.logger.log('Creating facilities...');
-    const facilities: unknown[] = [];
+    const facilities: Facility[] = [];
     for (const facility of FACILITIES) {
       const existingFacility = await this.facilityRepository.exists({ where: { id: facility.id } });
       if (!existingFacility) {
@@ -186,7 +205,7 @@ export class SeedsService {
   private async createCategories() {
     this.logger.log('Creating categories...');
 
-    const categories: unknown[] = [];
+    const categories: Category[] = [];
 
     for (const category of CATEGORIES) {
       const existingCategory = await this.categoryRepository.exists({ where: { id: category.id } });
@@ -220,17 +239,21 @@ export class SeedsService {
         }
 
         this.logger.log(`Creating place ${placeData.name}`);
-        const categories = placeData.categories
-          .map(category => CATEGORIES.find(c => c.name === category.name))
-          .filter(Boolean)
-          .map(categoryFound => ({ id: categoryFound.id }));
+        // const categories = placeData.categories
+        //   .map(category => CATEGORIES.find(c => c.name === category.name))
+        //   .filter(Boolean)
+        //   .map(categoryFound => ({ id: categoryFound.id }));
+        const categories = placeData.categories.flatMap(category => {
+          const categoryFound = CATEGORIES.find(c => c.name === category.name);
+          return categoryFound ? { id: categoryFound.id } : [];
+        });
 
-        const facilities = placeData.facilities
-          .map(facility => FACILITIES.find(f => f.name === facility.name))
-          .filter(Boolean)
-          .map(facilityFound => ({ id: facilityFound.id }));
+        const facilities = placeData.facilities.flatMap(facility => {
+          const facilityFound = FACILITIES.find(f => f.name === facility.name);
+          return facilityFound ? { id: facilityFound.id } : [];
+        });
 
-        const place = this.placeRepository.create({
+        const place = await queryRunner.manager.save(Place, {
           id: placeData.id,
           town: { id: TOWNS[0].id },
           categories,
@@ -244,22 +267,20 @@ export class SeedsService {
           reviewCount: 0,
           location: { type: 'Point', coordinates: [+placeData.longitude, +placeData.latitude] },
           urbarCenterDistance: placeData.total_distance,
-          googleMapsUrl: placeData.google_maps_link,
-          history: placeData.history,
-          temperature: placeData.temperature,
-          maxDepth: placeData.max_depth,
-          altitude: placeData.altitude,
+          googleMapsUrl: placeData.google_maps_link ?? undefined,
+          history: placeData.history ?? undefined,
+          temperature: placeData.temperature ?? undefined,
+          maxDepth: placeData.max_depth ?? undefined,
+          altitude: placeData.altitude ?? undefined,
           capacity: placeData.capacity,
-          minAge: placeData.min_age,
-          maxAge: placeData.max_age,
+          minAge: placeData.min_age ?? undefined,
+          maxAge: placeData.max_age ?? undefined,
           howToGetThere: placeData.how_to_get_there,
-          howToDress: placeData.how_to_dress,
-          restrictions: placeData.restrictions,
-          recommendations: placeData.recommendations,
-          observations: placeData.observations,
+          howToDress: placeData.how_to_dress ?? undefined,
+          restrictions: placeData.restrictions ?? undefined,
+          recommendations: placeData.recommendations ?? undefined,
+          observations: placeData.observations ?? undefined,
         });
-
-        await queryRunner.manager.save(Place, place);
 
         const imagesUrls: string[] = [placeData.image, ...placeData.images];
         const cloudinaryRes = await Promise.all(
@@ -269,7 +290,7 @@ export class SeedsService {
         );
 
         const images = cloudinaryRes
-          .filter(res => res)
+          .filter(res => typeof res !== 'undefined')
           .map(res => {
             imagesIds.push(res.publicId);
             return this.imageResourceRepository.create({
@@ -301,5 +322,224 @@ export class SeedsService {
     } finally {
       await queryRunner.release();
     }
+  }
+
+  async seedFromFile(file: Express.Multer.File, truncate?: boolean, sheet?: FileSheetsEnum) {
+    if (truncate) this.truncateAllTables();
+    console.log(sheet);
+
+    const workbook = read(file.buffer, { type: 'buffer' });
+    const models = this.getModelsFromWorkbook(workbook);
+    const departments = this.getDepartmentsFromWorkboob(workbook);
+    const towns = this.getTownsFromWorkbook(workbook);
+    const languages = this.getLanguagesFromWorkbook(workbook);
+    const icons = this.getIconsFromWorkbook(workbook);
+    const categories = this.getCategoriesFromWorkbook(workbook);
+    const facilities = this.getFacilitiesFromWorkbook(workbook);
+    const places = await this.getPlacesFromWorkbook(workbook);
+
+    return { places, facilities, categories, icons, languages, towns, departments, models };
+  }
+
+  private getModelsFromWorkbook(workbook: WorkBook): SheetModel[] {
+    const headers = ['id', 'name', 'slug', 'sl'];
+
+    const sheet = workbook.Sheets[FileSheetsEnum.models];
+    const json = utils.sheet_to_json<SheetModel>(sheet, { header: headers as string[], range: 1 });
+
+    const models = json
+      .map(row => {
+        if (!isUUID(row.id)) return null;
+        if (!row.name || !row.slug) return null;
+        return row;
+      })
+      .filter((row): row is SheetModel => row !== null);
+
+    return models;
+  }
+
+  private getDepartmentsFromWorkboob(workbook: WorkBook): SheetDepartment[] {
+    const headers = ['id', 'name', 'capital', 'number'];
+
+    const sheet = workbook.Sheets[FileSheetsEnum.departments];
+    const json = utils.sheet_to_json<SheetDepartment>(sheet, { header: headers, range: 1 });
+
+    const departments = json
+      .map(row => {
+        if (!isUUID(row.id)) return null;
+        if (!row.name) return null;
+        return row;
+      })
+      .filter((row): row is SheetDepartment => row !== null);
+
+    return departments;
+  }
+
+  private getTownsFromWorkbook(workbook: WorkBook): SheetTown[] {
+    const headers = ['id', 'name', 'description', 'departmentNumber', 'enabled', 'longitude', 'latitude'];
+
+    const sheet = workbook.Sheets[FileSheetsEnum.towns];
+    const json = utils.sheet_to_json<SheetTown>(sheet, { header: headers, range: 1 });
+
+    const towns = json
+      .map(row => {
+        if (!isUUID(row.id)) return null;
+        if (!row.name) return null;
+        return row;
+      })
+      .filter((row): row is SheetTown => row !== null);
+
+    return towns;
+  }
+
+  private getLanguagesFromWorkbook(workbook: WorkBook): SheetLanguages[] {
+    const headers = ['id', 'name', 'code'];
+
+    const sheet = workbook.Sheets[FileSheetsEnum.languages];
+    const json = utils.sheet_to_json<SheetLanguages>(sheet, { header: headers, range: 1 });
+
+    const languages = json
+      .map(row => {
+        if (!isUUID(row.id)) return null;
+        if (!row.name || !row.code) return null;
+        return row;
+      })
+      .filter((row): row is SheetLanguages => row !== null);
+
+    return languages;
+  }
+
+  private getIconsFromWorkbook(workbook: WorkBook): SheetIcon[] {
+    const headers = ['id', 'name', 'code'];
+
+    const sheet = workbook.Sheets[FileSheetsEnum.icons];
+    const json = utils.sheet_to_json<SheetIcon>(sheet, { header: headers, range: 1 });
+
+    const icons = json
+      .map(row => {
+        if (!isUUID(row.id)) return null;
+        if (!row.name || !row.code) return null;
+        return row;
+      })
+      .filter((row): row is SheetIcon => row !== null);
+
+    return icons;
+  }
+
+  private getCategoriesFromWorkbook(workbook: WorkBook): SheetCategory[] {
+    const headers = ['id', 'name', 'slug', 'icon', 'models'];
+
+    const sheet = workbook.Sheets[FileSheetsEnum.categories];
+    const json = utils.sheet_to_json<SheetCategory>(sheet, { header: headers, range: 1 });
+
+    const categories = json
+      .map(row => {
+        if (!isUUID(row.id)) return null;
+        if (!row.name || !row.slug) return null;
+        return row;
+      })
+      .filter((row): row is SheetCategory => row !== null);
+
+    return categories;
+  }
+
+  private getFacilitiesFromWorkbook(workbook: WorkBook): SheetFacility[] {
+    const headers = ['id', 'name', 'slug', 'models'];
+
+    const sheet = workbook.Sheets[FileSheetsEnum.facilities];
+    const json = utils.sheet_to_json<SheetFacility>(sheet, { header: headers, range: 1 });
+
+    const facilities = json
+      .map(row => {
+        if (!isUUID(row.id)) return null;
+        if (!row.name || !row.slug) return null;
+        return row;
+      })
+      .filter((row): row is SheetFacility => row !== null);
+
+    return facilities;
+  }
+
+  private async getPlacesFromWorkbook(workbook: WorkBook): Promise<SheetPlace[]> {
+    const headers = [
+      'id',
+      'order',
+      'name',
+      'slug',
+      'imageCount',
+      'zone',
+      'description',
+      'longitude',
+      'latitude',
+      'googleMapsLink',
+      'driveFolderLink',
+      'cloudinaryFolder',
+      'difficulty',
+      'facilities',
+      'pooints',
+      'distance',
+      'altitude',
+      'howToGetThere',
+      'town',
+      'category',
+      'arrivalReference',
+      'transportReference',
+      'maxDeep',
+      'capacity',
+      'minAge',
+      'maxAge',
+      'recomendations',
+      'howToDress',
+      'temperature',
+    ];
+
+    const sheet = workbook.Sheets[FileSheetsEnum.places];
+    const json = utils.sheet_to_json<SheetPlace>(sheet, { header: headers, range: 1 });
+
+    // console.log('json', json);
+    const sheetPlaces = json
+      .map(row => {
+        if (!isUUID(row.id)) return null;
+        if (!row.name || !row.slug) return null;
+        if (!row.description) return null;
+        if (!row.longitude || !row.latitude) return null;
+        if (!row.town) return null;
+        if (!row.cloudinaryFolder) return null;
+        if (!row.category) return null;
+
+        const points = row.points || 1;
+        const difficulty = row.difficulty ?? 1;
+        const images: string[] = [];
+        return { ...row, difficulty, points, images, foo: 'foo' };
+      })
+      .filter(row => row !== null);
+
+    // console.log('sheetPlaces', sheetPlaces);
+
+    const places: SheetPlace[] = [];
+    const baseFolder = 'banco-de-imagenes/places';
+
+    for (let index = 0; index < sheetPlaces.length; index++) {
+      const sheetPlace = sheetPlaces[index];
+      const url = `${baseFolder}/${sheetPlace.cloudinaryFolder}`;
+      const res = await this.cloudinaryService.getResourceFromFolder(url);
+      if (!res || (res.resources.length as number) === 0) continue;
+
+      console.log('clud', res.resources);
+
+      const mainImage = res.resources.findIndex(
+        resource => resource.public_id.includes('main') || resource.display_name.includes('main'),
+      );
+      const images: string[] = [];
+      if (mainImage !== -1) images.push(res.resources[mainImage].secure_url);
+      res.resources.forEach((resource, i) => {
+        if (i === mainImage) return;
+        images.push(resource.secure_url);
+      });
+
+      places.push({ ...sheetPlace, images });
+    }
+
+    return places;
   }
 }
