@@ -1,6 +1,12 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { nanoid } from 'nanoid';
-import { UploadApiOptions, UploadApiResponse, v2 as cloudinary } from 'cloudinary';
+import {
+  AdminAndResourceOptions,
+  ResourceApiResponse,
+  UploadApiOptions,
+  UploadApiResponse,
+  v2 as cloudinary,
+} from 'cloudinary';
 
 import { createSlug } from 'src/utils';
 import { bufferToStream } from './utils';
@@ -64,15 +70,28 @@ export class CloudinaryService {
     return promises;
   }
 
-  async destroyFile(publicId: string) {
+  async destroyFile(publicId?: string) {
+    if (!publicId) return false;
+
     try {
       const cloudRes = await cloudinary.uploader.destroy(publicId);
       return cloudRes.result === 'ok';
     } catch (error) {
       this.logger.error(error);
+      return false;
     }
+  }
 
-    return false;
+  async getResourceFromFolder(
+    folder: string,
+    options: AdminAndResourceOptions = {},
+  ): Promise<ResourceApiResponse | null> {
+    try {
+      return await cloudinary.api.resources_by_asset_folder(folder, options);
+    } catch (error) {
+      this.logger.error(error);
+    }
+    return null;
   }
 
   private createUniqueFileName(fileName: string) {
