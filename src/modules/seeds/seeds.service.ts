@@ -617,6 +617,7 @@ export class SeedsService {
         slug: item.slug,
         icon: icon ? { id: icon.id } : undefined,
         models: modelsIds.map(id => ({ id })),
+        isEnabled: true,
       });
 
       const dbCategory = dbCategories.find(c => c.id === category.id);
@@ -672,6 +673,7 @@ export class SeedsService {
         name: item.name,
         slug: item.slug,
         models: modelsIds.map(id => ({ id })),
+        isEnabled: true,
       });
 
       const dbFacility = dbFacilities.find(f => f.id === facility.id);
