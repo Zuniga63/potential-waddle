@@ -10,16 +10,19 @@ export class GoogleUserDto {
   refreshToken?: string;
 
   loadFromGoogleProfile(googleProfile: Profile) {
+    const email = googleProfile.emails ? googleProfile.emails[0].value : '';
+    const picture = googleProfile.photos ? googleProfile.photos[0].value : '';
+
     this.id = googleProfile.id;
-    this.email = googleProfile.emails[0].value;
+    this.email = email;
     this.username = googleProfile.displayName;
-    this.picture = googleProfile.photos[0].value;
+    this.picture = picture;
   }
 
   loadFromGooglePayload(googlePayload: TokenPayload) {
     this.id = googlePayload.sub;
-    this.email = googlePayload.email;
-    this.username = googlePayload.name;
+    this.email = googlePayload.email || '';
+    this.username = googlePayload.name || '';
     this.picture = googlePayload.picture;
   }
 }

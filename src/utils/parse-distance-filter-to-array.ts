@@ -16,6 +16,7 @@ export function parseDistanceFilterToArray(value: unknown): DistanceRange[] {
 
   const parseValue = (value: string): number | undefined => {
     const distance = isEmpty(value) ? undefined : Number(value);
+    if (distance === undefined) return undefined;
     return isNaN(distance) ? undefined : distance;
   };
 

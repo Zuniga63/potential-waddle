@@ -50,7 +50,7 @@ export class AllExceptionsFilter implements ExceptionFilter {
         const { detail } = pgError;
 
         const regex = /\((.*?)\)=\((.*?)\)/;
-        const [property, value] = detail.match(regex).slice(1);
+        const [property, value] = detail.match(regex)?.slice(1) || [];
         errorMessage = `The property "${property}" with value "${value}" already exists`;
 
         httpStatus = HttpStatus.UNPROCESSABLE_ENTITY;

@@ -36,8 +36,8 @@ export class UserDto {
     this.email = user.email;
     this.profilePhoto = user.profilePhoto?.url;
     this.emailVerifiedAt = user.emailVerifiedAt?.toISOString() || undefined;
-    this.isSuperUser = user.isSuperUser;
-    this.isActive = user.isActive;
+    this.isSuperUser = user.isSuperUser || false;
+    this.isActive = user.isActive || false;
     this.createdAt = user.createdAt.toISOString();
     this.updatedAt = user.updatedAt.toISOString();
   }

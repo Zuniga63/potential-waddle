@@ -25,9 +25,9 @@ export class AuthService {
     private readonly configService: ConfigService<EnvironmentVariables>,
   ) {}
 
-  async validateUser(username: string, pass: string): Promise<User> {
+  async validateUser(username: string, pass: string): Promise<User | null> {
     const user = await this.usersService.getFullUser(username);
-    if (!user || !compareSync(pass, user.password)) return null;
+    if (!user || !user.password || !compareSync(pass, user.password)) return null;
 
     delete user.password;
     return user;
@@ -48,7 +48,7 @@ export class AuthService {
     return this.usersService.createFromGoogle(googleUser);
   }
 
-  async signInFromGoogleTokenId({ idToken, ip, userAgent }: { idToken: string; ip: string; userAgent: string }) {
+  async signInFromGoogleTokenId({ idToken, ip, userAgent }: { idToken: string; ip?: string; userAgent?: string }) {
     const client = new OAuth2Client({ clientId: this.configService.get('googleOAuth.clientId', { infer: true }) });
     const ticket = await client.verifyIdToken({ idToken });
     const payload = ticket.getPayload();

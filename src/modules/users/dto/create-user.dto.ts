@@ -29,5 +29,5 @@ export class CreateUserDto {
   @IsString()
   @IsNotEmpty()
   @IsEqualTo('password', { message: 'The passwords do not match' })
-  passwordConfirmation: string;
+  passwordConfirmation?: string;
 }

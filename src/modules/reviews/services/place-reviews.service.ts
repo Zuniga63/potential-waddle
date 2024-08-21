@@ -113,7 +113,7 @@ export class PlaceReviewsService {
       this.reviewRepository.findOne({ where: { id: reviewId, user: { id: userId }, place: { id: placeId } } }),
       this.placeRepository.findOne({ where: { id: placeId }, select: { id: true, rating: true, reviewCount: true } }),
     ]);
-    if (!review) throw new NotFoundException('Review not found');
+    if (!review || !place) throw new NotFoundException('Review not found');
 
     this.reviewRepository.merge(review, reviewDto);
     await this.reviewRepository.save(review);
@@ -133,7 +133,7 @@ export class PlaceReviewsService {
       this.reviewRepository.findOne({ where: { id: reviewId, user: { id: userId }, place: { id: placeId } } }),
       this.placeRepository.findOne({ where: { id: placeId }, select: { id: true, rating: true, reviewCount: true } }),
     ]);
-    if (!review) throw new NotFoundException('Review not found');
+    if (!review || !place) throw new NotFoundException('Review not found');
 
     await this.reviewRepository.remove(review);
 

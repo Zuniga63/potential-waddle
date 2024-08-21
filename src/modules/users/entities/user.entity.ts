@@ -40,10 +40,10 @@ export class User {
   email: string;
 
   @Column('text', { select: false, nullable: true })
-  password: string;
+  password?: string;
 
   @Column('json', { nullable: true, name: 'profile_photo' })
-  profilePhoto?: CloudinaryImage;
+  profilePhoto?: CloudinaryImage | null;
 
   @Column('timestamp', { nullable: true, name: 'email_verified_at' })
   emailVerifiedAt?: Date;
@@ -55,13 +55,13 @@ export class User {
   isActive?: boolean;
 
   @CreateDateColumn({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP', name: 'created_at' })
-  createdAt?: Date;
+  createdAt: Date;
 
   @Column('timestamp', { name: 'updated_at', default: () => 'CURRENT_TIMESTAMP', onUpdate: 'CURRENT_TIMESTAMP' })
-  updatedAt?: Date;
+  updatedAt: Date;
 
   @OneToMany(() => Session, session => session.user)
-  sessions: Session[];
+  sessions?: Session[];
 
   @BeforeInsert()
   emailToLowerCase() {

@@ -1,4 +1,4 @@
-import { Controller, Post, Body, UseGuards, Ip, Headers, Get, Query } from '@nestjs/common';
+import { Controller, Post, Body, UseGuards, Ip, Headers, Get, Query, UnauthorizedException } from '@nestjs/common';
 import {
   ApiBadRequestResponse,
   ApiBody,
@@ -107,6 +107,7 @@ export class AuthController {
     @Query('id_token') id_token?: string,
   ) {
     if (user) return this.authService.signIn({ user, ip, userAgent });
-    return this.authService.signInFromGoogleTokenId({ idToken: id_token, ip, userAgent });
+    if (id_token) return this.authService.signInFromGoogleTokenId({ idToken: id_token, ip, userAgent });
+    throw new UnauthorizedException('Invalid Google ID Token');
   }
 }

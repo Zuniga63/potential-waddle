@@ -21,7 +21,7 @@ export class DepartmentDto {
     description: 'The name of the municipality',
     readOnly: true,
   })
-  capital: string;
+  capital?: string;
 
   @ApiProperty({
     example: '5000',

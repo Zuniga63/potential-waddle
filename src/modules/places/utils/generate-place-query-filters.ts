@@ -3,6 +3,7 @@ import { Between, FindOptionsOrder, FindOptionsWhere, ILike, In, LessThanOrEqual
 import { Place } from '../entities';
 import { PlaceSortByEnum } from '../constants';
 import { PlaceFiltersDto } from '../dto/place-filters.dto';
+import { BadRequestException } from '@nestjs/common';
 
 export function generatePlaceQueryFilters(filters: PlaceFiltersDto) {
   const { search, sortBy, townId, categories, facilities, difficulties, ratings, distanceRanges } = filters;
@@ -50,11 +51,13 @@ export function generatePlaceQueryFilters(filters: PlaceFiltersDto) {
 
   // * Handle distanceRanges filter
   if (distanceRanges) {
-    const ranges = distanceRanges.map(range => {
-      const [min, max] = range;
-      if (!min) return LessThanOrEqual(max);
-      if (!max) return MoreThanOrEqual(min);
-      return Between(min, max);
+    const ranges = distanceRanges.map(([min, max]) => {
+      if (min === undefined && max === undefined) throw new BadRequestException('Both min and max cannot be undefined');
+
+      if (max === undefined) return MoreThanOrEqual(min as number);
+      if (min === undefined) return LessThanOrEqual(max as number);
+
+      return Between(min as number, max as number);
     });
     where.urbarCenterDistance = Or(...ranges);
   }

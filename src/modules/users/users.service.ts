@@ -48,6 +48,7 @@ export class UsersService {
             CloudinaryPresets.PROFILE_PHOTO,
           );
         } catch (error) {
+          console.log(error);
           this.logger.error('No se pudo cargar la imagen desde la url');
         }
       }
@@ -77,12 +78,12 @@ export class UsersService {
     return this.usersRepository.find();
   }
 
-  async findOne(id: string): Promise<User> {
+  async findOne(id: string): Promise<User | null> {
     const user = await this.usersRepository.findOne({ where: { id }, relations: ['role'] });
     return user;
   }
 
-  async findOneWithSessionAndRole(id: string, sessionId: string): Promise<User> {
+  async findOneWithSessionAndRole(id: string, sessionId: string): Promise<User | null> {
     return this.usersRepository
       .createQueryBuilder('user')
       .innerJoinAndSelect('user.sessions', 'session')
@@ -92,7 +93,7 @@ export class UsersService {
       .getOne();
   }
 
-  async getFullUser(email: string): Promise<User> {
+  async getFullUser(email: string): Promise<User | null> {
     return this.usersRepository
       .createQueryBuilder('user')
       .leftJoinAndSelect('user.role', 'role')
@@ -160,7 +161,7 @@ export class UsersService {
 
     const user = await this.getFullUser(email);
     if (!user) throw new NotFoundException('User not found');
-    if (!compareSync(password, user.password)) throw new UnauthorizedException('Invalid password');
+    if (user.password && !compareSync(password, user.password)) throw new UnauthorizedException('Invalid password');
 
     user.password = hashPassword(newPassword);
     await this.usersRepository.save(user);

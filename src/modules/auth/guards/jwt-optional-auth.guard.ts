@@ -7,7 +7,7 @@ export class JwtOptionalAuthGuard extends AuthGuard('optional-jwt') {
   handleRequest<TUser = User>(err: any, user: any): TUser {
     // ? Si hay un error (token inválido, expirado, etc.) o no hay usuario, retorna null
     if (err || !user) {
-      return null;
+      return null as TUser;
     }
     return user;
   }

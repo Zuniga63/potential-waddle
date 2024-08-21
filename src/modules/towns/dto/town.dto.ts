@@ -26,7 +26,7 @@ export class TownDto {
     description: 'The description of the town',
     required: false,
   })
-  description: string;
+  description?: string;
 
   @ApiProperty({
     example: 'https://image.jpg',
