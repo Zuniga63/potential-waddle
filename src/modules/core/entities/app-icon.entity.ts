@@ -24,7 +24,7 @@ export class AppIcon {
   name: string;
 
   @Column('text', { unique: true })
-  slug: string;
+  code: string;
 
   @CreateDateColumn({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP', name: 'created_at' })
   createdAt: Date;
