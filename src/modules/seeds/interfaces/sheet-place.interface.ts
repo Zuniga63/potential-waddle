@@ -11,7 +11,6 @@ export interface SheetPlace {
   googleMapsLink?: string;
   driveFolderLink?: string;
   cloudinaryFolder: string;
-  images: string[];
   difficulty: number;
   facilities?: string;
   points: number;
@@ -28,5 +27,7 @@ export interface SheetPlace {
   maxAge?: number;
   recomendations?: string;
   howToDress?: string;
+  internalRecommendations?: string;
   temperature?: string;
+  images: string[];
 }

@@ -3,13 +3,14 @@ import { SeedsService } from './seeds.service';
 import { SeedsController } from './seeds.controller';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { Department, Town } from '../towns/entities';
-import { Category, Facility, ImageResource, Language, Model } from '../core/entities';
+import { AppIcon, Category, Facility, ImageResource, Language, Model } from '../core/entities';
 import { Place, PlaceImage } from '../places/entities';
 import { CloudinaryModule } from '../cloudinary/cloudinary.module';
 
 @Module({
   imports: [
     TypeOrmModule.forFeature([
+      AppIcon,
       Department,
       Town,
       Model,
