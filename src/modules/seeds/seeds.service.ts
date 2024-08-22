@@ -23,6 +23,13 @@ import {
 } from './interfaces';
 import { isUUID } from 'class-validator';
 
+interface SeedPlaceProps {
+  workbook: WorkBook;
+  queryRunner: QueryRunner;
+  onDeleteImage: (id: string) => void;
+  onAddTempImage: (id: string) => void;
+}
+
 @Injectable()
 export class SeedsService {
   private readonly logger = new Logger('SeedsService');
@@ -325,10 +332,12 @@ export class SeedsService {
 
   async seedFromFile(file: Express.Multer.File, truncate?: boolean, sheet?: FileSheetsEnum) {
     if (truncate) await this.truncateAllTables();
-    console.log(sheet);
 
     const workbook = read(file.buffer, { type: 'buffer' });
-    await this.seedAllWoorkbook(workbook);
+    if (!sheet) {
+      await this.seedAllWoorkbook(workbook);
+      return 'The full workbook has been seeded successfully';
+    }
 
     return 'The seed has been created successfully';
   }
@@ -342,7 +351,11 @@ export class SeedsService {
     this.logger.log('Start seeding all workbook...');
 
     const queryRunner = this.dataSource.createQueryRunner();
-    const imagesIds: string[] = [];
+    const tempImages: string[] = [];
+    const imageToDelete: string[] = [];
+
+    const addTempImage = (id: string) => tempImages.push(id);
+    const addImageToDelete = (id: string) => imageToDelete.push(id);
 
     await queryRunner.connect();
     await queryRunner.startTransaction();
@@ -355,13 +368,28 @@ export class SeedsService {
       await this.seedModelFromWorkbook(workbook, queryRunner);
       await this.seedCategoriesFromWorkbook(workbook, queryRunner);
       await this.seedFacilitiesFromWorkbook(workbook, queryRunner);
-      await this.seedPlacesFromWorkbook(workbook, queryRunner, id => imagesIds.push(id));
+      await this.seedPlacesFromWorkbook({
+        workbook,
+        queryRunner,
+        onAddTempImage: addTempImage,
+        onDeleteImage: addImageToDelete,
+      });
 
       await queryRunner.commitTransaction();
+
+      if (imageToDelete.length) {
+        this.logger.log(`Destroying ${imageToDelete.length} images from Cloudinary...`);
+        await Promise.all(imageToDelete.map(id => this.cloudinaryService.destroyFile(id)));
+        this.writeLog('All images have been destroyed successfully');
+      }
     } catch (error) {
       this.logger.error(error.message);
       console.log(error);
-      if (imagesIds.length) await Promise.all(imagesIds.map(id => this.cloudinaryService.destroyFile(id)));
+      if (tempImages.length) {
+        this.writeLog(`Destroying ${tempImages.length} temp images from Cloudinary...`);
+        await Promise.all(tempImages.map(id => this.cloudinaryService.destroyFile(id)));
+        this.writeLog('All temp images have been destroyed successfully');
+      }
       await queryRunner.rollbackTransaction();
     } finally {
       await queryRunner.release();
@@ -744,9 +772,8 @@ export class SeedsService {
     const places: SheetPlace[] = [];
     const baseFolder = 'banco-de-imagenes/places';
 
-    for (let index = 0; index < sheetPlaces.length; index++) {
-      const sheetPlace = sheetPlaces[index];
-      const url = `${baseFolder}/${sheetPlace.cloudinaryFolder}`;
+    for (const sheetPlace of sheetPlaces) {
+      const url = `${baseFolder}/${sheetPlace.cloudinaryFolder.trim()}`;
       const res = await this.cloudinaryService.getResourceFromFolder(url);
       if (!res || (res.resources.length as number) === 0) continue;
 
@@ -766,102 +793,117 @@ export class SeedsService {
     return places;
   }
 
-  private async seedPlacesFromWorkbook(
-    workbook: WorkBook,
-    queryRunner: QueryRunner,
-    addImageCallback: (id: string) => void,
-  ) {
-    this.logger.log('Creating places...');
+  private async seedPlacesFromWorkbook({ workbook, queryRunner, onAddTempImage, onDeleteImage }: SeedPlaceProps) {
+    this.writeLog('Creating places...');
 
     const placesData = await this.getPlacesFromWorkbook(workbook);
     const categoriesData = this.getCategoriesFromWorkbook(workbook);
     const facilitiesData = this.getFacilitiesFromWorkbook(workbook);
     const townsData = this.getTownsFromWorkbook(workbook);
 
-    this.logger.log('\tGet all places from the database');
+    this.writeLog(`Records of file: ${placeListData.length}`, 1);
+
+    this.writeLog('Get all places from database', 1);
     const dbPlaces = await this.placeRepository.find({
       relations: { categories: true, facilities: true, images: { imageResource: true } },
     });
-    this.logger.log(`\tPlaces found: ${dbPlaces.length}`);
+    this.writeLog(`Places found: ${dbPlaces.length}`, 2);
 
-    for (const item of placesData) {
+    for (const placeData of placesData) {
+      this.writeLog(`Creating place ${placeData.name}`, 1);
       // * Check if the place already exists
-      const existingPlace = dbPlaces.find(p => p.id === item.id);
-      if (existingPlace) this.logger.log(`Place ${item.name} already exists`);
+      const existingPlace = dbPlaces.find(p => p.id === placeData.id);
+      if (existingPlace) this.writeLog('The place already exists', 2);
 
       // * Get the category ids using the category names
-      const categoryIds =
-        item.category
+      const placeCategories =
+        placeData.category
           ?.split(',')
-          .map(c => c.trim())
-          .map(category => {
-            const categoryFound = categoriesData.find(c => c.name.toLocaleLowerCase() === category.toLocaleLowerCase());
-            return categoryFound ? { id: categoryFound.id } : null;
+          .map(c => c.trim().toLocaleLowerCase())
+          .map(identifier => {
+            const category = categoriesData.find(
+              c => c.name.toLocaleLowerCase() === identifier || c.slug === identifier,
+            );
+            return category ?? null;
           })
           .filter(c => c !== null) || [];
 
+      if (placeCategories.length === 0) this.writeLog('No category found', 2);
+      else this.writeLog(`Place categories: ${placeCategories.map(c => c.name).join(', ')}`, 2);
+
       // * Get the facility ids using the facility names
       const facilitiesIds =
-        item.facilities
+        placeData.facilities
           ?.split(',')
-          .map(f => f.trim())
-          .map(facility => facilitiesData.find(f => f.name.toLocaleLowerCase() === facility.toLocaleLowerCase()))
-          .filter(f => f !== undefined)
-          .map(f => ({ id: f.id })) || [];
+          .map(f => f.trim().toLocaleLowerCase())
+          .map(identifier =>
+            facilitiesData.find(f => f.name.toLocaleLowerCase() === identifier || f.slug === identifier),
+          )
+          .filter(f => f !== undefined) || [];
+
+      if (facilitiesIds.length === 0) this.writeLog('No facility found', 2);
+      else this.writeLog(`Place facilities: ${facilitiesIds.map(f => f.name).join(', ')}`, 2);
 
       // * Get the town id using the town name
-      const town = townsData.find(t => t.name.toLocaleLowerCase() === item.town.toLocaleLowerCase());
+      const town = townsData.find(t => t.name.toLocaleLowerCase() === placeData.town.toLocaleLowerCase());
+      if (!town) this.writeLog('No town found', 2);
+      else this.writeLog(`Place town: ${town.name}`, 2);
 
       // * Create the place object with the data from the sheet
       const newPlace = this.placeRepository.create({
-        id: item.id,
-        name: item.name,
-        slug: item.slug,
-        description: item.description,
-        difficultyLevel: item.difficulty,
-        points: item.points,
-        location: { type: 'Point', coordinates: [+item.longitude, +item.latitude] },
-        urbarCenterDistance: item.distance,
-        googleMapsUrl: item.googleMapsLink,
-        temperature: item.temperature ? +item.temperature : undefined,
-        maxDepth: item.maxDeep,
-        altitude: item.altitude,
-        capacity: item.capacity,
-        minAge: item.minAge,
-        maxAge: item.maxAge,
-        howToGetThere: item.howToGetThere,
-        transportReference: item.transportReference,
-        arrivalReference: item.arrivalReference,
-        recommendations: item.recomendations?.split('&').join('\n -'),
-        howToDress: item.howToDress,
-        observations: item.internalRecommendations,
+        id: placeData.id,
+        name: placeData.name,
+        slug: placeData.slug,
+        description: placeData.description,
+        difficultyLevel: placeData.difficulty,
+        points: placeData.points,
+        location: { type: 'Point', coordinates: [+placeData.longitude, +placeData.latitude] },
+        urbarCenterDistance: placeData.distance,
+        googleMapsUrl: placeData.googleMapsLink,
+        temperature: placeData.temperature ? +placeData.temperature : undefined,
+        maxDepth: placeData.maxDeep,
+        altitude: placeData.altitude,
+        capacity: placeData.capacity,
+        minAge: placeData.minAge,
+        maxAge: placeData.maxAge,
+        howToGetThere: placeData.howToGetThere,
+        transportReference: placeData.transportReference,
+        arrivalReference: placeData.arrivalReference,
+        recommendations: placeData.recomendations?.split('&').join('\n -'),
+        howToDress: placeData.howToDress,
+        observations: placeData.internalRecommendations,
         town: town ? { id: town.id } : undefined,
-        categories: categoryIds,
-        facilities: facilitiesIds,
+        categories: placeCategories.map(c => ({ id: c.id })),
+        facilities: facilitiesIds.map(f => ({ id: f.id })),
       });
 
       // * Save the place in the database with only the data from the sheet witout images
+      this.writeLog('Save place in the database with sheet data', 2);
       const place = existingPlace ? this.placeRepository.merge(existingPlace, newPlace) : newPlace;
       await queryRunner.manager.save(Place, place);
 
       // * Remove old images and save the new ones
-      this.logger.log(`\tRemove old images for place ${newPlace.name}`);
+      this.writeLog(`Remove old images...`, 2);
       if (place.images) {
-        await Promise.all(place.images.map(image => this.cloudinaryService.destroyFile(image.imageResource.publicId)));
+        place.images.forEach(({ imageResource }) => {
+          if (imageResource.publicId) onDeleteImage(imageResource.publicId);
+        });
         await Promise.all(place.images.map(image => queryRunner.manager.remove(image)));
       }
 
-      this.logger.log(`\tSave images for place ${newPlace.name}`);
+      this.writeLog(`Save new images...`, 2);
       const cloudinaryRes = await Promise.all(
-        item.images.map(url =>
+        placeData.images.map(url =>
           this.cloudinaryService.uploadImageFromUrl(url, `${place.name}`, CloudinaryPresets.PLACE_PHOTO),
         ),
       );
 
+      this.writeLog(`Save ${cloudinaryRes.length} images in cloudinary!`, 2);
+
       const images = cloudinaryRes
         .filter(res => typeof res !== 'undefined')
         .map(res => {
-          addImageCallback(res.publicId);
+          onAddTempImage(res.publicId);
           return this.imageResourceRepository.create({
             publicId: res.publicId,
             url: res.url,
@@ -874,14 +916,21 @@ export class SeedsService {
           });
         });
 
+      this.writeLog(`Save ${images.length} images resource in the database...`, 2);
       await queryRunner.manager.save(ImageResource, images);
 
       // * Save the images in the database and add ID to global array
+      this.writeLog(`Add image to place and updating...`, 2);
       const placeImages = images.map((image, index) => {
         return this.placeImageRepository.create({ imageResource: image, order: index + 1, place: { id: place.id } });
       });
 
       await queryRunner.manager.save(PlaceImage, placeImages);
     }
+  }
+
+  private writeLog(message: string, level = 0) {
+    const tabs = '  '.repeat(level);
+    this.logger.log(`${tabs}${message}`);
   }
 }

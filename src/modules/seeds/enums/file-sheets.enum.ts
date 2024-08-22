@@ -6,5 +6,5 @@ export enum FileSheetsEnum {
   icons = 'Iconos',
   categories = 'Categorías',
   facilities = 'Facilidades',
-  places = 'Places_RevFinal',
+  places = 'Places',
 }
