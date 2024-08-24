@@ -1,46 +1,31 @@
-import { Logger } from '@nestjs/common';
-import { v2 as cloudinary } from 'cloudinary';
+import { AdminApiOptions } from 'cloudinary';
 
 import { CloudinaryPresets } from 'src/config';
+import { createPreset, updatePreset, verifyIfPresetExist } from '../logic';
 
 export async function createProfilePhotosPreset(folder = 'profile_photos') {
-  const presetName = CloudinaryPresets.PROFILE_PHOTO;
-  const logger = new Logger('Cloudinary');
+  const name = CloudinaryPresets.PROFILE_PHOTO;
 
-  let message = '';
+  const options: AdminApiOptions = {
+    name,
+    folder,
+    resource_type: 'image',
+    allowed_formats: 'jpg, png, gif, webp, bmp, jpe, jpeg',
+    access_mode: 'public',
+    unique_filename: true,
+    auto_tagging: 0.7,
+    overwrite: true,
 
-  try {
-    const preset = await cloudinary.api.create_upload_preset({
-      name: presetName,
-      folder,
-      resource_type: 'image',
-      allowed_formats: 'jpg, png, gif, webp, bmp, jpe, jpeg',
-      access_mode: 'public',
-      unique_filename: true,
-      auto_tagging: 0.7,
-      overwrite: true,
+    transformation: [{ width: 200, height: 200, crop: 'thumb', gravity: 'face' }],
+  };
 
-      transformation: [
-        {
-          width: 200,
-          height: 200,
-          crop: 'thumb',
-          gravity: 'face',
-        },
-      ],
-    });
+  const presetExist = await verifyIfPresetExist(name);
 
-    message = preset.message;
-    logger.log(`Preset ${presetName} created successfully`);
-  } catch (error: any) {
-    if (error.error && typeof error.error.message === 'string') {
-      logger.error(error.error.message);
-      message = error.error.message;
-    }
+  if (presetExist) {
+    const { message } = await updatePreset({ options });
+    return { name, message };
   }
 
-  return {
-    name: presetName,
-    message,
-  };
+  const { message } = await createPreset({ options });
+  return { name, message };
 }
