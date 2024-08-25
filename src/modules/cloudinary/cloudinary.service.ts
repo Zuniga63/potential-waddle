@@ -77,7 +77,8 @@ export class CloudinaryService {
       const cloudRes = await cloudinary.uploader.destroy(publicId);
       return cloudRes.result === 'ok';
     } catch (error) {
-      this.logger.error(error);
+      this.logger.error(`Error deleting file with publicId: ${publicId}`);
+      console.log(error);
       return false;
     }
   }

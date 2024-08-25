@@ -1,26 +1,22 @@
-import { Controller, ParseBoolPipe, ParseEnumPipe, Post, Query, UploadedFile, UseInterceptors } from '@nestjs/common';
-import { SeedsService } from './seeds.service';
 import { ApiBody, ApiConsumes, ApiOperation, ApiQuery, ApiTags } from '@nestjs/swagger';
-import { SwaggerTags } from 'src/config';
-import { FileInterceptor } from '@nestjs/platform-express';
+import { Controller, ParseBoolPipe, ParseEnumPipe, Post, Query, UploadedFile, UseInterceptors } from '@nestjs/common';
+
 import { FileDto } from './dto';
 import { FileSheetsEnum } from './enums';
+import { SwaggerTags } from 'src/config';
+import { SeedsService } from './seeds.service';
+import { FileInterceptor } from '@nestjs/platform-express';
 
 @Controller('seeds')
 @ApiTags(SwaggerTags.Seeds)
 export class SeedsController {
   constructor(private readonly seedsService: SeedsService) {}
 
-  @Post()
-  create() {
-    return this.seedsService.create();
-  }
-
-  @Post('from-file')
+  @Post('')
   @UseInterceptors(FileInterceptor('file'))
   @ApiOperation({
     summary:
-      'Seed the data from this template https://docs.google.com/spreadsheets/d/1bPjJWa1hM7zurExoXRqW1FNht5_J1GF0/edit?gid=701236842#gid=701236842.',
+      'Seed the data from excel file. The file should be in the format of .xlsx and should contain the required data.',
   })
   @ApiConsumes('multipart/form-data')
   @ApiBody({ type: FileDto })
@@ -32,5 +28,11 @@ export class SeedsController {
     @Query('sheet', new ParseEnumPipe(FileSheetsEnum, { optional: true })) sheet?: FileSheetsEnum,
   ) {
     return this.seedsService.seedFromFile(file, truncate, sheet);
+  }
+
+  @Post('truncate')
+  @ApiOperation({ summary: 'Truncate all the data in the database.' })
+  truncate() {
+    return this.seedsService.truncateAllData();
   }
 }

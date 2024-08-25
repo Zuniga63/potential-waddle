@@ -61,7 +61,7 @@ export class PlacesService {
     const cloudinaryResponse = await this.cloudinaryService.uploadImage({
       file: file,
       fileName: place.name,
-      preset: CloudinaryPresets.PLACE_PHOTO,
+      preset: CloudinaryPresets.PLACE_IMAGE,
     });
 
     if (!cloudinaryResponse) throw new BadGatewayException('Error uploading image');

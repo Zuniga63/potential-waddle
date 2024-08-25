@@ -29,5 +29,4 @@ export interface SheetPlace {
   howToDress?: string;
   internalRecommendations?: string;
   temperature?: string;
-  images: string[];
 }

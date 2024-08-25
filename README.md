@@ -128,6 +128,16 @@ $ pnpm run test:cov
 
 ---
 
+## Correr el seed
+
+1. Pedir acceso al [Excel con la información](https://docs.google.com/spreadsheets/d/1bPjJWa1hM7zurExoXRqW1FNht5_J1GF0/edit?gid=652715223#gid=652715223).
+2. En la raíz de la cuenta de Cloudinary, crear una carpeta llamada **banco-de-imagenes**.
+3. Dentro de **banco-de-imagenes**, crear otra carpeta llamada **places**.
+4. Pedir acceso al [folder de multimedia](https://drive.google.com/drive/folders/10cjl__lx_RTJMi0hqZKutwhjUmg4kavO?usp=drive_link).
+5. Copiar todas las carpetas de **place_script** dentro del folder **places** de Cloudinary.
+6. [Correr el seed desde la API](http://localhost:8080/api/docs#/Seeds/SeedsController_seedFromFile).
+
+
 ## Instalaciones adicionales y otras configuraciones
 
 - [Table Plus](https://tableplus.com/) o [PgAdmin](https://www.pgadmin.org/download/)
