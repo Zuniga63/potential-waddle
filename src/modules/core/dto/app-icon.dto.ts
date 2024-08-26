@@ -1,7 +1,7 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { AppIcon } from '../entities';
 
-export class IconDto {
+export class AppIconDto {
   @ApiProperty({
     example: '624013aa-9555-4a69-bf08-30cf990c56dd',
     description: 'The UUID of the icon',

@@ -1,6 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { Category } from '../entities';
-import { IconDto } from './icon.dto';
+import { AppIconDto } from './app-icon.dto';
 
 export class CategoryDto {
   @ApiProperty({
@@ -30,11 +30,11 @@ export class CategoryDto {
   description?: string;
 
   @ApiProperty({
-    type: IconDto,
+    type: AppIconDto,
     readOnly: true,
     required: false,
   })
-  icon?: IconDto;
+  icon?: AppIconDto;
 
   @ApiProperty({
     format: 'date-time',
@@ -55,7 +55,7 @@ export class CategoryDto {
     this.name = category.name;
     this.slug = category.slug;
     this.description = category.description;
-    this.icon = category.icon ? new IconDto(category.icon) : undefined;
+    this.icon = category.icon ? new AppIconDto(category.icon) : undefined;
     this.updatedAt = category.updatedAt;
     this.createdAt = category.createdAt;
   }
