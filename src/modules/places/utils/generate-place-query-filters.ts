@@ -8,7 +8,7 @@ import { BadRequestException } from '@nestjs/common';
 export function generatePlaceQueryFilters(filters: PlaceFiltersDto) {
   const { search, sortBy, townId, categories, facilities, difficulties, ratings, distanceRanges } = filters;
   const where: FindOptionsWhere<Place> = {};
-  const order: FindOptionsOrder<Place> = { name: 'ASC' };
+  const order: FindOptionsOrder<Place> = { name: 'ASC', images: { order: 'ASC' } };
 
   // * Handle search filter
   if (search) where.name = ILike(`%${search}%`);

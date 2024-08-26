@@ -119,7 +119,11 @@ export class PlacesService {
       images: { imageResource: true },
     };
 
-    let place = await this.placeRepo.findOne({ where: { slug: identifier }, relations });
+    let place = await this.placeRepo.findOne({
+      where: { slug: identifier },
+      relations,
+      order: { images: { order: 'ASC' } },
+    });
     if (!place) place = await this.placeRepo.findOne({ where: { id: identifier }, relations });
     if (!place) throw new NotFoundException('Place not found');
 
