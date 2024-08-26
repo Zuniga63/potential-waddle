@@ -29,7 +29,7 @@ export class TownsService {
   }
 
   findAll() {
-    return this.townRepository.find();
+    return this.townRepository.find({ where: { isEnable: true } });
   }
 
   async findOne(id: string) {
