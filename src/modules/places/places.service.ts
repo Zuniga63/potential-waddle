@@ -96,7 +96,7 @@ export class PlacesService {
     const relations: FindOptionsRelations<Place> = {
       town: { department: true },
       reviews: true,
-      categories: true,
+      categories: { icon: true },
       images: { imageResource: true },
     };
 
@@ -113,7 +113,7 @@ export class PlacesService {
 
   async findOne(identifier: string, user: User | null = null) {
     const relations: FindOptionsRelations<Place> = {
-      categories: true,
+      categories: { icon: true },
       facilities: true,
       town: { department: true },
       images: { imageResource: true },

@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Category, Model } from '../entities';
-import { FindOptionsOrder, FindOptionsWhere, In, IsNull, Not, Repository } from 'typeorm';
+import { FindOptionsOrder, FindOptionsRelations, FindOptionsWhere, In, IsNull, Not, Repository } from 'typeorm';
 import { CreateCategoryDto } from '../dto';
 import { ModelsEnum } from '../enums';
 
@@ -34,6 +34,7 @@ export class CategoriesService {
   async findAll({ modelId, innerJoin }: { modelId?: string; innerJoin?: ModelsEnum } = {}) {
     const where: FindOptionsWhere<Category> = { isEnabled: true };
     const order: FindOptionsOrder<Category> = { name: 'ASC' };
+    const relations: FindOptionsRelations<Category> = { icon: true };
     if (!modelId) return this.categoriesRepository.find({ order, where, relations: { models: true } });
 
     where.models = { id: modelId };
@@ -45,8 +46,8 @@ export class CategoriesService {
     }
 
     const [modelCategories, generalCategories] = await Promise.all([
-      this.categoriesRepository.find({ where, order }),
-      this.categoriesRepository.find({ where: { ...where, models: { id: IsNull() } }, order }),
+      this.categoriesRepository.find({ where, order, relations }),
+      this.categoriesRepository.find({ where: { ...where, models: { id: IsNull() } }, order, relations }),
     ]);
 
     const categoryMap = new Map<string, Category>();

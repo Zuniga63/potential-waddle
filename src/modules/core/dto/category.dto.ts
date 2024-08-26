@@ -1,5 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { Category } from '../entities';
+import { IconDto } from './icon.dto';
 
 export class CategoryDto {
   @ApiProperty({
@@ -29,6 +30,13 @@ export class CategoryDto {
   description?: string;
 
   @ApiProperty({
+    type: IconDto,
+    readOnly: true,
+    required: false,
+  })
+  icon?: IconDto;
+
+  @ApiProperty({
     format: 'date-time',
     example: '2021-09-03T00:00:00.000Z',
   })
@@ -47,6 +55,7 @@ export class CategoryDto {
     this.name = category.name;
     this.slug = category.slug;
     this.description = category.description;
+    this.icon = category.icon ? new IconDto(category.icon) : undefined;
     this.updatedAt = category.updatedAt;
     this.createdAt = category.createdAt;
   }
