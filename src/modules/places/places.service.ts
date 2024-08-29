@@ -2,7 +2,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { FindOptionsRelations, Geometry, In, Repository } from 'typeorm';
 import { BadGatewayException, Injectable, NotFoundException } from '@nestjs/common';
 
-import { PlaceDto } from './dto';
+import { PlaceDetailDto, PlaceDto } from './dto';
 import { CloudinaryPresets } from 'src/config';
 import { Place, PlaceImage } from './entities';
 import { generatePlaceQueryFilters } from './utils';
@@ -128,7 +128,7 @@ export class PlacesService {
     if (!place) throw new NotFoundException('Place not found');
 
     const review = user ? await this.placeReviewService.findUserReview({ userId: user.id, placeId: place.id }) : null;
-    return new PlaceDto(place, review?.id);
+    return new PlaceDetailDto({ place, reviewId: review?.id });
   }
 
   update(id: number, updatePlaceDto: UpdatePlaceDto) {

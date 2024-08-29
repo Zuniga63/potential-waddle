@@ -14,7 +14,7 @@ import {
 import { FileInterceptor } from '@nestjs/platform-express';
 import { ApiConsumes, ApiOkResponse, ApiOperation, ApiTags } from '@nestjs/swagger';
 
-import { PlaceDto } from './dto';
+import { PlaceDetailDto, PlaceDto } from './dto';
 import { SwaggerTags } from 'src/config';
 import { PlaceFilters, PlaceListQueryDocsGroup } from './decorators';
 import { PlacesService } from './places.service';
@@ -57,6 +57,7 @@ export class PlacesController {
   @Get()
   @PlaceListQueryDocsGroup()
   @OptionalAuth()
+  @ApiOkResponse({ description: 'The places have been successfully retrieved.', type: [PlaceDto] })
   findAll(@PlaceFilters() filters: PlaceFiltersDto, @GetUser() user: User | null) {
     return this.placesService.findAll(filters, user);
   }
@@ -66,6 +67,7 @@ export class PlacesController {
   // * ----------------------------------------------------------------------------------------------------------------
   @Get(':id')
   @OptionalAuth()
+  @ApiOkResponse({ description: 'The place has been successfully retrieved.', type: PlaceDetailDto })
   findOne(@Param('id') id: string, @GetUser() user: User | null) {
     return this.placesService.findOne(id, user);
   }
