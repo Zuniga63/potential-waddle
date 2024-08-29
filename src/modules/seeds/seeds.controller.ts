@@ -22,12 +22,19 @@ export class SeedsController {
   @ApiBody({ type: FileDto })
   @ApiQuery({ name: 'truncate', required: false, type: Boolean })
   @ApiQuery({ name: 'sheet', required: false, enum: FileSheetsEnum })
+  @ApiQuery({
+    name: 'omit-images',
+    required: false,
+    type: Boolean,
+    description: 'By default this end point create or recreate the images.',
+  })
   seedFromFile(
     @UploadedFile() file: Express.Multer.File,
     @Query('truncate', new ParseBoolPipe({ optional: true })) truncate?: boolean,
     @Query('sheet', new ParseEnumPipe(FileSheetsEnum, { optional: true })) sheet?: FileSheetsEnum,
+    @Query('omit-images', new ParseBoolPipe({ optional: true })) omitImages?: boolean,
   ) {
-    return this.seedsService.seedFromFile(file, truncate, sheet);
+    return this.seedsService.seedFromFile({ file, truncate, sheet, omitImages });
   }
 
   @Post('truncate')

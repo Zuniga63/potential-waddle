@@ -14,8 +14,16 @@ import { AppIcon, Category, Facility, ImageResource, Language, Model } from '../
 interface SeedPlaceProps {
   workbook: SeedWorkbook;
   queryRunner: QueryRunner;
+  createOrRecreateImages?: boolean;
   addTempImage: (id: string) => void;
   addImageToDelete: (id: string) => void;
+}
+
+interface SeedFromFileProps {
+  file: Express.Multer.File;
+  truncate?: boolean;
+  sheet?: FileSheetsEnum;
+  omitImages?: boolean;
 }
 
 @Injectable()
@@ -61,7 +69,7 @@ export class SeedsService {
     return 'All data has been truncated successfully';
   }
 
-  async seedFromFile(file: Express.Multer.File, truncate?: boolean, sheet?: FileSheetsEnum) {
+  async seedFromFile({ file, truncate, sheet, omitImages }: SeedFromFileProps) {
     this.writeLog('Start seeding from file...');
 
     const imagesToDelete: string[] = [];
@@ -88,8 +96,15 @@ export class SeedsService {
       if (!sheet || sheet === FileSheetsEnum.models) await this.seedModelFromWorkbook(workbook, queryRunner);
       if (!sheet || sheet === FileSheetsEnum.categories) await this.seedCategoriesFromWorkbook(workbook, queryRunner);
       if (!sheet || sheet === FileSheetsEnum.facilities) await this.seedFacilitiesFromWorkbook(workbook, queryRunner);
-      if (!sheet || sheet === FileSheetsEnum.places)
-        await this.seedPlacesFromWorkbook({ workbook, queryRunner, addTempImage, addImageToDelete });
+      if (!sheet || sheet === FileSheetsEnum.places) {
+        await this.seedPlacesFromWorkbook({
+          workbook,
+          queryRunner,
+          createOrRecreateImages: Boolean(truncate || !omitImages),
+          addTempImage,
+          addImageToDelete,
+        });
+      }
 
       this.writeLog('Save changes in the database...');
       await queryRunner.commitTransaction();
@@ -315,7 +330,13 @@ export class SeedsService {
     this.logger.log('\tFacilities saved successfully in the database');
   }
 
-  private async seedPlacesFromWorkbook({ workbook, queryRunner, addImageToDelete, addTempImage }: SeedPlaceProps) {
+  private async seedPlacesFromWorkbook({
+    workbook,
+    queryRunner,
+    addImageToDelete,
+    addTempImage,
+    createOrRecreateImages = true,
+  }: SeedPlaceProps) {
     this.writeLog('Creating places...');
 
     const placesData = workbook.getPlaces();
@@ -334,15 +355,17 @@ export class SeedsService {
     for (const placeData of placesData) {
       this.writeLog(`Processing place ${placeData.name}`, 1);
 
-      this.writeLog(`Recover images from cloudinary`, 2);
-      const folderImages = await this.getImagesFromFolder(placeData.cloudinaryFolder);
-      if (folderImages.length === 0) {
-        this.writeLog('This place dont have image, continue to next');
-        continue;
-      }
-
       const existingPlace = dbPlaces.find(p => p.id === placeData.id);
       if (existingPlace) this.writeLog('The place already exists', 2);
+
+      this.writeLog(`Recover images from cloudinary`, 2);
+      const folderImages = await this.getImagesFromFolder(placeData.cloudinaryFolder);
+      this.writeLog(`Images found: ${folderImages.length}`, 3);
+
+      if ((folderImages.length === 0 && createOrRecreateImages) || !existingPlace) {
+        this.writeLog('No images found, continue with the next place', 3);
+        continue;
+      }
 
       // * Get the category ids using the category names
       const placeCategories = matchCategoriesByValue({ value: placeData.category, categories: categoriesData });
@@ -379,7 +402,7 @@ export class SeedsService {
         howToGetThere: placeData.howToGetThere,
         transportReference: placeData.transportReference,
         arrivalReference: placeData.arrivalReference,
-        recommendations: placeData.recomendations?.split('&').join('\n -'),
+        recommendations: placeData.recomendations,
         howToDress: placeData.howToDress,
         observations: placeData.internalRecommendations,
         town: town ? { id: town.id } : undefined,
@@ -392,57 +415,59 @@ export class SeedsService {
       const place = existingPlace ? queryRunner.manager.merge(Place, existingPlace, newPlace) : newPlace;
       await queryRunner.manager.save(Place, place);
 
-      // * Remove old images and save the new ones
-      this.writeLog(`Remove old images...`, 2);
-      if (place.images) {
-        const promises: Promise<any>[] = [];
-        place.images.forEach(image => {
-          const { imageResource } = image;
-          if (imageResource && imageResource.publicId) addImageToDelete(imageResource.publicId);
-          promises.push(queryRunner.manager.remove(image));
-        });
-        await Promise.all(promises);
-      }
+      if (createOrRecreateImages || !existingPlace) {
+        // * Remove old images and save the new ones
+        this.writeLog(`Remove old images...`, 2);
+        if (place.images) {
+          const promises: Promise<any>[] = [];
+          place.images.forEach(image => {
+            const { imageResource } = image;
+            if (imageResource && imageResource.publicId) addImageToDelete(imageResource.publicId);
+            promises.push(queryRunner.manager.remove(image));
+          });
+          await Promise.all(promises);
+        }
 
-      this.writeLog(`Save images...`, 2);
-      const cloudinaryRes = await Promise.all(
-        folderImages.map(url =>
-          this.cloudinaryService.uploadImageFromUrl(url, `${place.name}`, CloudinaryPresets.PLACE_IMAGE),
-        ),
-      );
+        this.writeLog(`Save images...`, 2);
+        const cloudinaryRes = await Promise.all(
+          folderImages.map(url =>
+            this.cloudinaryService.uploadImageFromUrl(url, `${place.name}`, CloudinaryPresets.PLACE_IMAGE),
+          ),
+        );
 
-      this.writeLog(`Save ${cloudinaryRes.length} images in cloudinary!`, 2);
+        this.writeLog(`Save ${cloudinaryRes.length} images in cloudinary!`, 2);
 
-      const imageResources = cloudinaryRes
-        .filter(res => typeof res !== 'undefined')
-        .map(res => {
-          addTempImage(res.publicId);
-          return queryRunner.manager.create(ImageResource, {
-            publicId: res.publicId,
-            url: res.url,
-            fileName: place.name,
-            width: res.width,
-            height: res.height,
-            format: res.format,
-            resourceType: res.type,
-            provider: ResourceProvider.Cloudinary,
+        const imageResources = cloudinaryRes
+          .filter(res => typeof res !== 'undefined')
+          .map(res => {
+            addTempImage(res.publicId);
+            return queryRunner.manager.create(ImageResource, {
+              publicId: res.publicId,
+              url: res.url,
+              fileName: place.name,
+              width: res.width,
+              height: res.height,
+              format: res.format,
+              resourceType: res.type,
+              provider: ResourceProvider.Cloudinary,
+            });
+          });
+
+        this.writeLog(`Save ${imageResources.length} images resource in the database...`, 2);
+        await queryRunner.manager.save(ImageResource, imageResources);
+
+        // * Save the images in the database and add ID to global array
+        this.writeLog(`Add image to place and updating...`, 2);
+        const placeImages = imageResources.map((image, index) => {
+          return queryRunner.manager.create(PlaceImage, {
+            imageResource: image,
+            order: index + 1,
+            place: { id: place.id },
           });
         });
 
-      this.writeLog(`Save ${imageResources.length} images resource in the database...`, 2);
-      await queryRunner.manager.save(ImageResource, imageResources);
-
-      // * Save the images in the database and add ID to global array
-      this.writeLog(`Add image to place and updating...`, 2);
-      const placeImages = imageResources.map((image, index) => {
-        return queryRunner.manager.create(PlaceImage, {
-          imageResource: image,
-          order: index + 1,
-          place: { id: place.id },
-        });
-      });
-
-      await queryRunner.manager.save(PlaceImage, placeImages);
+        await queryRunner.manager.save(PlaceImage, placeImages);
+      }
     }
   }
 
