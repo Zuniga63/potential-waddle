@@ -108,7 +108,7 @@ export class SeedsService {
 
       this.writeLog('Save changes in the database...');
       await queryRunner.commitTransaction();
-      this.writeLog('All changes have been truncated successfully');
+      this.writeLog('All changes have been saved successfully');
 
       await this.deleteImagesInBatches(imagesToDelete);
     } catch (error) {
