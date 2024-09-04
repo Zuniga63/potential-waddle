@@ -338,6 +338,7 @@ export class SeedsService {
     createOrRecreateImages = true,
   }: SeedPlaceProps) {
     this.writeLog('Creating places...');
+    console.log(createOrRecreateImages);
 
     const placesData = workbook.getPlaces();
     const categoriesData = workbook.getCategories();
@@ -362,7 +363,7 @@ export class SeedsService {
       const folderImages = await this.getImagesFromFolder(placeData.cloudinaryFolder);
       this.writeLog(`Images found: ${folderImages.length}`, 3);
 
-      if ((folderImages.length === 0 && createOrRecreateImages) || !existingPlace) {
+      if (folderImages.length === 0 && (!existingPlace || createOrRecreateImages)) {
         this.writeLog('No images found, continue with the next place', 3);
         continue;
       }
