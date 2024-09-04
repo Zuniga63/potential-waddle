@@ -151,7 +151,7 @@ export class SeedWorkbook {
 
         const points = row.points || 1;
         const difficulty = row.difficulty ?? 1;
-        return { ...row, difficulty, points };
+        return { ...row, difficulty, points, slug: row.slug.trim() };
       })
       .filter(row => row !== null);
 
