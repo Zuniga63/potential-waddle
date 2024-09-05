@@ -3,8 +3,8 @@ import { HttpAdapterHost, NestFactory } from '@nestjs/core';
 import { SwaggerModule } from '@nestjs/swagger';
 
 import { AppModule } from './app.module';
+import { AllExceptionsFilter } from './modules/common/filters';
 import { appConfig, swaggerConfig, validationPipeConfig } from './config';
-import { AllExceptionsFilter } from './modules/common/filters/all-exceptions.filter';
 
 async function bootstrap() {
   const logger = new Logger('bootstrap');
