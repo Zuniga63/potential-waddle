@@ -41,7 +41,7 @@ Este proyecto tiene como objetivo proporcionar un punto de partida para el desar
 
 3.  Precargar la imagen de postgres
     ```bash
-      docker pull postgis/postgis:16-3.4-alpine
+      docker pull postgis/postgis:16-3.4
     ```
 
 ## Instalación en Entorno Local
@@ -107,7 +107,7 @@ Si se hizo la instalación de docker entonces se puede iniciar la base de datos 
 
 ```bash
 # development
-docker-compose -up -d
+docker compose up -d
 
 ```
 
