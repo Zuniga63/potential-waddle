@@ -1,7 +1,18 @@
-import { Column, CreateDateColumn, Entity, JoinColumn, ManyToMany, ManyToOne, PrimaryGeneratedColumn } from 'typeorm';
+import {
+  Column,
+  CreateDateColumn,
+  Entity,
+  JoinColumn,
+  ManyToMany,
+  ManyToOne,
+  OneToMany,
+  PrimaryGeneratedColumn,
+} from 'typeorm';
+
 import { Model } from './model.entity';
-import { Place } from 'src/modules/places/entities';
 import { AppIcon } from './app-icon.entity';
+import { Place } from 'src/modules/places/entities';
+import { LodgingFacility } from 'src/modules/lodgings/entities/lodging-facility.entity';
 
 @Entity({ name: 'facility' })
 export class Facility {
@@ -20,6 +31,9 @@ export class Facility {
 
   @ManyToMany(() => Place, place => place.facilities)
   places: Place[];
+
+  @OneToMany(() => LodgingFacility, lodging => lodging.facility, { onDelete: 'RESTRICT' })
+  lodgings: LodgingFacility[];
   // * ----------------------------------------------------------------------------------------------------------------
   // * MAIN FIELDS
   // * ----------------------------------------------------------------------------------------------------------------

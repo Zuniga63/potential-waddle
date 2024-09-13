@@ -1,4 +1,22 @@
-import { Column, CreateDateColumn, Entity, Index, Point, PrimaryGeneratedColumn } from 'typeorm';
+import {
+  Column,
+  CreateDateColumn,
+  Entity,
+  Index,
+  JoinColumn,
+  JoinTable,
+  ManyToMany,
+  ManyToOne,
+  OneToMany,
+  Point,
+  PrimaryGeneratedColumn,
+} from 'typeorm';
+
+import { Town } from 'src/modules/towns/entities';
+import { Category } from 'src/modules/core/entities';
+import { LodgingImage } from './lodging-image.entity';
+import { Review } from 'src/modules/reviews/entities';
+import { LodgingFacility } from './lodging-facility.entity';
 
 @Entity({ name: 'lodging' })
 export class Lodging {
@@ -8,6 +26,26 @@ export class Lodging {
   // * ----------------------------------------------------------------------------------------------------------------
   // * RELATIONSHIPS
   // * ----------------------------------------------------------------------------------------------------------------
+  @ManyToOne(() => Town, town => town.lodgings, { nullable: true, onDelete: 'SET NULL' })
+  @JoinColumn({ name: 'town_id' })
+  town: Town;
+
+  @ManyToMany(() => Category, category => category.lodgings)
+  @JoinTable({
+    name: 'lodging_category',
+    joinColumn: { name: 'lodging_id' },
+    inverseJoinColumn: { name: 'category_id' },
+  })
+  categories: Category[];
+
+  @OneToMany(() => LodgingImage, image => image.lodging)
+  images: LodgingImage[];
+
+  @OneToMany(() => LodgingFacility, facility => facility.lodging)
+  facilities: LodgingFacility[];
+
+  @OneToMany(() => Review, review => review.lodging)
+  reviews: Review[];
 
   // * ----------------------------------------------------------------------------------------------------------------
   // * MAIN FIELDS

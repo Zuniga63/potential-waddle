@@ -11,6 +11,7 @@ import {
 import { ImageResource } from 'src/modules/core/entities';
 import { User } from 'src/modules/users/entities/user.entity';
 import { Place } from 'src/modules/places/entities';
+import { Lodging } from 'src/modules/lodgings/entities';
 
 @Entity({ name: 'review' })
 export class Review {
@@ -26,7 +27,11 @@ export class Review {
 
   @ManyToOne(() => Place, place => place.reviews, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'place_id' })
-  place?: Place;
+  place?: Place | null;
+
+  @ManyToOne(() => Lodging, lodging => lodging.reviews, { onDelete: 'CASCADE', nullable: true })
+  @JoinColumn({ name: 'lodging_id' })
+  lodging?: Lodging | null;
 
   @ManyToMany(() => ImageResource, image => image.review, { onDelete: 'RESTRICT' })
   @JoinTable({ name: 'review_image' })

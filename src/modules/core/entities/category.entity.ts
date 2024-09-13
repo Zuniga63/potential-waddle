@@ -1,7 +1,9 @@
 import { Column, CreateDateColumn, Entity, JoinColumn, ManyToMany, ManyToOne, PrimaryGeneratedColumn } from 'typeorm';
+
 import { Model } from './model.entity';
-import { Place } from 'src/modules/places/entities';
 import { AppIcon } from './app-icon.entity';
+import { Place } from 'src/modules/places/entities';
+import { Lodging } from 'src/modules/lodgings/entities';
 
 @Entity({ name: 'category' })
 export class Category {
@@ -20,6 +22,9 @@ export class Category {
 
   @ManyToMany(() => Place, place => place.categories)
   places: Place[];
+
+  @ManyToMany(() => Lodging, lodging => lodging.categories)
+  lodgings: Lodging[];
   // * ----------------------------------------------------------------------------------------------------------------
   // * MAIN FIELDS
   // * ----------------------------------------------------------------------------------------------------------------

@@ -15,6 +15,7 @@ import { Department } from './department.entity';
 import { Place } from 'src/modules/places/entities';
 import { TownInfo } from './town-info.entity';
 import { TownFestivity } from './town-festivity.entity';
+import { Lodging } from 'src/modules/lodgings/entities';
 
 @Entity({ name: 'town' })
 export class Town {
@@ -37,6 +38,9 @@ export class Town {
 
   @OneToMany(() => Place, place => place.town)
   places: Place[];
+
+  @OneToMany(() => Lodging, lodging => lodging.town)
+  lodgings: Lodging[];
 
   // * ----------------------------------------------------------------------------------------------------------------
   // * MAIN FIELDS

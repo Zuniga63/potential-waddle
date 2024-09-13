@@ -1,7 +1,9 @@
-import { ResourceProvider } from 'src/config';
-import { PlaceImage } from 'src/modules/places/entities';
-import { Review } from 'src/modules/reviews/entities';
 import { Column, CreateDateColumn, Entity, ManyToMany, OneToMany, PrimaryGeneratedColumn } from 'typeorm';
+
+import { ResourceProvider } from 'src/config';
+import { Review } from 'src/modules/reviews/entities';
+import { PlaceImage } from 'src/modules/places/entities';
+import { LodgingImage } from 'src/modules/lodgings/entities/lodging-image.entity';
 
 @Entity({ name: 'image_resource' })
 export class ImageResource {
@@ -13,6 +15,9 @@ export class ImageResource {
   // * ----------------------------------------------------------------------------------------------------------------
   @OneToMany(() => PlaceImage, placeImage => placeImage.imageResource)
   placeImages: PlaceImage[];
+
+  @OneToMany(() => LodgingImage, lodgingImage => lodgingImage.imageResource)
+  lodgingImages: LodgingImage[];
 
   @ManyToMany(() => Review, review => review.images)
   review?: Review;
