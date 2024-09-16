@@ -9,11 +9,11 @@ export class AddNewColumnsToLodgingTable1726497162426 implements MigrationInterf
     await queryRunner.query(`ALTER TABLE "lodging" ADD "phones" text array DEFAULT '{}'`);
     await queryRunner.query(`ALTER TABLE "lodging" ADD "facebook" text`);
     await queryRunner.query(`ALTER TABLE "lodging" ADD "instagram" text`);
-    await queryRunner.query(`ALTER TABLE "lodging" ADD "whataapps" text array DEFAULT '{}'`);
+    await queryRunner.query(`ALTER TABLE "lodging" ADD "whatapps" text array DEFAULT '{}'`);
   }
 
   public async down(queryRunner: QueryRunner): Promise<void> {
-    await queryRunner.query(`ALTER TABLE "lodging" DROP COLUMN "whataapps"`);
+    await queryRunner.query(`ALTER TABLE "lodging" DROP COLUMN "whatapps"`);
     await queryRunner.query(`ALTER TABLE "lodging" DROP COLUMN "instagram"`);
     await queryRunner.query(`ALTER TABLE "lodging" DROP COLUMN "facebook"`);
     await queryRunner.query(`ALTER TABLE "lodging" DROP COLUMN "phones"`);

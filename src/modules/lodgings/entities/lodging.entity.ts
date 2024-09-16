@@ -100,7 +100,7 @@ export class Lodging {
   instagram: string | null;
 
   @Column('text', { nullable: true, array: true, default: [] })
-  whataapps: string[];
+  whatapps: string[];
 
   @Column('text', { name: 'opening_hours', nullable: true })
   openingHours: string | null;
