@@ -59,17 +59,20 @@ export class Lodging {
   @Column('text', { nullable: true })
   description: string | null;
 
+  @Column('smallint', { default: 0 })
+  points: number;
+
   @Column('integer', { name: 'review_count', default: 0 })
   reviewCount: number;
 
   @Column('smallint', { default: 0 })
-  points: number;
+  rating: number;
+
+  @Column('text', { name: 'room_types', array: true, default: [] })
+  roomTypes: string[];
 
   @Column('smallint', { name: 'room_count', default: 0 })
   roomCount: number;
-
-  @Column('smallint', { default: 0 })
-  rating: number;
 
   @Column('decimal', { name: 'lowest_price', precision: 10, scale: 2, nullable: true })
   lowestPrice: number | null;
@@ -81,14 +84,23 @@ export class Lodging {
   @Column('text', { nullable: true })
   address: string | null;
 
-  @Column('text', { nullable: true })
-  phone: string | null;
+  @Column('text', { nullable: true, array: true, default: [] })
+  phones: string[];
 
   @Column('text', { nullable: true })
   email: string | null;
 
   @Column('text', { nullable: true })
   website: string | null;
+
+  @Column('text', { nullable: true })
+  facebook: string | null;
+
+  @Column('text', { nullable: true })
+  instagram: string | null;
+
+  @Column('text', { nullable: true, array: true, default: [] })
+  whataapps: string[];
 
   @Column('text', { name: 'opening_hours', nullable: true })
   openingHours: string | null;
