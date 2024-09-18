@@ -3,12 +3,12 @@ import { AdminApiOptions } from 'cloudinary';
 import { CloudinaryPresets } from 'src/config';
 import { createPreset, updatePreset, verifyIfPresetExist } from '../logic';
 
-export async function createPlacePreset() {
-  const name = CloudinaryPresets.PLACE_IMAGE;
+export async function createLodgingPreset() {
+  const name = CloudinaryPresets.LODGING_IMAGE;
 
   const options: AdminApiOptions = {
     name,
-    folder: 'places',
+    folder: 'lodgings',
     resource_type: 'image',
     allowed_formats: 'jpg, png, gif, webp, bmp, jpe, jpeg',
     access_mode: 'public',
