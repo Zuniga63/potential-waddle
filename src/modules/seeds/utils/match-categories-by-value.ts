@@ -21,7 +21,7 @@ export function matchCategoriesByValue({ value, categories }: Params): SheetCate
 
   identifiers.forEach(identifier => {
     const category = categories.find(
-      ({ id, slug, name }) => name === identifier || slug === identifier || id === identifier,
+      ({ id, slug, name }) => name.toLocaleLowerCase() === identifier || slug === identifier || id === identifier,
     );
 
     if (!category) return;

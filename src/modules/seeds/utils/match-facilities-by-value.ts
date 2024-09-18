@@ -15,7 +15,7 @@ export function matchFacilitiesByValue({ value, facilities }: Params): SheetFaci
 
   identifiers.forEach(identifier => {
     const facility = facilities.find(
-      ({ id, slug, name }) => name === identifier || slug === identifier || id === identifier,
+      ({ id, slug, name }) => name.toLocaleLowerCase() === identifier || slug === identifier || id === identifier,
     );
 
     if (!facility) return;
