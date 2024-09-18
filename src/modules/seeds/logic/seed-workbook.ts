@@ -7,6 +7,7 @@ import type {
   SheetFacility,
   SheetIcon,
   SheetLanguage,
+  SheetLodging,
   SheetModel,
   SheetPlace,
   SheetTown,
@@ -17,6 +18,7 @@ import {
   SHEET_FACILITY_HEADERS,
   SHEET_ICON_HEADERS,
   SHEET_LANGUAGE_HEADERS,
+  SHEET_LODGING_HEADERS,
   SHEET_MODEL_HEADERS,
   SHEET_PLACE_HEADERS,
   SHEET_TOWN_HEADERS,
@@ -156,5 +158,28 @@ export class SeedWorkbook {
       .filter(row => row !== null);
 
     return sheetPlaces;
+  }
+
+  public getLodgings(): SheetLodging[] {
+    const sheet = this.workbook.Sheets[FileSheetsEnum.lodgings];
+    const json = utils.sheet_to_json<SheetLodging>(sheet, { header: SHEET_LODGING_HEADERS, range: 1 });
+
+    const sheetLodgings = json
+      .map((row): SheetLodging | null => {
+        // console.log(row);
+        if (!isUUID(row.id)) return null;
+        if (!row.name || !row.slug) return null;
+        if (!row.description) return null;
+        if (!row.longitude || !row.latitude) return null;
+        if (!row.town) return null;
+        if (!row.categories) return null;
+
+        const points = row.points || 1;
+        const roomCount = row.roomCount || '1';
+        return { ...row, points, slug: row.slug.trim(), roomCount };
+      })
+      .filter(row => row !== null);
+
+    return sheetLodgings;
   }
 }

@@ -10,8 +10,9 @@ import { CloudinaryPresets, ResourceProvider } from 'src/config';
 import { CloudinaryService } from '../cloudinary/cloudinary.service';
 import { matchCategoriesByValue, matchFacilitiesByValue } from './utils';
 import { AppIcon, Category, Facility, ImageResource, Language, Model } from '../core/entities';
+import { Lodging, LodgingFacility, LodgingImage } from '../lodgings/entities';
 
-interface SeedPlaceProps {
+interface SeedMainEntityProps {
   workbook: SeedWorkbook;
   queryRunner: QueryRunner;
   createOrRecreateImages?: boolean;
@@ -74,6 +75,7 @@ export class SeedsService {
 
     const imagesToDelete: string[] = [];
     const tempImages: string[] = [];
+    const createOrRecreateImages = Boolean(truncate || !omitImages);
 
     const addImageToDelete = (id: string) => imagesToDelete.push(id);
     const addTempImage = (id: string) => tempImages.push(id);
@@ -100,7 +102,17 @@ export class SeedsService {
         await this.seedPlacesFromWorkbook({
           workbook,
           queryRunner,
-          createOrRecreateImages: Boolean(truncate || !omitImages),
+          createOrRecreateImages,
+          addTempImage,
+          addImageToDelete,
+        });
+      }
+
+      if (!sheet || sheet === FileSheetsEnum.lodgings) {
+        await this.seedLodgingsFromWorkbook({
+          workbook,
+          queryRunner,
+          createOrRecreateImages,
           addTempImage,
           addImageToDelete,
         });
@@ -336,9 +348,8 @@ export class SeedsService {
     addImageToDelete,
     addTempImage,
     createOrRecreateImages = true,
-  }: SeedPlaceProps) {
+  }: SeedMainEntityProps) {
     this.writeLog('Creating places...');
-    console.log(createOrRecreateImages);
 
     const placesData = workbook.getPlaces();
     const categoriesData = workbook.getCategories();
@@ -472,8 +483,163 @@ export class SeedsService {
     }
   }
 
-  private async getImagesFromFolder(folder: string) {
-    const url = `banco-de-imagenes/places/${folder.trim()}`;
+  private async seedLodgingsFromWorkbook({
+    workbook,
+    queryRunner,
+    addImageToDelete,
+    addTempImage,
+    createOrRecreateImages,
+  }: SeedMainEntityProps) {
+    this.writeLog('Creating lodgings...');
+
+    const lodgingsData = workbook.getLodgings();
+    const categoriesData = workbook.getCategories();
+    const facilitiesData = workbook.getFacilities();
+    const townsData = workbook.getTowns();
+
+    this.writeLog(`Records of file: ${lodgingsData.length}`, 1);
+
+    this.writeLog('Get all lodgings from database', 1);
+    const dbLodgings = await queryRunner.manager.find(Lodging, {
+      relations: { categories: true, facilities: true, images: { imageResource: true } },
+    });
+    this.writeLog(`DB lodging found: ${dbLodgings.length}`, 2);
+
+    for (const lodgingData of lodgingsData) {
+      this.writeLog(`Processing lodging ${lodgingData.name}`, 1);
+
+      const existingLodging = dbLodgings.find(l => l.id === lodgingData.id);
+      if (existingLodging) this.writeLog('The lodging already exists', 2);
+
+      this.writeLog(`Recover images from cloudinary`, 2);
+      const folderImages = await this.getImagesFromFolder(lodgingData.slug, 'lodgings');
+      this.writeLog(`Images found: ${folderImages.length}`, 3);
+
+      if (folderImages.length === 0 && (!existingLodging || createOrRecreateImages)) {
+        this.writeLog('No images found, continue with the next lodging', 3);
+        continue;
+      }
+
+      // * Get the category ids using the category names
+      const lodgingCategories = matchCategoriesByValue({ value: lodgingData.categories, categories: categoriesData });
+      if (lodgingCategories.length === 0) this.writeLog('No category found', 2);
+      else this.writeLog(`Lodging categories: ${lodgingCategories.map(c => c.name).join(', ')}`, 2);
+
+      // * Get the facility ids using the facility names
+      const facilities = matchFacilitiesByValue({ value: lodgingData.facilities, facilities: facilitiesData });
+      if (facilities.length === 0) this.writeLog('No facility found', 2);
+      else this.writeLog(`Lodging facilities: ${facilities.map(f => f.name).join(', ')}`, 2);
+
+      // * Get the town id using the town name
+      const town = townsData.find(t => t.name.toLocaleLowerCase() === lodgingData.town.toLocaleLowerCase());
+      if (!town) this.writeLog('No town found', 2);
+      else this.writeLog(`Lodging town: ${town.name}`, 2);
+
+      // * Create the lodging object with the data from the sheet
+      const lodginFacilities = await Promise.all(
+        facilities.map(f => {
+          const facility = queryRunner.manager.create(LodgingFacility, {
+            facility: { id: f.id },
+            lodging: { id: lodgingData.id },
+          });
+          return queryRunner.manager.save(LodgingFacility, facility);
+        }),
+      );
+
+      const newLodging = queryRunner.manager.create(Lodging, {
+        id: lodgingData.id,
+        name: lodgingData.name,
+        slug: lodgingData.slug,
+        description: lodgingData.description,
+        roomTypes: lodgingData.roomTypes?.split(',').map(r => r.trim()),
+        roomCount: +lodgingData.roomCount,
+        lowestPrice: lodgingData.lowestPrice ? +lodgingData.lowestPrice : undefined,
+        highestPrice: lodgingData.highestPrice ? +lodgingData.highestPrice : undefined,
+        // ------------------------------------------------
+        address: lodgingData.address,
+        phones: lodgingData.phones?.split(',').map(p => p.trim()),
+        email: lodgingData.email,
+        website: lodgingData.website,
+        facebook: lodgingData.facebook,
+        instagram: lodgingData.instagram,
+        whatapps: lodgingData.whatsapps?.split(',').map(w => w.trim()),
+        openingHours: lodgingData.openingHours,
+        languageSpoken: lodgingData.languages,
+        // ------------------------------------------------
+        location: { type: 'Point', coordinates: [+lodgingData.longitude, +lodgingData.latitude] },
+        googleMapsUrl: lodgingData.googleMaps,
+        howToGetThere: lodgingData.howToGetThere,
+        arrivalReference: lodgingData.zone,
+        // ------------------------------------------------
+        isPublic: true,
+        town: town ? { id: town.id } : undefined,
+        categories: lodgingCategories.map(c => ({ id: c.id })),
+        facilities: lodginFacilities,
+      });
+
+      // * Save the lodging in the database with only the data from the sheet without images
+      this.writeLog('Save lodging in the database with sheet data', 2);
+      const lodging = existingLodging ? queryRunner.manager.merge(Lodging, existingLodging, newLodging) : newLodging;
+      await queryRunner.manager.save(Lodging, lodging);
+
+      if (createOrRecreateImages || !existingLodging) {
+        // * Remove old images and save the new ones
+        this.writeLog(`Remove old images...`, 2);
+        if (lodging.images) {
+          const promises: Promise<any>[] = [];
+          lodging.images.forEach(image => {
+            const { imageResource } = image;
+            if (imageResource && imageResource.publicId) addImageToDelete(imageResource.publicId);
+            promises.push(queryRunner.manager.remove(image));
+          });
+          await Promise.all(promises);
+        }
+
+        this.writeLog(`Save images...`, 2);
+        const cloudinaryRes = await Promise.all(
+          folderImages.map(url =>
+            this.cloudinaryService.uploadImageFromUrl(url, `${lodging.name}`, CloudinaryPresets.LODGING_IMAGE),
+          ),
+        );
+
+        this.writeLog(`Save ${cloudinaryRes.length} images in cloudinary!`, 2);
+
+        const imageResources = cloudinaryRes
+          .filter(res => typeof res !== 'undefined')
+          .map(res => {
+            addTempImage(res.publicId);
+            return queryRunner.manager.create(ImageResource, {
+              publicId: res.publicId,
+              url: res.url,
+              fileName: lodging.name,
+              width: res.width,
+              height: res.height,
+              format: res.format,
+              resourceType: res.type,
+              provider: ResourceProvider.Cloudinary,
+            });
+          });
+
+        this.writeLog(`Save ${imageResources.length} images resource in the database...`, 2);
+        await queryRunner.manager.save(ImageResource, imageResources);
+
+        // * Save the images in the database and add ID to global array
+        this.writeLog(`Add image to lodging and updating...`, 2);
+        const lodgingImages = imageResources.map((image, index) => {
+          return queryRunner.manager.create(LodgingImage, {
+            imageResource: image,
+            order: index + 1,
+            lodging: { id: lodging.id },
+          });
+        });
+
+        await queryRunner.manager.save(LodgingImage, lodgingImages);
+      }
+    }
+  }
+
+  private async getImagesFromFolder(folder: string, base = 'places') {
+    const url = `banco-de-imagenes/${base}/${folder.trim()}`;
     const res = await this.cloudinaryService.getResourceFromFolder(url);
     if (!res || (res.resources.length as number) === 0) return [];
 

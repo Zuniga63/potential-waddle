@@ -7,4 +7,5 @@ export enum FileSheetsEnum {
   categories = 'Categorías',
   facilities = 'Facilidades',
   places = 'Places',
+  lodgings = 'Alojamientos',
 }
