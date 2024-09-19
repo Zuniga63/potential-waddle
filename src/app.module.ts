@@ -15,6 +15,7 @@ import { CoreModule } from './modules/core/core.module';
 import { PlacesModule } from './modules/places/places.module';
 import { SeedsModule } from './modules/seeds/seeds.module';
 import { ReviewsModule } from './modules/reviews/reviews.module';
+import { LodgingsModule } from './modules/lodgings/lodgings.module';
 
 @Module({
   imports: [
@@ -48,6 +49,8 @@ import { ReviewsModule } from './modules/reviews/reviews.module';
     SeedsModule,
 
     ReviewsModule,
+
+    LodgingsModule,
   ],
   controllers: [],
   providers: [],
