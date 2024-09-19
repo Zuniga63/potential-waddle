@@ -564,10 +564,11 @@ export class SeedsService {
         instagram: lodgingData.instagram,
         whatapps: lodgingData.whatsapps?.split(',').map(w => w.trim()),
         openingHours: lodgingData.openingHours,
-        languageSpoken: lodgingData.languages,
+        languageSpoken: lodgingData.languages?.split(',').map(l => l.trim()),
         // ------------------------------------------------
         location: { type: 'Point', coordinates: [+lodgingData.longitude, +lodgingData.latitude] },
         googleMapsUrl: lodgingData.googleMaps,
+        urbanCenterDistance: lodgingData.distance,
         howToGetThere: lodgingData.howToGetThere,
         arrivalReference: lodgingData.zone,
         // ------------------------------------------------

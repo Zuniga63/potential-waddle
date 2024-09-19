@@ -105,8 +105,8 @@ export class Lodging {
   @Column('text', { name: 'opening_hours', nullable: true })
   openingHours: string | null;
 
-  @Column('text', { name: 'language_spoken', nullable: true })
-  languageSpoken: string | null;
+  @Column('text', { name: 'language_spoken', nullable: true, array: true, default: [] })
+  languageSpoken: string[];
 
   // * ----------------------------------------------------------------------------------------------------------------
   @Column('geometry', { spatialFeatureType: 'Point', srid: 4326 })
@@ -115,6 +115,9 @@ export class Lodging {
 
   @Column('text', { name: 'google_maps_url', nullable: true })
   googleMapsUrl: string | null;
+
+  @Column('smallint', { name: 'urban_center_distance', nullable: true })
+  urbanCenterDistance: number | null;
 
   @Column('text', { name: 'how_to_get_there', nullable: true })
   howToGetThere: string | null;

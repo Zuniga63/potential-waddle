@@ -14,7 +14,7 @@ export class SheetLodging {
   availability?: string;
   howToGetThere?: string;
   zone?: string;
-  distance?: string;
+  distance?: number;
   maxCapacity?: string;
   roomTypes?: string;
   roomCount: string;
