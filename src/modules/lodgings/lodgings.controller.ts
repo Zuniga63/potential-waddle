@@ -1,7 +1,7 @@
-import { Controller, Get } from '@nestjs/common';
+import { Controller, Get, Param } from '@nestjs/common';
 import { ApiOkResponse, ApiTags } from '@nestjs/swagger';
 
-import { LodgingIndexDto } from './dto';
+import { LodgingFullDto, LodgingIndexDto } from './dto';
 import { SwaggerTags } from 'src/config';
 import { OptionalAuth } from '../auth/decorators';
 import { LodgingsService } from './lodgings.service';
@@ -21,5 +21,15 @@ export class LodgingsController {
   @ApiOkResponse({ description: 'Lodging List', type: [LodgingIndexDto] })
   findAll() {
     return this.lodgingsService.findAll();
+  }
+
+  // * ----------------------------------------------------------------------------------------------------------------
+  // * GET LODGING BY IDENTIFIER
+  // * ----------------------------------------------------------------------------------------------------------------
+  @Get(':identifier')
+  @OptionalAuth()
+  @ApiOkResponse({ description: 'Lodging Detail', type: LodgingFullDto })
+  findOne(@Param('identifier') identifier: string) {
+    return this.lodgingsService.findOne({ identifier });
   }
 }

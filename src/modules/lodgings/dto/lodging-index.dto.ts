@@ -41,6 +41,16 @@ export class LodgingIndexDto {
   categories: CategoryDto[];
 
   @ApiProperty({
+    example: ['https://image.jpg'],
+    isArray: true,
+    description: 'The image of the lodging',
+    readOnly: true,
+    required: false,
+    type: String,
+  })
+  images: string[];
+
+  @ApiProperty({
     example: 'This ',
     description: 'The description of the lodging',
   })
@@ -52,7 +62,7 @@ export class LodgingIndexDto {
     readOnly: true,
     required: false,
   })
-  reviews: number;
+  reviewsCount: number;
 
   @ApiProperty({
     example: 100,
@@ -63,29 +73,20 @@ export class LodgingIndexDto {
   points: number;
 
   @ApiProperty({
-    example: 4,
-    description: 'The number of rooms of the lodging',
-    readOnly: true,
-    required: false,
-  })
-  rooms: number;
-
-  @ApiProperty({
-    example: 'https://image.jpg',
-    isArray: true,
-    description: 'The image of the lodging',
-    readOnly: true,
-    required: false,
-  })
-  images: string[];
-
-  @ApiProperty({
     example: 4.5,
     description: 'Rating of the lodging, on a scale from 1 to 5',
     readOnly: true,
     required: false,
   })
   rating: number;
+
+  @ApiProperty({
+    example: 4,
+    description: 'The number of rooms of the lodging',
+    readOnly: true,
+    required: false,
+  })
+  rooms: number;
 
   @ApiProperty({
     description: 'Minimum price of the lodging',
@@ -119,6 +120,14 @@ export class LodgingIndexDto {
   })
   openingHours?: string;
 
+  @ApiProperty({
+    example: 1340,
+    description: 'The distance from the urban center of the town to the place',
+    readOnly: true,
+    required: false,
+  })
+  urbanCenterDistance: number;
+
   constructor(lodging?: Lodging, userReview?: string) {
     if (!lodging) return;
     this.id = lodging.id;
@@ -127,7 +136,7 @@ export class LodgingIndexDto {
     this.slug = lodging.slug;
     this.categories = lodging.categories.map(category => new CategoryDto(category));
     this.description = lodging.description || '';
-    this.reviews = 0;
+    this.reviewsCount = 0;
     this.points = lodging.points;
     this.rooms = lodging.roomCount;
     this.images = lodging.images.map(image => image.imageResource.url);
@@ -136,5 +145,6 @@ export class LodgingIndexDto {
     this.highestPrice = lodging.highestPrice || undefined;
     this.userReview = userReview;
     this.openingHours = lodging.openingHours || undefined;
+    this.urbanCenterDistance = lodging.urbanCenterDistance || 0;
   }
 }

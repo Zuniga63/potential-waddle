@@ -1,9 +1,9 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { FindOptionsOrder, FindOptionsRelations, FindOptionsWhere, Repository } from 'typeorm';
 
 import { Lodging } from './entities';
-import { LodgingIndexDto } from './dto';
+import { LodgingFullDto, LodgingIndexDto } from './dto';
 
 @Injectable()
 export class LodgingsService {
@@ -27,7 +27,23 @@ export class LodgingsService {
     return lodgings.map(lodgings => new LodgingIndexDto(lodgings));
   }
 
-  findOne(id: number) {
-    return `This action returns a #${id} lodging`;
+  async findOne({ identifier }: { identifier: string }) {
+    const relations: FindOptionsRelations<Lodging> = {
+      categories: { icon: true },
+      facilities: { facility: { icon: true } },
+      town: { department: true },
+      images: { imageResource: true },
+    };
+
+    let place = await this.lodgingRespository.findOne({
+      where: { slug: identifier },
+      relations,
+      order: { images: { order: 'ASC' } },
+    });
+
+    if (!place) place = await this.lodgingRespository.findOne({ where: { id: identifier }, relations });
+    if (!place) throw new NotFoundException('Lodging not found');
+
+    return new LodgingFullDto(place);
   }
 }
