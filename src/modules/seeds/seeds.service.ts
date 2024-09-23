@@ -535,17 +535,6 @@ export class SeedsService {
       if (!town) this.writeLog('No town found', 2);
       else this.writeLog(`Lodging town: ${town.name}`, 2);
 
-      // * Create the lodging object with the data from the sheet
-      const lodginFacilities = await Promise.all(
-        facilities.map(f => {
-          const facility = queryRunner.manager.create(LodgingFacility, {
-            facility: { id: f.id },
-            lodging: { id: lodgingData.id },
-          });
-          return queryRunner.manager.save(LodgingFacility, facility);
-        }),
-      );
-
       const newLodging = queryRunner.manager.create(Lodging, {
         id: lodgingData.id,
         name: lodgingData.name,
@@ -575,12 +564,25 @@ export class SeedsService {
         isPublic: true,
         town: town ? { id: town.id } : undefined,
         categories: lodgingCategories.map(c => ({ id: c.id })),
-        facilities: lodginFacilities,
       });
 
       // * Save the lodging in the database with only the data from the sheet without images
       this.writeLog('Save lodging in the database with sheet data', 2);
       const lodging = existingLodging ? queryRunner.manager.merge(Lodging, existingLodging, newLodging) : newLodging;
+      await queryRunner.manager.save(Lodging, lodging);
+
+      // * Create the lodging object with the data from the sheet
+      const lodginFacilities = await Promise.all(
+        facilities.map(f => {
+          const facility = queryRunner.manager.create(LodgingFacility, {
+            facility: { id: f.id },
+            lodging: { id: lodging.id },
+          });
+          return queryRunner.manager.save(LodgingFacility, facility);
+        }),
+      );
+
+      lodging.facilities = lodginFacilities;
       await queryRunner.manager.save(Lodging, lodging);
 
       if (createOrRecreateImages || !existingLodging) {
