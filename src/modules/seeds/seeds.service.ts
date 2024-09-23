@@ -562,7 +562,7 @@ export class SeedsService {
         website: lodgingData.website,
         facebook: lodgingData.facebook,
         instagram: lodgingData.instagram,
-        whatapps: lodgingData.whatsapps?.split(',').map(w => w.trim()),
+        whatsappNumbers: lodgingData.whatsapps?.split(',').map(w => w.trim()),
         openingHours: lodgingData.openingHours,
         languageSpoken: lodgingData.languages?.split(',').map(l => l.trim()),
         // ------------------------------------------------

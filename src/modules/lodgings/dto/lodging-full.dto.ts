@@ -70,7 +70,7 @@ export class LodgingFullDto extends LodgingIndexDto {
     description: 'List of WhatsApps of the lodging',
     required: false,
   })
-  whatapps?: string[];
+  whatsappNumbers?: string[];
 
   @ApiProperty({
     example: ['English', 'Spanish'],
@@ -118,20 +118,22 @@ export class LodgingFullDto extends LodgingIndexDto {
 
   constructor(lodging?: Lodging, userReview?: string) {
     super(lodging, userReview);
-    this.facilities = lodging?.facilities?.map(facility => new FacilityDto(facility.facility)) || [];
-    this.roomTypes = lodging?.roomTypes || [];
-    this.address = lodging?.address || undefined;
-    this.phones = lodging?.phones || [];
-    this.email = lodging?.email || undefined;
-    this.website = lodging?.website || undefined;
-    this.facebook = lodging?.facebook || undefined;
-    this.instagram = lodging?.instagram || undefined;
-    this.whatapps = lodging?.whatapps || [];
-    this.languages = lodging?.languageSpoken || [];
-    this.longitude = lodging?.location?.coordinates[0] || 0;
-    this.latitude = lodging?.location?.coordinates[1] || 0;
-    this.googleMapsUrl = lodging?.googleMapsUrl || undefined;
-    this.howToGetThere = lodging?.howToGetThere || undefined;
-    this.arrivalReference = lodging?.arrivalReference || undefined;
+
+    if (!lodging) return;
+    this.facilities = lodging.facilities?.map(facility => new FacilityDto(facility.facility)) || [];
+    this.roomTypes = lodging.roomTypes || [];
+    this.address = lodging.address || undefined;
+    this.phones = lodging.phones || [];
+    this.email = lodging.email || undefined;
+    this.website = lodging.website || undefined;
+    this.facebook = lodging.facebook || undefined;
+    this.instagram = lodging.instagram || undefined;
+    this.whatsappNumbers = lodging.whatsappNumbers;
+    this.languages = lodging.languageSpoken;
+    this.longitude = lodging.location?.coordinates[0] || 0;
+    this.latitude = lodging.location?.coordinates[1] || 0;
+    this.googleMapsUrl = lodging.googleMapsUrl || undefined;
+    this.howToGetThere = lodging.howToGetThere || undefined;
+    this.arrivalReference = lodging.arrivalReference || undefined;
   }
 }

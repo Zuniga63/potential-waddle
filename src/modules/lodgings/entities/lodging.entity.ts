@@ -99,8 +99,8 @@ export class Lodging {
   @Column('text', { nullable: true })
   instagram: string | null;
 
-  @Column('text', { nullable: true, array: true, default: [] })
-  whatapps: string[];
+  @Column('text', { nullable: true, array: true, default: [], name: 'whatsapp_numbers' })
+  whatsappNumbers: string[];
 
   @Column('text', { name: 'opening_hours', nullable: true })
   openingHours: string | null;
