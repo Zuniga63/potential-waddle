@@ -7,3 +7,4 @@ export type { SheetCategory } from './sheet-category.interface';
 export type { SheetFacility } from './sheet-facility.interface';
 export type { SheetPlace } from './sheet-place.interface';
 export type { SheetLodging } from './sheet-lodging.interface';
+export type { SheetExperience } from './sheet-experience.interface';

@@ -13,6 +13,7 @@ import { Model } from './model.entity';
 import { AppIcon } from './app-icon.entity';
 import { Place } from 'src/modules/places/entities';
 import { LodgingFacility } from 'src/modules/lodgings/entities/lodging-facility.entity';
+import { Experience } from 'src/modules/experiences/entities';
 
 @Entity({ name: 'facility' })
 export class Facility {
@@ -34,6 +35,9 @@ export class Facility {
 
   @OneToMany(() => LodgingFacility, lodging => lodging.facility, { onDelete: 'RESTRICT' })
   lodgings: LodgingFacility[];
+
+  @OneToMany(() => Experience, experience => experience.facilities)
+  experiences: Experience[];
   // * ----------------------------------------------------------------------------------------------------------------
   // * MAIN FIELDS
   // * ----------------------------------------------------------------------------------------------------------------

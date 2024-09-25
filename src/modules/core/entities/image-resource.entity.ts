@@ -4,6 +4,7 @@ import { ResourceProvider } from 'src/config';
 import { Review } from 'src/modules/reviews/entities';
 import { PlaceImage } from 'src/modules/places/entities';
 import { LodgingImage } from 'src/modules/lodgings/entities/lodging-image.entity';
+import { ExperienceImage } from 'src/modules/experiences/entities/experience-image.entity';
 
 @Entity({ name: 'image_resource' })
 export class ImageResource {
@@ -18,6 +19,9 @@ export class ImageResource {
 
   @OneToMany(() => LodgingImage, lodgingImage => lodgingImage.imageResource)
   lodgingImages: LodgingImage[];
+
+  @OneToMany(() => ExperienceImage, experienceImage => experienceImage.imageResource)
+  experienceImages: ExperienceImage[];
 
   @ManyToMany(() => Review, review => review.images)
   review?: Review;

@@ -15,6 +15,7 @@ import { Socket } from 'socket.io';
 import { SeedsGateway } from './seeds.gateway';
 import { UsersService } from '../users/users.service';
 import { User } from '../users/entities/user.entity';
+import { Experience, ExperienceImage } from '../experiences/entities';
 
 interface SeedMainEntityProps {
   workbook: SeedWorkbook;
@@ -166,16 +167,29 @@ export class SeedsService {
       // * SEED ICONS
       if (!collection || collection === FileSheetsEnum.icons) await this.seedIconsFromWorkbook(workbook, queryRunner);
 
+      // * SEED LANGUAGES
       if (!collection || collection === FileSheetsEnum.languages)
         await this.seedLanguagesFromWorkbook(workbook, queryRunner);
+
+      // * SEED DEPARTMENTS
       if (!collection || collection === FileSheetsEnum.departments)
         await this.seedDepartmentsFromWorkbook(workbook, queryRunner);
+
+      // * SEED TOWNS
       if (!collection || collection === FileSheetsEnum.towns) await this.seedTownsFromWorkbook(workbook, queryRunner);
+
+      // * SEED MODELS
       if (!collection || collection === FileSheetsEnum.models) await this.seedModelFromWorkbook(workbook, queryRunner);
+
+      // * SEED CATEGORIES
       if (!collection || collection === FileSheetsEnum.categories)
         await this.seedCategoriesFromWorkbook(workbook, queryRunner);
+
+      // * SEED FACILITIES
       if (!collection || collection === FileSheetsEnum.facilities)
         await this.seedFacilitiesFromWorkbook(workbook, queryRunner);
+
+      // * SEED PLACES
       if (!collection || collection === FileSheetsEnum.places) {
         await this.seedPlacesFromWorkbook({
           workbook,
@@ -186,8 +200,19 @@ export class SeedsService {
         });
       }
 
+      // * SEED LODGINGS
       if (!collection || collection === FileSheetsEnum.lodgings) {
         await this.seedLodgingsFromWorkbook({
+          workbook,
+          queryRunner,
+          createOrRecreateImages,
+          addTempImage,
+          addImageToDelete,
+        });
+      }
+
+      if (!collection || collection === FileSheetsEnum.experiences) {
+        await this.seedExperiencesFromWorkbook({
           workbook,
           queryRunner,
           createOrRecreateImages,
@@ -216,7 +241,7 @@ export class SeedsService {
       await queryRunner.release();
     }
 
-    this.seedsWS.sendSeedLog('End seeding from file...', 4);
+    this.seedsWS.sendSeedLog('End seeding from file...');
 
     return 'The seed has been created successfully';
   }
@@ -768,6 +793,160 @@ export class SeedsService {
     }
 
     this.seedsWS.sendSeedLog('Lodgings saved successfully in the database', 2);
+  }
+
+  // * ----------------------------------------------------------------------------------------------------------------
+  // * SEED EXPERIENCE
+  // * ----------------------------------------------------------------------------------------------------------------
+  private async seedExperiencesFromWorkbook({
+    workbook,
+    queryRunner,
+    addImageToDelete,
+    addTempImage,
+    createOrRecreateImages,
+  }: SeedMainEntityProps) {
+    this.seedsWS.sendSeedLog('Creating experiences: this seed require categories, facilities and town', 1);
+    const experiencesData = workbook.getExperiences();
+    const categoriesData = workbook.getCategories();
+    const facilitiesData = workbook.getFacilities();
+    const townsData = workbook.getTowns();
+
+    this.seedsWS.sendSeedLog('Get experiences from database', 2);
+    const dbExperiences = await queryRunner.manager.find(Experience, {
+      relations: { categories: true, facilities: true, images: { imageResource: true } },
+    });
+
+    this.seedsWS.sendSeedLog(`DB experiences found: ${dbExperiences.length}`, 3);
+    this.seedsWS.sendSeedLog(`File experiences: ${experiencesData.length}`, 3);
+    this.seedsWS.sendSeedLog(`File Categories: ${categoriesData.length}`, 3);
+    this.seedsWS.sendSeedLog(`File Facilities: ${facilitiesData.length}`, 3);
+
+    for (const experienceData of experiencesData) {
+      this.seedsWS.sendSeedLog(`Processing experience ${experienceData.title}`, 2);
+
+      const existingExperience = dbExperiences.find(e => e.id === experienceData.id);
+      if (existingExperience) this.seedsWS.sendSeedLog('The experience already exists', 3);
+
+      this.seedsWS.sendSeedLog(`Recover images from cloudinary`, 3);
+      const folderImages = await this.getImagesFromFolder(experienceData.slug, 'Experiences');
+      this.seedsWS.sendSeedLog(`Images found: ${folderImages.length}`, 4);
+
+      if (folderImages.length === 0 && (!existingExperience || createOrRecreateImages)) {
+        this.seedsWS.sendSeedLog('No images found, continue with the next experience', 4);
+        continue;
+      }
+
+      // * Get the category ids using the category names
+      const categories = matchCategoriesByValue({ value: experienceData.categories, categories: categoriesData });
+      if (categories.length === 0) this.seedsWS.sendSeedLog('No category found', 3);
+      else this.seedsWS.sendSeedLog(`Experience categories: ${categories.map(c => c.name).join(', ')}`, 3);
+
+      // * Get the facility ids using the facility names
+      const facilities = matchFacilitiesByValue({ value: experienceData.facilities, facilities: facilitiesData });
+      if (facilities.length === 0) this.seedsWS.sendSeedLog('No facility found', 3);
+      else this.seedsWS.sendSeedLog(`Experience facilities: ${facilities.map(f => f.name).join(', ')}`, 3);
+
+      // * Get the town id using the town name
+      const town = townsData.find(t => t.name.toLocaleLowerCase() === experienceData.town.toLocaleLowerCase());
+      if (!town) this.seedsWS.sendSeedLog('No town found', 3);
+      else this.seedsWS.sendSeedLog(`Experience town: ${town.name}`, 3);
+
+      // * Create the experience object with the data from the sheet
+      const newExperience = queryRunner.manager.create(Experience, {
+        id: experienceData.id,
+        town: town ? { id: town.id } : undefined,
+        categories: categories.map(c => ({ id: c.id })),
+        facilities: facilities.map(f => ({ id: f.id })),
+        title: experienceData.title,
+        slug: experienceData.slug,
+        description: experienceData.description,
+        difficultyLevel: experienceData.difficultyLevel,
+        price: experienceData.price,
+        departureDescription: experienceData.departureDescription,
+        departureLocation: {
+          type: 'Point',
+          coordinates: [+experienceData.departureLongitude, +experienceData.departureLatitude],
+        },
+        arrivalDescription: experienceData.arrivalDescription,
+        arrivalLocation: {
+          type: 'Point',
+          coordinates: [+experienceData.arrivalLongitude, +experienceData.arrivalLatitude],
+        },
+        totalDistance: experienceData.totalDistance,
+        travelTime: experienceData.travelTime * 60 * 60,
+        points: experienceData.points,
+        minAge: experienceData.minAge,
+        maxAge: experienceData.maxAge,
+        minParticipants: experienceData.minParticipants,
+        maxParticipants: experienceData.maxParticipants,
+        recommendations: experienceData.recommendations,
+        howToDress: experienceData.howToDress,
+        restrictions: experienceData.restrictions,
+      });
+
+      // * Save the experience in the database with only the data from the sheet without images
+      this.seedsWS.sendSeedLog('Save experience in the database with sheet data', 3);
+      const experience = existingExperience
+        ? queryRunner.manager.merge(Experience, existingExperience, newExperience)
+        : newExperience;
+      await queryRunner.manager.save(Experience, experience);
+
+      if (createOrRecreateImages || !existingExperience) {
+        // * Remove old images and save the new ones
+        this.seedsWS.sendSeedLog(`Remove old images...`, 3);
+        if (experience.images) {
+          const promises: Promise<any>[] = [];
+          experience.images.forEach(image => {
+            const { imageResource } = image;
+            if (imageResource && imageResource.publicId) addImageToDelete(imageResource.publicId);
+            promises.push(queryRunner.manager.remove(image));
+          });
+          await Promise.all(promises);
+        }
+
+        this.seedsWS.sendSeedLog(`Save images...`, 3);
+        const cloudinaryRes = await Promise.all(
+          folderImages.map(url =>
+            this.cloudinaryService.uploadImageFromUrl(url, `${experience.title}`, CloudinaryPresets.EXPERIENCE_IMAGE),
+          ),
+        );
+
+        this.seedsWS.sendSeedLog(`Save ${cloudinaryRes.length} images in cloudinary!`, 3);
+
+        const imageResources = cloudinaryRes
+          .filter(res => typeof res !== 'undefined')
+          .map(res => {
+            addTempImage(res.publicId);
+            return queryRunner.manager.create(ImageResource, {
+              publicId: res.publicId,
+              url: res.url,
+              fileName: experience.title,
+              width: res.width,
+              height: res.height,
+              format: res.format,
+              resourceType: res.type,
+              provider: ResourceProvider.Cloudinary,
+            });
+          });
+
+        this.seedsWS.sendSeedLog(`Save ${imageResources.length} images resource in the database...`, 3);
+        await queryRunner.manager.save(ImageResource, imageResources);
+
+        // * Save the images in the database and add ID to global array
+        this.seedsWS.sendSeedLog(`Add image to experience and updating...`, 3);
+        const experienceImages = imageResources.map((image, index) => {
+          return queryRunner.manager.create(ExperienceImage, {
+            imageResource: image,
+            order: index + 1,
+            experience: { id: experience.id },
+          });
+        });
+
+        await queryRunner.manager.save(ExperienceImage, experienceImages);
+      } //. end if createOrRecreateImages
+    } //. end for loop experiences data
+
+    this.seedsWS.sendSeedLog('Experiences saved successfully in the database', 2);
   }
 
   private async getImagesFromFolder(folder: string, base = 'places') {

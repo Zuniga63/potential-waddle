@@ -7,3 +7,4 @@ export { SHEET_CATEGORY_HEADERS } from './sheet-category-headers';
 export { SHEET_FACILITY_HEADERS } from './sheet-facility-headers';
 export { SHEET_PLACE_HEADERS } from './sheet-place-headers';
 export { SHEET_LODGING_HEADERS } from './sheet-lodging-headers';
+export { SHEET_EXPERIENCE_HEADERS } from './sheet-experience-headers';

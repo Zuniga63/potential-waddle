@@ -4,6 +4,7 @@ import { Model } from './model.entity';
 import { AppIcon } from './app-icon.entity';
 import { Place } from 'src/modules/places/entities';
 import { Lodging } from 'src/modules/lodgings/entities';
+import { Experience } from 'src/modules/experiences/entities';
 
 @Entity({ name: 'category' })
 export class Category {
@@ -25,6 +26,9 @@ export class Category {
 
   @ManyToMany(() => Lodging, lodging => lodging.categories)
   lodgings: Lodging[];
+
+  @ManyToMany(() => Experience, experience => experience.categories)
+  experiences: Experience[];
   // * ----------------------------------------------------------------------------------------------------------------
   // * MAIN FIELDS
   // * ----------------------------------------------------------------------------------------------------------------

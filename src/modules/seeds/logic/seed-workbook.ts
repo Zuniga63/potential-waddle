@@ -4,6 +4,7 @@ import { read, utils, type WorkBook } from 'xlsx';
 import type {
   SheetCategory,
   SheetDepartment,
+  SheetExperience,
   SheetFacility,
   SheetIcon,
   SheetLanguage,
@@ -15,6 +16,7 @@ import type {
 import {
   SHEET_CATEGORY_HEADERS,
   SHEET_DEPARTMENT_HEADERS,
+  SHEET_EXPERIENCE_HEADERS,
   SHEET_FACILITY_HEADERS,
   SHEET_ICON_HEADERS,
   SHEET_LANGUAGE_HEADERS,
@@ -181,5 +183,28 @@ export class SeedWorkbook {
       .filter(row => row !== null);
 
     return sheetLodgings;
+  }
+
+  public getExperiences(): SheetExperience[] {
+    const sheet = this.workbook.Sheets[FileSheetsEnum.experiences];
+    const json = utils.sheet_to_json<SheetExperience>(sheet, { header: SHEET_EXPERIENCE_HEADERS, range: 1 });
+
+    const sheetExperiences = json
+      .map((row): SheetExperience | null => {
+        if (!isUUID(row.id)) return null;
+        if (!row.title || !row.slug) return null;
+        if (!row.description) return null;
+        if (!row.departureLongitude || !row.departureLatitude) return null;
+        if (!row.arrivalLongitude || !row.arrivalLatitude) return null;
+        if (!row.town) return null;
+        if (!row.categories) return null;
+        if (!row.totalDistance) return null;
+
+        const points = row.points || 1;
+        return { ...row, points, slug: row.slug.trim() };
+      })
+      .filter(row => row !== null);
+
+    return sheetExperiences;
   }
 }
