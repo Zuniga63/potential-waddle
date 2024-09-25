@@ -1,5 +1,14 @@
 import { ApiBody, ApiConsumes, ApiOperation, ApiQuery, ApiTags } from '@nestjs/swagger';
-import { Controller, ParseBoolPipe, ParseEnumPipe, Post, Query, UploadedFile, UseInterceptors } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  ParseBoolPipe,
+  ParseEnumPipe,
+  Post,
+  Query,
+  UploadedFile,
+  UseInterceptors,
+} from '@nestjs/common';
 
 import { FileDto } from './dto';
 import { FileSheetsEnum } from './enums';
@@ -21,7 +30,7 @@ export class SeedsController {
   @ApiConsumes('multipart/form-data')
   @ApiBody({ type: FileDto })
   @ApiQuery({ name: 'truncate', required: false, type: Boolean })
-  @ApiQuery({ name: 'sheet', required: false, enum: FileSheetsEnum })
+  @ApiQuery({ name: 'colleaction', required: false, enum: FileSheetsEnum })
   @ApiQuery({
     name: 'omit-images',
     required: false,
@@ -31,15 +40,21 @@ export class SeedsController {
   seedFromFile(
     @UploadedFile() file: Express.Multer.File,
     @Query('truncate', new ParseBoolPipe({ optional: true })) truncate?: boolean,
-    @Query('sheet', new ParseEnumPipe(FileSheetsEnum, { optional: true })) sheet?: FileSheetsEnum,
+    @Query('collection', new ParseEnumPipe(FileSheetsEnum, { optional: true })) collection?: FileSheetsEnum,
     @Query('omit-images', new ParseBoolPipe({ optional: true })) omitImages?: boolean,
   ) {
-    return this.seedsService.seedFromFile({ file, truncate, sheet, omitImages });
+    return this.seedsService.seedFromFile({ file, truncate, collection, omitImages });
   }
 
   @Post('truncate')
   @ApiOperation({ summary: 'Truncate all the data in the database.' })
   truncate() {
     return this.seedsService.truncateAllData();
+  }
+
+  @Get('avaliable-sheets')
+  sheets() {
+    const sheets: string[] = Object.values(FileSheetsEnum);
+    return sheets;
   }
 }

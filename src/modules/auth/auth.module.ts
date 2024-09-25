@@ -31,5 +31,6 @@ import { AuthService, SessionService } from './services';
   ],
   providers: [AuthService, SessionService, LocalStrategy, JwtStrategy, GoogleStrategy, OptionalJwtStrategy],
   controllers: [AuthController, ProfileController],
+  exports: [JwtModule],
 })
 export class AuthModule {}

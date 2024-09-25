@@ -4,6 +4,7 @@ interface Params {
   queryRunner: QueryRunner;
   addImageToDelete: (id: string) => void;
   logger: (message: string, level?: number) => void;
+  level?: number;
 }
 
 interface ProfilePhoto {
@@ -14,27 +15,27 @@ interface ImageResource {
   public_id: string | null;
 }
 
-export async function truncateTables({ queryRunner, addImageToDelete, logger }: Params) {
-  logger('Truncating tables...');
-  logger('Getting tables...', 1);
+export async function truncateTables({ queryRunner, addImageToDelete, logger, level = 0 }: Params) {
+  logger('Truncating tables...', level);
+  logger('Getting tables...', level + 1);
   const tables = await getTables({ queryRunner });
 
-  logger('Getting images and add to global group...', 1);
+  logger('Getting images and add to global group...', level + 1);
   const images = await getImagesToDelete({ queryRunner });
   images.forEach(publicId => addImageToDelete(publicId));
 
-  logger('Disabling foreign key constraints', 1);
+  logger('Disabling foreign key constraints', level + 1);
   await queryRunner.query('SET session_replication_role = replica;');
 
   for (const { table_name } of tables) {
-    logger(`Truncating table ${table_name}`, 1);
+    logger(`Truncating table ${table_name}`, level + 1);
     await queryRunner.query(`TRUNCATE TABLE "${table_name}" RESTART IDENTITY CASCADE;`);
   }
 
-  logger('Enabling foreign key constraints', 1);
+  logger('Enabling foreign key constraints', level + 1);
   await queryRunner.query('SET session_replication_role = DEFAULT;');
 
-  logger('Truncate tables completed.', 1);
+  logger('Truncate tables completed.', level + 1);
 }
 
 async function getTables({ queryRunner }: Pick<Params, 'queryRunner'>): Promise<{ table_name: string }[]> {

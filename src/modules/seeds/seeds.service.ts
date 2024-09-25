@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { forwardRef, Inject, Injectable, Logger } from '@nestjs/common';
 import { InjectDataSource } from '@nestjs/typeorm';
 import { DataSource, QueryRunner } from 'typeorm';
 
@@ -11,6 +11,10 @@ import { CloudinaryService } from '../cloudinary/cloudinary.service';
 import { matchCategoriesByValue, matchFacilitiesByValue } from './utils';
 import { AppIcon, Category, Facility, ImageResource, Language, Model } from '../core/entities';
 import { Lodging, LodgingFacility, LodgingImage } from '../lodgings/entities';
+import { Socket } from 'socket.io';
+import { SeedsGateway } from './seeds.gateway';
+import { UsersService } from '../users/users.service';
+import { User } from '../users/entities/user.entity';
 
 interface SeedMainEntityProps {
   workbook: SeedWorkbook;
@@ -23,38 +27,82 @@ interface SeedMainEntityProps {
 interface SeedFromFileProps {
   file: Express.Multer.File;
   truncate?: boolean;
-  sheet?: FileSheetsEnum;
+  collection?: FileSheetsEnum;
   omitImages?: boolean;
+}
+
+interface ConnectedClient {
+  [id: string]: { socked: Socket; user: User | null };
 }
 
 @Injectable()
 export class SeedsService {
   private readonly logger = new Logger('SeedsService');
+  private connectedClients: ConnectedClient = {};
 
   constructor(
     @InjectDataSource()
     private readonly dataSource: DataSource,
 
     private readonly cloudinaryService: CloudinaryService,
+
+    @Inject(forwardRef(() => SeedsGateway))
+    private readonly seedsWS: SeedsGateway,
+
+    private readonly usersService: UsersService,
   ) {}
 
+  // * ----------------------------------------------------------------------------------------------------------------
+  // * WEB SOCKETS
+  // * ----------------------------------------------------------------------------------------------------------------
+  async registerClient({ client, userId }: { client: Socket; userId: string }) {
+    const user = await this.usersService.findOne(userId);
+    if (!user) throw new Error('User not found');
+
+    this.connectedClients[client.id] = { socked: client, user };
+  }
+
+  unregisterClient(client: Socket) {
+    delete this.connectedClients[client.id];
+  }
+
+  getConnectedClients(): string[] {
+    // Envío el nombre de los usarios en connectedClients sin duplicar usando el email
+    const users: string[] = [];
+    const emails: string[] = [];
+
+    for (const id in this.connectedClients) {
+      const { user } = this.connectedClients[id];
+      if (!user || emails.includes(user.email)) continue;
+
+      users.push(user.username);
+      emails.push(user.email);
+    }
+
+    return users;
+  }
+
+  // * ----------------------------------------------------------------------------------------------------------------
+  // * DELETE SECTION
+  // * ----------------------------------------------------------------------------------------------------------------
   async truncateAllData() {
-    this.writeLog('Start truncating all data...');
+    const logger = this.seedsWS.sendSeedLog.bind(this.seedsWS);
+    this.seedsWS.sendSeedLog('Start truncating all data...');
 
     const imagesToDelete: string[] = [];
     const addImageToDelete = (id: string) => imagesToDelete.push(id);
 
-    this.writeLog('Creating query runner and connect...');
+    this.seedsWS.sendSeedLog('Creating query runner and connect...', 1);
     const queryRunner = this.dataSource.createQueryRunner();
     await queryRunner.connect();
     await queryRunner.startTransaction();
 
     try {
-      await truncateTables({ queryRunner, addImageToDelete, logger: this.writeLog.bind(this) });
+      await truncateTables({ queryRunner, addImageToDelete, logger, level: 1 });
 
-      this.writeLog('Save changes in the database...');
+      this.seedsWS.sendSeedLog('Save changes in the database...', 1);
       await queryRunner.commitTransaction();
-      this.writeLog('All changes have been truncated successfully');
+      this.seedsWS.sendSeedLog('All changes have been truncated successfully');
 
       await this.deleteImagesInBatches(imagesToDelete);
     } catch (error) {
@@ -70,8 +118,29 @@ export class SeedsService {
     return 'All data has been truncated successfully';
   }
 
-  async seedFromFile({ file, truncate, sheet, omitImages }: SeedFromFileProps) {
-    this.writeLog('Start seeding from file...');
+  private async deleteImagesInBatches(publicIds: string[]) {
+    if (publicIds.length === 0) return;
+
+    this.seedsWS.sendSeedLog(`Clear Cloudinary images [${publicIds.length}]...`, 1);
+
+    const batchSize = 10;
+
+    for (let i = 0; i < publicIds.length; i += batchSize) {
+      const count = Math.min(batchSize, publicIds.length - i);
+      this.seedsWS.sendSeedLog(`Deleting batch ${i + 1} to ${i + count}...`, 2);
+      const batch = publicIds.slice(i, i + batchSize);
+      await Promise.all(batch.map(id => this.cloudinaryService.destroyFile(id)));
+    }
+
+    this.seedsWS.sendSeedLog('All images have been destroyed successfully', 1);
+  }
+
+  // * ----------------------------------------------------------------------------------------------------------------
+  // * SEED AREA
+  // * ----------------------------------------------------------------------------------------------------------------
+  async seedFromFile({ file, truncate, collection, omitImages }: SeedFromFileProps) {
+    this.seedsWS.sendSeedLog('Start seeding from file...');
+    const logger = this.seedsWS.sendSeedLog.bind(this.seedsWS);
 
     const imagesToDelete: string[] = [];
     const tempImages: string[] = [];
@@ -80,25 +149,34 @@ export class SeedsService {
     const addImageToDelete = (id: string) => imagesToDelete.push(id);
     const addTempImage = (id: string) => tempImages.push(id);
 
-    this.writeLog('Creating workbook...');
+    // this.writeLog('Creating workbook...');
+    this.seedsWS.sendSeedLog('Creating workbook...', 1);
     const workbook = new SeedWorkbook(file);
 
-    this.writeLog('Creating query runner and connect...');
+    // this.writeLog('Creating query runner and connect...');
+    this.seedsWS.sendSeedLog('Creating query runner and connect...', 1);
     const queryRunner = this.dataSource.createQueryRunner();
     await queryRunner.connect();
     await queryRunner.startTransaction();
 
     try {
-      if (truncate) await truncateTables({ queryRunner, addImageToDelete, logger: this.writeLog.bind(this) });
+      // * Truncate all tables
+      if (truncate && !collection) await truncateTables({ queryRunner, addImageToDelete, logger, level: 1 });
 
-      if (!sheet || sheet === FileSheetsEnum.icons) await this.seedIconsFromWorkbook(workbook, queryRunner);
-      if (!sheet || sheet === FileSheetsEnum.languages) await this.seedLanguagesFromWorkbook(workbook, queryRunner);
-      if (!sheet || sheet === FileSheetsEnum.departments) await this.seedDepartmentsFromWorkbook(workbook, queryRunner);
-      if (!sheet || sheet === FileSheetsEnum.towns) await this.seedTownsFromWorkbook(workbook, queryRunner);
-      if (!sheet || sheet === FileSheetsEnum.models) await this.seedModelFromWorkbook(workbook, queryRunner);
-      if (!sheet || sheet === FileSheetsEnum.categories) await this.seedCategoriesFromWorkbook(workbook, queryRunner);
-      if (!sheet || sheet === FileSheetsEnum.facilities) await this.seedFacilitiesFromWorkbook(workbook, queryRunner);
-      if (!sheet || sheet === FileSheetsEnum.places) {
+      // * SEED ICONS
+      if (!collection || collection === FileSheetsEnum.icons) await this.seedIconsFromWorkbook(workbook, queryRunner);
+
+      if (!collection || collection === FileSheetsEnum.languages)
+        await this.seedLanguagesFromWorkbook(workbook, queryRunner);
+      if (!collection || collection === FileSheetsEnum.departments)
+        await this.seedDepartmentsFromWorkbook(workbook, queryRunner);
+      if (!collection || collection === FileSheetsEnum.towns) await this.seedTownsFromWorkbook(workbook, queryRunner);
+      if (!collection || collection === FileSheetsEnum.models) await this.seedModelFromWorkbook(workbook, queryRunner);
+      if (!collection || collection === FileSheetsEnum.categories)
+        await this.seedCategoriesFromWorkbook(workbook, queryRunner);
+      if (!collection || collection === FileSheetsEnum.facilities)
+        await this.seedFacilitiesFromWorkbook(workbook, queryRunner);
+      if (!collection || collection === FileSheetsEnum.places) {
         await this.seedPlacesFromWorkbook({
           workbook,
           queryRunner,
@@ -108,7 +186,7 @@ export class SeedsService {
         });
       }
 
-      if (!sheet || sheet === FileSheetsEnum.lodgings) {
+      if (!collection || collection === FileSheetsEnum.lodgings) {
         await this.seedLodgingsFromWorkbook({
           workbook,
           queryRunner,
@@ -118,9 +196,11 @@ export class SeedsService {
         });
       }
 
-      this.writeLog('Save changes in the database...');
+      // this.writeLog('Save changes in the database...');
+      this.seedsWS.sendSeedLog('Save changes in the database...', 1);
       await queryRunner.commitTransaction();
-      this.writeLog('All changes have been saved successfully');
+      // this.writeLog('All changes have been saved successfully');
+      this.seedsWS.sendSeedLog('All changes have been saved successfully', 1);
 
       await this.deleteImagesInBatches(imagesToDelete);
     } catch (error) {
@@ -129,22 +209,29 @@ export class SeedsService {
 
       await this.deleteImagesInBatches(tempImages);
 
+      this.seedsWS.sendSeedLog('Seed Error', 1);
       this.logger.log('Error Details');
       console.log(error);
     } finally {
       await queryRunner.release();
     }
 
+    this.seedsWS.sendSeedLog('End seeding from file...', 4);
+
     return 'The seed has been created successfully';
   }
 
+  // * ----------------------------------------------------------------------------------------------------------------
+  // * SEED ICONS
+  // * ----------------------------------------------------------------------------------------------------------------
   private async seedIconsFromWorkbook(workbook: SeedWorkbook, queryRunner: QueryRunner) {
-    this.logger.log('Creating icons...');
+    this.seedsWS.sendSeedLog('Creating icons...', 1);
     const sheetIcons = workbook.getIcons();
 
-    this.logger.log('\tGet all icons from the database');
+    this.seedsWS.sendSeedLog('Get all icons from the database', 2);
     const dbIcons = await queryRunner.manager.find(AppIcon, {});
-    this.logger.log(`\tIcons found: ${dbIcons.length}`);
+    this.seedsWS.sendSeedLog(`DB Icons: ${dbIcons.length}`, 3);
+    this.seedsWS.sendSeedLog(`File Icons: ${sheetIcons.length}`, 3);
 
     const icons: AppIcon[] = sheetIcons.map(item => {
       const icon = queryRunner.manager.create(AppIcon, { id: item.id, name: item.name, code: item.code });
@@ -154,18 +241,22 @@ export class SeedsService {
       return queryRunner.manager.merge(AppIcon, dbIcon, icon);
     });
 
-    this.logger.log('\tSaving icons...');
+    this.seedsWS.sendSeedLog('Saving icons...', 2);
     await queryRunner.manager.save(AppIcon, icons);
-    this.logger.log('\tIcons saved successfully in the database');
+    this.seedsWS.sendSeedLog('Icons saved successfully in the database', 2);
   }
 
+  // * ----------------------------------------------------------------------------------------------------------------
+  // * SEED LANGUAGES
+  // * ----------------------------------------------------------------------------------------------------------------
   private async seedLanguagesFromWorkbook(workbook: SeedWorkbook, queryRunner: QueryRunner) {
-    this.logger.log('Creating languages...');
+    this.seedsWS.sendSeedLog('Creating languages...', 1);
     const sheetLanguages = workbook.getLanguages();
 
-    this.logger.log('\tGet all languages from the database');
+    this.seedsWS.sendSeedLog('Get all languages from the database', 2);
     const dbLanguages = await queryRunner.manager.find(Language, {});
-    this.logger.log(`\tLanguages found: ${dbLanguages.length}`);
+    this.seedsWS.sendSeedLog(`DB Languages: ${dbLanguages.length}`, 3);
+    this.seedsWS.sendSeedLog(`File Languages: ${sheetLanguages.length}`, 3);
 
     const languages: Language[] = sheetLanguages.map(item => {
       const language = queryRunner.manager.create(Language, { id: item.id, name: item.name, code: item.code });
@@ -175,18 +266,22 @@ export class SeedsService {
       return queryRunner.manager.merge(Language, dbLanguage, language);
     });
 
-    this.logger.log('\tSaving languages...');
+    this.seedsWS.sendSeedLog('Saving languages...', 2);
     await queryRunner.manager.save(Language, languages);
-    this.logger.log('\tLanguages saved successfully in the database');
+    this.seedsWS.sendSeedLog('Languages saved successfully in the database', 2);
   }
 
+  // * ----------------------------------------------------------------------------------------------------------------
+  // * SEED MODELS
+  // * ----------------------------------------------------------------------------------------------------------------
   private async seedModelFromWorkbook(workbook: SeedWorkbook, queryRunner: QueryRunner) {
-    this.logger.log('Creating models...');
+    this.seedsWS.sendSeedLog('Creating models...', 1);
     const sheetModel = workbook.getModels();
 
-    this.logger.log('\tGet all models from the database');
+    this.seedsWS.sendSeedLog('Get all models from the database', 2);
     const dbModels = await queryRunner.manager.find(Model, {});
-    this.logger.log(`\tModels found: ${dbModels.length}`);
+    this.seedsWS.sendSeedLog(`Models found: ${dbModels.length}`, 3);
+    this.seedsWS.sendSeedLog(`File Models: ${sheetModel.length}`, 3);
 
     const models: Model[] = sheetModel.map(item => {
       const model = queryRunner.manager.create(Model, { id: item.id, name: item.name, slug: item.slug });
@@ -196,18 +291,22 @@ export class SeedsService {
       return queryRunner.manager.merge(Model, dbModel, model);
     });
 
-    this.logger.log('\tSaving models...');
+    this.seedsWS.sendSeedLog('Saving models...', 2);
     await queryRunner.manager.save(Model, models);
-    this.logger.log('\tModels saved successfully in the database');
+    this.seedsWS.sendSeedLog('Models saved successfully in the database', 2);
   }
 
+  // * ----------------------------------------------------------------------------------------------------------------
+  // * SEED DEPARTMENTS
+  // * ----------------------------------------------------------------------------------------------------------------
   private async seedDepartmentsFromWorkbook(workbook: SeedWorkbook, queryRunner: QueryRunner) {
-    this.logger.log('Creating departments...');
+    this.seedsWS.sendSeedLog('Creating departments...', 1);
     const sheetDepartments = workbook.getDepartments();
 
-    this.logger.log('\tGet all departments from the database');
+    this.seedsWS.sendSeedLog('Get all departments from the database', 2);
     const dbDepartments = await queryRunner.manager.find(Department, {});
-    this.logger.log(`\tDepartments found: ${dbDepartments.length}`);
+    this.seedsWS.sendSeedLog(`Departments found: ${dbDepartments.length}`, 3);
+    this.seedsWS.sendSeedLog(`File Departments: ${sheetDepartments.length}`, 3);
 
     const departments: Department[] = sheetDepartments.map(item => {
       const department = queryRunner.manager.create(Department, {
@@ -221,19 +320,23 @@ export class SeedsService {
       return queryRunner.manager.merge(Department, dbDepartment, department);
     });
 
-    this.logger.log('\tSaving departments...');
+    this.seedsWS.sendSeedLog('Saving departments...', 2);
     await queryRunner.manager.save(Department, departments);
-    this.logger.log('\tDepartments saved successfully in the database');
+    this.seedsWS.sendSeedLog('Departments saved successfully in the database', 2);
   }
 
+  // * ----------------------------------------------------------------------------------------------------------------
+  // * SEED TOWNS
+  // * ----------------------------------------------------------------------------------------------------------------
   private async seedTownsFromWorkbook(workbook: SeedWorkbook, queryRunner: QueryRunner) {
-    this.logger.log('Creating towns...');
+    this.seedsWS.sendSeedLog('Creating towns: This module use departments of file sheet', 1);
     const sheetTowns = workbook.getTowns();
     const sheetDepartments = workbook.getDepartments();
 
-    this.logger.log('\tGet all towns from the database');
+    this.seedsWS.sendSeedLog('Get all towns from the database', 2);
     const dbTowns = await queryRunner.manager.find(Town, {});
-    this.logger.log(`\tTowns found: ${dbTowns.length}`);
+    this.seedsWS.sendSeedLog(`Towns DB: ${dbTowns.length}`, 3);
+    this.seedsWS.sendSeedLog(`File Towns: ${sheetTowns.length}`, 3);
 
     const towns: Town[] = sheetTowns.map(item => {
       const department = sheetDepartments.find(d => d.number === item.departmentNumber);
@@ -256,20 +359,26 @@ export class SeedsService {
       return queryRunner.manager.merge(Town, dbTown, town);
     });
 
-    this.logger.log('\tSaving towns...');
+    this.seedsWS.sendSeedLog('Saving towns...', 2);
     await queryRunner.manager.save(Town, towns);
-    this.logger.log('\tTowns saved successfully in the database');
+    this.seedsWS.sendSeedLog('Towns saved successfully in the database', 2);
   }
 
+  // * ----------------------------------------------------------------------------------------------------------------
+  // * SEED CATEGORIES
+  // * ----------------------------------------------------------------------------------------------------------------
   private async seedCategoriesFromWorkbook(workbook: SeedWorkbook, queryRunner: QueryRunner) {
-    this.logger.log('Creating categories...');
+    this.seedsWS.sendSeedLog('Creating categories: For create caegoría require models and icons', 1);
     const sheetCategories = workbook.getCategories();
     const sheetModels = workbook.getModels();
     const sheetIcons = workbook.getIcons();
 
-    this.logger.log('\tGet all categories from the database');
+    this.seedsWS.sendSeedLog('Get all categories from the database', 2);
     const dbCategories = await queryRunner.manager.find(Category, {});
-    this.logger.log(`\tCategories found: ${dbCategories.length}`);
+    this.seedsWS.sendSeedLog(`Categories DB: ${dbCategories.length}`, 3);
+    this.seedsWS.sendSeedLog(`File Categories: ${sheetCategories.length}`, 3);
+    this.seedsWS.sendSeedLog(`File Models: ${sheetModels.length}`, 3);
+    this.seedsWS.sendSeedLog(`File Icons: ${sheetIcons.length}`, 3);
 
     const categories: Category[] = sheetCategories.map(item => {
       const icon = sheetIcons.find(i => i.name.toLocaleLowerCase() === item.icon?.toLocaleLowerCase());
@@ -298,19 +407,24 @@ export class SeedsService {
       return queryRunner.manager.merge(Category, dbCategory, category);
     });
 
-    this.logger.log('\tSaving categories...');
+    this.seedsWS.sendSeedLog('Saving categories...', 2);
     await queryRunner.manager.save(Category, categories);
-    this.logger.log('\tCategories saved successfully in the database');
+    this.seedsWS.sendSeedLog('Categories saved successfully in the database', 2);
   }
 
+  // * ----------------------------------------------------------------------------------------------------------------
+  // * SEED FACILITIES
+  // * ----------------------------------------------------------------------------------------------------------------
   private async seedFacilitiesFromWorkbook(workbook: SeedWorkbook, queryRunner: QueryRunner) {
-    this.logger.log('Creating facilities...');
+    this.seedsWS.sendSeedLog('Creating facilities: This seed require models, icons is not avaliable', 1);
     const sheetFacilities = workbook.getFacilities();
     const sheetModels = workbook.getModels();
 
-    this.logger.log('\tGet all facilities from the database');
+    this.seedsWS.sendSeedLog('Get all facilities from the database', 2);
     const dbFacilities = await queryRunner.manager.find(Facility, {});
-    this.logger.log(`\tFacilities found: ${dbFacilities.length}`);
+    this.seedsWS.sendSeedLog(`Facilities DB: ${dbFacilities.length}`, 3);
+    this.seedsWS.sendSeedLog(`File Facilities: ${sheetFacilities.length}`, 3);
+    this.seedsWS.sendSeedLog(`File Models: ${sheetModels.length}`, 3);
 
     const facilities: Facility[] = sheetFacilities.map(item => {
       const modelsIds: string[] =
@@ -337,11 +451,14 @@ export class SeedsService {
       return queryRunner.manager.merge(Facility, dbFacility, facility);
     });
 
-    this.logger.log('\tSaving facilities...');
+    this.seedsWS.sendSeedLog('Saving facilities...', 2);
     await queryRunner.manager.save(Facility, facilities);
-    this.logger.log('\tFacilities saved successfully in the database');
+    this.seedsWS.sendSeedLog('Facilities saved successfully in the database', 2);
   }
 
+  // * ----------------------------------------------------------------------------------------------------------------
+  // * SEED PLACES
+  // * ----------------------------------------------------------------------------------------------------------------
   private async seedPlacesFromWorkbook({
     workbook,
     queryRunner,
@@ -349,50 +466,52 @@ export class SeedsService {
     addTempImage,
     createOrRecreateImages = true,
   }: SeedMainEntityProps) {
-    this.writeLog('Creating places...');
+    this.seedsWS.sendSeedLog('Creating places: For seed place require categories, facilities and towns', 1);
 
     const placesData = workbook.getPlaces();
     const categoriesData = workbook.getCategories();
     const facilitiesData = workbook.getFacilities();
     const townsData = workbook.getTowns();
 
-    this.writeLog(`Records of file: ${placesData.length}`, 1);
-
-    this.writeLog('Get all places from database', 1);
+    this.seedsWS.sendSeedLog('Get all places from database', 2);
     const dbPlaces = await queryRunner.manager.find(Place, {
       relations: { categories: true, facilities: true, images: { imageResource: true } },
     });
-    this.writeLog(`DB place found: ${dbPlaces.length}`, 2);
+    this.seedsWS.sendSeedLog(`Place DB: ${dbPlaces.length}`, 3);
+    this.seedsWS.sendSeedLog(`File Place: ${placesData.length}`, 3);
+    this.seedsWS.sendSeedLog(`File Categories: ${categoriesData.length}`, 3);
+    this.seedsWS.sendSeedLog(`File Facilities: ${facilitiesData.length}`, 3);
+    this.seedsWS.sendSeedLog(`File Towns: ${townsData.length}`, 3);
 
     for (const placeData of placesData) {
-      this.writeLog(`Processing place ${placeData.name}`, 1);
+      this.seedsWS.sendSeedLog(`Processing place ${placeData.name}`, 2);
 
       const existingPlace = dbPlaces.find(p => p.id === placeData.id);
-      if (existingPlace) this.writeLog('The place already exists', 2);
+      if (existingPlace) this.seedsWS.sendSeedLog('The place already exists', 3);
 
-      this.writeLog(`Recover images from cloudinary`, 2);
+      this.seedsWS.sendSeedLog(`Recover images from cloudinary`, 3);
       const folderImages = await this.getImagesFromFolder(placeData.cloudinaryFolder);
-      this.writeLog(`Images found: ${folderImages.length}`, 3);
+      this.seedsWS.sendSeedLog(`Images found: ${folderImages.length}`, 4);
 
       if (folderImages.length === 0 && (!existingPlace || createOrRecreateImages)) {
-        this.writeLog('No images found, continue with the next place', 3);
+        this.seedsWS.sendSeedLog('No images found, continue with the next place', 3);
         continue;
       }
 
       // * Get the category ids using the category names
       const placeCategories = matchCategoriesByValue({ value: placeData.category, categories: categoriesData });
-      if (placeCategories.length === 0) this.writeLog('No category found', 2);
-      else this.writeLog(`Place categories: ${placeCategories.map(c => c.name).join(', ')}`, 2);
+      if (placeCategories.length === 0) this.seedsWS.sendSeedLog('No category found', 3);
+      else this.seedsWS.sendSeedLog(`Place categories: ${placeCategories.map(c => c.name).join(', ')}`, 3);
 
       // * Get the facility ids using the facility names
       const facilities = matchFacilitiesByValue({ value: placeData.facilities, facilities: facilitiesData });
-      if (facilities.length === 0) this.writeLog('No facility found', 2);
-      else this.writeLog(`Place facilities: ${facilities.map(f => f.name).join(', ')}`, 2);
+      if (facilities.length === 0) this.seedsWS.sendSeedLog('No facility found', 3);
+      else this.seedsWS.sendSeedLog(`Place facilities: ${facilities.map(f => f.name).join(', ')}`, 3);
 
       // * Get the town id using the town name
       const town = townsData.find(t => t.name.toLocaleLowerCase() === placeData.town.toLocaleLowerCase());
-      if (!town) this.writeLog('No town found', 2);
-      else this.writeLog(`Place town: ${town.name}`, 2);
+      if (!town) this.seedsWS.sendSeedLog('No town found', 3);
+      else this.seedsWS.sendSeedLog(`Place town: ${town.name}`, 3);
 
       // * Create the place object with the data from the sheet
       const newPlace = queryRunner.manager.create(Place, {
@@ -423,13 +542,13 @@ export class SeedsService {
       });
 
       // * Save the place in the database with only the data from the sheet without images
-      this.writeLog('Save place in the database with sheet data', 2);
+      this.seedsWS.sendSeedLog('Save place in the database with sheet data', 3);
       const place = existingPlace ? queryRunner.manager.merge(Place, existingPlace, newPlace) : newPlace;
       await queryRunner.manager.save(Place, place);
 
       if (createOrRecreateImages || !existingPlace) {
         // * Remove old images and save the new ones
-        this.writeLog(`Remove old images...`, 2);
+        this.seedsWS.sendSeedLog(`Remove old images...`, 3);
         if (place.images) {
           const promises: Promise<any>[] = [];
           place.images.forEach(image => {
@@ -440,14 +559,14 @@ export class SeedsService {
           await Promise.all(promises);
         }
 
-        this.writeLog(`Save images...`, 2);
+        this.seedsWS.sendSeedLog(`Save images...`, 3);
         const cloudinaryRes = await Promise.all(
           folderImages.map(url =>
             this.cloudinaryService.uploadImageFromUrl(url, `${place.name}`, CloudinaryPresets.PLACE_IMAGE),
           ),
         );
 
-        this.writeLog(`Save ${cloudinaryRes.length} images in cloudinary!`, 2);
+        this.seedsWS.sendSeedLog(`Save ${cloudinaryRes.length} images in cloudinary!`, 3);
 
         const imageResources = cloudinaryRes
           .filter(res => typeof res !== 'undefined')
@@ -465,11 +584,11 @@ export class SeedsService {
             });
           });
 
-        this.writeLog(`Save ${imageResources.length} images resource in the database...`, 2);
+        this.seedsWS.sendSeedLog(`Save ${imageResources.length} images resource in the database...`, 3);
         await queryRunner.manager.save(ImageResource, imageResources);
 
         // * Save the images in the database and add ID to global array
-        this.writeLog(`Add image to place and updating...`, 2);
+        this.seedsWS.sendSeedLog(`Add image to place and updating...`, 3);
         const placeImages = imageResources.map((image, index) => {
           return queryRunner.manager.create(PlaceImage, {
             imageResource: image,
@@ -481,8 +600,13 @@ export class SeedsService {
         await queryRunner.manager.save(PlaceImage, placeImages);
       }
     }
+
+    this.seedsWS.sendSeedLog('Places saved successfully in the database', 2);
   }
 
+  // * ----------------------------------------------------------------------------------------------------------------
+  // * SEED LODGINGS
+  // * ----------------------------------------------------------------------------------------------------------------
   private async seedLodgingsFromWorkbook({
     workbook,
     queryRunner,
@@ -490,50 +614,53 @@ export class SeedsService {
     addTempImage,
     createOrRecreateImages,
   }: SeedMainEntityProps) {
-    this.writeLog('Creating lodgings...');
+    this.seedsWS.sendSeedLog('Creating lodgings: this seed require categories, facilities and town', 1);
 
     const lodgingsData = workbook.getLodgings();
     const categoriesData = workbook.getCategories();
     const facilitiesData = workbook.getFacilities();
     const townsData = workbook.getTowns();
 
-    this.writeLog(`Records of file: ${lodgingsData.length}`, 1);
+    this.seedsWS.sendSeedLog(`Records of file: ${lodgingsData.length}`, 2);
 
-    this.writeLog('Get all lodgings from database', 1);
+    this.seedsWS.sendSeedLog('Get all lodgings from database', 2);
     const dbLodgings = await queryRunner.manager.find(Lodging, {
       relations: { categories: true, facilities: true, images: { imageResource: true } },
     });
-    this.writeLog(`DB lodging found: ${dbLodgings.length}`, 2);
+    this.seedsWS.sendSeedLog(`DB lodging found: ${dbLodgings.length}`, 3);
+    this.seedsWS.sendSeedLog(`File Lodgings: ${lodgingsData.length}`, 3);
+    this.seedsWS.sendSeedLog(`File Categories: ${categoriesData.length}`, 3);
+    this.seedsWS.sendSeedLog(`File Facilities: ${facilitiesData.length}`, 3);
 
     for (const lodgingData of lodgingsData) {
-      this.writeLog(`Processing lodging ${lodgingData.name}`, 1);
+      this.seedsWS.sendSeedLog(`Processing lodging ${lodgingData.name}`, 2);
 
       const existingLodging = dbLodgings.find(l => l.id === lodgingData.id);
-      if (existingLodging) this.writeLog('The lodging already exists', 2);
+      if (existingLodging) this.seedsWS.sendSeedLog('The lodging already exists', 3);
 
-      this.writeLog(`Recover images from cloudinary`, 2);
+      this.seedsWS.sendSeedLog(`Recover images from cloudinary`, 3);
       const folderImages = await this.getImagesFromFolder(lodgingData.slug, 'lodgings');
-      this.writeLog(`Images found: ${folderImages.length}`, 3);
+      this.seedsWS.sendSeedLog(`Images found: ${folderImages.length}`, 4);
 
       if (folderImages.length === 0 && (!existingLodging || createOrRecreateImages)) {
-        this.writeLog('No images found, continue with the next lodging', 3);
+        this.seedsWS.sendSeedLog('No images found, continue with the next lodging', 4);
         continue;
       }
 
       // * Get the category ids using the category names
       const lodgingCategories = matchCategoriesByValue({ value: lodgingData.categories, categories: categoriesData });
-      if (lodgingCategories.length === 0) this.writeLog('No category found', 2);
-      else this.writeLog(`Lodging categories: ${lodgingCategories.map(c => c.name).join(', ')}`, 2);
+      if (lodgingCategories.length === 0) this.seedsWS.sendSeedLog('No category found', 3);
+      else this.seedsWS.sendSeedLog(`Lodging categories: ${lodgingCategories.map(c => c.name).join(', ')}`, 3);
 
       // * Get the facility ids using the facility names
       const facilities = matchFacilitiesByValue({ value: lodgingData.facilities, facilities: facilitiesData });
-      if (facilities.length === 0) this.writeLog('No facility found', 2);
-      else this.writeLog(`Lodging facilities: ${facilities.map(f => f.name).join(', ')}`, 2);
+      if (facilities.length === 0) this.seedsWS.sendSeedLog('No facility found', 3);
+      else this.seedsWS.sendSeedLog(`Lodging facilities: ${facilities.map(f => f.name).join(', ')}`, 3);
 
       // * Get the town id using the town name
       const town = townsData.find(t => t.name.toLocaleLowerCase() === lodgingData.town.toLocaleLowerCase());
-      if (!town) this.writeLog('No town found', 2);
-      else this.writeLog(`Lodging town: ${town.name}`, 2);
+      if (!town) this.seedsWS.sendSeedLog('No town found', 3);
+      else this.seedsWS.sendSeedLog(`Lodging town: ${town.name}`, 3);
 
       const newLodging = queryRunner.manager.create(Lodging, {
         id: lodgingData.id,
@@ -567,7 +694,7 @@ export class SeedsService {
       });
 
       // * Save the lodging in the database with only the data from the sheet without images
-      this.writeLog('Save lodging in the database with sheet data', 2);
+      this.seedsWS.sendSeedLog('Save lodging in the database with sheet data', 3);
       const lodging = existingLodging ? queryRunner.manager.merge(Lodging, existingLodging, newLodging) : newLodging;
       await queryRunner.manager.save(Lodging, lodging);
 
@@ -587,7 +714,7 @@ export class SeedsService {
 
       if (createOrRecreateImages || !existingLodging) {
         // * Remove old images and save the new ones
-        this.writeLog(`Remove old images...`, 2);
+        this.seedsWS.sendSeedLog(`Remove old images...`, 3);
         if (lodging.images) {
           const promises: Promise<any>[] = [];
           lodging.images.forEach(image => {
@@ -598,14 +725,14 @@ export class SeedsService {
           await Promise.all(promises);
         }
 
-        this.writeLog(`Save images...`, 2);
+        this.seedsWS.sendSeedLog(`Save images...`, 3);
         const cloudinaryRes = await Promise.all(
           folderImages.map(url =>
             this.cloudinaryService.uploadImageFromUrl(url, `${lodging.name}`, CloudinaryPresets.LODGING_IMAGE),
           ),
         );
 
-        this.writeLog(`Save ${cloudinaryRes.length} images in cloudinary!`, 2);
+        this.seedsWS.sendSeedLog(`Save ${cloudinaryRes.length} images in cloudinary!`, 3);
 
         const imageResources = cloudinaryRes
           .filter(res => typeof res !== 'undefined')
@@ -623,11 +750,11 @@ export class SeedsService {
             });
           });
 
-        this.writeLog(`Save ${imageResources.length} images resource in the database...`, 2);
+        this.seedsWS.sendSeedLog(`Save ${imageResources.length} images resource in the database...`, 3);
         await queryRunner.manager.save(ImageResource, imageResources);
 
         // * Save the images in the database and add ID to global array
-        this.writeLog(`Add image to lodging and updating...`, 2);
+        this.seedsWS.sendSeedLog(`Add image to lodging and updating...`, 3);
         const lodgingImages = imageResources.map((image, index) => {
           return queryRunner.manager.create(LodgingImage, {
             imageResource: image,
@@ -639,6 +766,8 @@ export class SeedsService {
         await queryRunner.manager.save(LodgingImage, lodgingImages);
       }
     }
+
+    this.seedsWS.sendSeedLog('Lodgings saved successfully in the database', 2);
   }
 
   private async getImagesFromFolder(folder: string, base = 'places') {
@@ -660,27 +789,5 @@ export class SeedsService {
     });
 
     return images;
-  }
-
-  private async deleteImagesInBatches(publicIds: string[]) {
-    if (publicIds.length === 0) return;
-
-    this.writeLog(`Clear Cloudinary images [${publicIds.length}]...`);
-
-    const batchSize = 10;
-
-    for (let i = 0; i < publicIds.length; i += batchSize) {
-      const count = Math.min(batchSize, publicIds.length - i);
-      this.writeLog(`Deleting batch ${i + 1} to ${i + count}...`, 1);
-      const batch = publicIds.slice(i, i + batchSize);
-      await Promise.all(batch.map(id => this.cloudinaryService.destroyFile(id)));
-    }
-
-    this.writeLog('All images have been destroyed successfully');
-  }
-
-  private writeLog(message: string, level = 0) {
-    const tabs = '  '.repeat(level);
-    this.logger.log(`${tabs}${message}`);
   }
 }
