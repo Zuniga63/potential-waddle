@@ -14,6 +14,7 @@ import { AppIcon } from './app-icon.entity';
 import { Place } from 'src/modules/places/entities';
 import { LodgingFacility } from 'src/modules/lodgings/entities/lodging-facility.entity';
 import { Experience } from 'src/modules/experiences/entities';
+import { Restaurant } from 'src/modules/restaurants/entities';
 
 @Entity({ name: 'facility' })
 export class Facility {
@@ -38,6 +39,9 @@ export class Facility {
 
   @OneToMany(() => Experience, experience => experience.facilities)
   experiences: Experience[];
+
+  @ManyToMany(() => Restaurant, restaurant => restaurant.facilities)
+  restaurants?: Restaurant[];
   // * ----------------------------------------------------------------------------------------------------------------
   // * MAIN FIELDS
   // * ----------------------------------------------------------------------------------------------------------------

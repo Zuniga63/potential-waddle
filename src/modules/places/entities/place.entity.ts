@@ -1,5 +1,3 @@
-import { Category, Facility } from 'src/modules/core/entities';
-import { Town } from 'src/modules/towns/entities';
 import {
   Column,
   CreateDateColumn,
@@ -13,8 +11,12 @@ import {
   Point,
   PrimaryGeneratedColumn,
 } from 'typeorm';
+
+import { Town } from 'src/modules/towns/entities';
 import { PlaceImage } from './place-image.entity';
 import { Review } from 'src/modules/reviews/entities';
+import { Restaurant } from 'src/modules/restaurants/entities';
+import { Category, Facility } from 'src/modules/core/entities';
 
 @Entity({ name: 'place' })
 export class Place {
@@ -42,6 +44,9 @@ export class Place {
 
   @OneToMany(() => Review, review => review.place)
   reviews: Review[];
+
+  @OneToMany(() => Restaurant, restaurant => restaurant.place)
+  restaurants?: Restaurant[];
 
   // * ----------------------------------------------------------------------------------------------------------------
   // * MAIN FIELDS

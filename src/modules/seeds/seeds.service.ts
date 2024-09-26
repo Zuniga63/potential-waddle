@@ -1,21 +1,22 @@
-import { forwardRef, Inject, Injectable, Logger } from '@nestjs/common';
-import { InjectDataSource } from '@nestjs/typeorm';
+import { Socket } from 'socket.io';
 import { DataSource, QueryRunner } from 'typeorm';
+import { InjectDataSource } from '@nestjs/typeorm';
+import { forwardRef, Inject, Injectable, Logger } from '@nestjs/common';
 
+import { SeedsGateway } from './seeds.gateway';
+import { User } from '../users/entities/user.entity';
 import { Department, Town } from '../towns/entities';
+import { UsersService } from '../users/users.service';
 import { SeedWorkbook, truncateTables } from './logic';
 import { Place, PlaceImage } from '../places/entities';
 import { FileSheetsEnum } from './enums/file-sheets.enum';
 import { CloudinaryPresets, ResourceProvider } from 'src/config';
 import { CloudinaryService } from '../cloudinary/cloudinary.service';
-import { matchCategoriesByValue, matchFacilitiesByValue } from './utils';
-import { AppIcon, Category, Facility, ImageResource, Language, Model } from '../core/entities';
-import { Lodging, LodgingFacility, LodgingImage } from '../lodgings/entities';
-import { Socket } from 'socket.io';
-import { SeedsGateway } from './seeds.gateway';
-import { UsersService } from '../users/users.service';
-import { User } from '../users/entities/user.entity';
+import { Restaurant, RestaurantImage } from '../restaurants/entities';
 import { Experience, ExperienceImage } from '../experiences/entities';
+import { matchCategoriesByValue, matchFacilitiesByValue } from './utils';
+import { Lodging, LodgingFacility, LodgingImage } from '../lodgings/entities';
+import { AppIcon, Category, Facility, ImageResource, Language, Model } from '../core/entities';
 
 interface SeedMainEntityProps {
   workbook: SeedWorkbook;
@@ -211,8 +212,20 @@ export class SeedsService {
         });
       }
 
+      // * SEED EXPERIENCES
       if (!collection || collection === FileSheetsEnum.experiences) {
         await this.seedExperiencesFromWorkbook({
+          workbook,
+          queryRunner,
+          createOrRecreateImages,
+          addTempImage,
+          addImageToDelete,
+        });
+      }
+
+      // * SEED RESTAURANTS
+      if (!collection || collection === FileSheetsEnum.restaurants) {
+        await this.seedRestaurantsFromWorkbook({
           workbook,
           queryRunner,
           createOrRecreateImages,
@@ -947,6 +960,158 @@ export class SeedsService {
     } //. end for loop experiences data
 
     this.seedsWS.sendSeedLog('Experiences saved successfully in the database', 2);
+  }
+
+  // * ----------------------------------------------------------------------------------------------------------------
+  // * SEED RESTAURANTS
+  // * ----------------------------------------------------------------------------------------------------------------
+  private async seedRestaurantsFromWorkbook({
+    queryRunner,
+    workbook,
+    addImageToDelete,
+    addTempImage,
+    createOrRecreateImages,
+  }: SeedMainEntityProps) {
+    this.seedsWS.sendSeedLog('Creating restaurants: this seed require categories, facilities and town', 1);
+    // * Get the data from the workbook
+    const restaurantsData = workbook.getRestaurants();
+    const categoriesData = workbook.getCategories();
+    const facilitiesData = workbook.getFacilities();
+    const townsData = workbook.getTowns();
+
+    // * Get all the restaurants from the database
+    this.seedsWS.sendSeedLog('Get restaurants from the database', 2);
+    const dbRestaurants = await queryRunner.manager.find(Restaurant, {
+      relations: { categories: true, facilities: true, images: { imageResource: true } },
+    });
+
+    this.seedsWS.sendSeedLog(`DB restaurants found: ${dbRestaurants.length}`, 3);
+    this.seedsWS.sendSeedLog(`File restaurants: ${restaurantsData.length}`, 3);
+    this.seedsWS.sendSeedLog(`File Categories: ${categoriesData.length}`, 3);
+    this.seedsWS.sendSeedLog(`File Facilities: ${facilitiesData.length}`, 3);
+
+    // * Process each restaurant from the workbook
+    for (const restaurantData of restaurantsData) {
+      this.seedsWS.sendSeedLog(`Processing restaurant ${restaurantData.name}`, 2);
+
+      // * Check if the restaurant already exists in the database
+      const existingRestaurant = dbRestaurants.find(r => r.id === restaurantData.id);
+      if (existingRestaurant) this.seedsWS.sendSeedLog('The restaurant already exists', 3);
+
+      // * Get the images from the cloudinary folder
+      this.seedsWS.sendSeedLog(`Recover images from cloudinary`, 3);
+      const folderImages = await this.getImagesFromFolder(restaurantData.slug, 'restaurantes');
+      this.seedsWS.sendSeedLog(`Images found: ${folderImages.length}`, 4);
+
+      // * If no images found and the restaurant already exists, continue with the next restaurant
+      if (folderImages.length === 0 && (!existingRestaurant || createOrRecreateImages)) {
+        this.seedsWS.sendSeedLog('No images found, continue with the next restaurant', 4);
+        continue;
+      }
+
+      // * Get the category ids using the category names
+      const categories = matchCategoriesByValue({ value: restaurantData.categories, categories: categoriesData });
+      if (categories.length === 0) this.seedsWS.sendSeedLog('No category found', 3);
+      else this.seedsWS.sendSeedLog(`Restaurant categories: ${categories.map(c => c.name).join(', ')}`, 3);
+
+      // * Get the facility ids using the facility names
+      const facilities = matchFacilitiesByValue({ value: restaurantData.facilities, facilities: facilitiesData });
+      if (facilities.length === 0) this.seedsWS.sendSeedLog('No facility found', 3);
+      else this.seedsWS.sendSeedLog(`Restaurant facilities: ${facilities.map(f => f.name).join(', ')}`, 3);
+
+      // * Get the town id using the town name
+      const town = townsData.find(t => t.name.toLocaleLowerCase() === restaurantData.town.toLocaleLowerCase());
+      if (!town) this.seedsWS.sendSeedLog('No town found', 3);
+      else this.seedsWS.sendSeedLog(`Restaurant town: ${town.name}`, 3);
+
+      // * Create the restaurant object with the data from the sheet
+      const newRestaurant = queryRunner.manager.create(Restaurant, {
+        id: restaurantData.id,
+        town: town ? { id: town.id } : undefined,
+        categories: categories.map(c => ({ id: c.id })),
+        facilities: facilities.map(f => ({ id: f.id })),
+        name: restaurantData.name,
+        slug: restaurantData.slug,
+        description: restaurantData.description,
+        address: restaurantData.address,
+        phoneNumbers: restaurantData.phoneNumbers?.split(',').map(p => p.trim()),
+        email: restaurantData.email,
+        website: restaurantData.website,
+        facebook: restaurantData.facebook,
+        instagram: restaurantData.instagram,
+        whatsappNumbers: restaurantData.whatsappNumbers?.split(',').map(w => w.trim()),
+        openingHours: restaurantData.openingHours?.split(',').map(h => h.trim()),
+        spokenLanguages: restaurantData.spokenLanguages?.split(',').map(l => l.trim()),
+        location: { type: 'Point', coordinates: [+restaurantData.longitude, +restaurantData.latitude] },
+        googleMapsUrl: restaurantData.googleMapsUrl,
+        urbanCenterDistance: restaurantData.urbanCenterDistance,
+      });
+
+      // * Save the restaurant in the database with only the data from the sheet without images
+      this.seedsWS.sendSeedLog('Save restaurant in the database with sheet data', 3);
+      const restaurant = existingRestaurant
+        ? queryRunner.manager.merge(Restaurant, existingRestaurant, newRestaurant)
+        : newRestaurant;
+
+      await queryRunner.manager.save(Restaurant, restaurant);
+
+      // * If createOrRecreateImages is true or the restaurant does not exist, save the images
+      if (createOrRecreateImages || !existingRestaurant) {
+        // * Remove old images and save the new ones
+        this.seedsWS.sendSeedLog(`Remove old images...`, 3);
+        if (restaurant.images) {
+          const promises: Promise<any>[] = [];
+          restaurant.images.forEach(image => {
+            const { imageResource } = image;
+            if (imageResource && imageResource.publicId) addImageToDelete(imageResource.publicId);
+            promises.push(queryRunner.manager.remove(image));
+          });
+          await Promise.all(promises);
+        }
+
+        this.seedsWS.sendSeedLog(`Save images...`, 3);
+        const cloudinaryRes = await Promise.all(
+          folderImages.map(url =>
+            this.cloudinaryService.uploadImageFromUrl(url, `${restaurant.name}`, CloudinaryPresets.RESTAURANT_IMAGE),
+          ),
+        );
+
+        this.seedsWS.sendSeedLog(`Save ${cloudinaryRes.length} images in cloudinary!`, 3);
+
+        const imageResources = cloudinaryRes
+          .filter(res => typeof res !== 'undefined')
+          .map(res => {
+            addTempImage(res.publicId);
+            return queryRunner.manager.create(ImageResource, {
+              publicId: res.publicId,
+              url: res.url,
+              fileName: restaurant.name,
+              width: res.width,
+              height: res.height,
+              format: res.format,
+              resourceType: res.type,
+              provider: ResourceProvider.Cloudinary,
+            });
+          });
+
+        this.seedsWS.sendSeedLog(`Save ${imageResources.length} images resource in the database...`, 3);
+        await queryRunner.manager.save(ImageResource, imageResources);
+
+        // * Save the images in the database and add ID to global array
+        this.seedsWS.sendSeedLog(`Add image to restaurant and updating...`, 3);
+        const restaurantImages = imageResources.map((image, index) => {
+          return queryRunner.manager.create(RestaurantImage, {
+            imageResource: image,
+            order: index + 1,
+            restaurant: { id: restaurant.id },
+          });
+        });
+
+        await queryRunner.manager.save(RestaurantImage, restaurantImages);
+      } //. end if createOrRecreateImages
+    } //. end for loop restaurants data
+
+    this.seedsWS.sendSeedLog('Restaurants saved successfully in the database', 2);
   }
 
   private async getImagesFromFolder(folder: string, base = 'places') {

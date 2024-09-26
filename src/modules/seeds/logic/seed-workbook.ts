@@ -11,6 +11,7 @@ import type {
   SheetLodging,
   SheetModel,
   SheetPlace,
+  SheetRestaurant,
   SheetTown,
 } from '../interfaces';
 import {
@@ -23,6 +24,7 @@ import {
   SHEET_LODGING_HEADERS,
   SHEET_MODEL_HEADERS,
   SHEET_PLACE_HEADERS,
+  SHEET_RESTAURANT_HEADERS,
   SHEET_TOWN_HEADERS,
 } from '../constants';
 import { FileSheetsEnum } from '../enums';
@@ -206,5 +208,26 @@ export class SeedWorkbook {
       .filter(row => row !== null);
 
     return sheetExperiences;
+  }
+
+  public getRestaurants(): SheetRestaurant[] {
+    const sheet = this.workbook.Sheets[FileSheetsEnum.restaurants];
+    const json = utils.sheet_to_json<SheetRestaurant>(sheet, { header: SHEET_RESTAURANT_HEADERS, range: 1 });
+
+    const sheetRestaurants = json
+      .map((row): SheetRestaurant | null => {
+        if (!isUUID(row.id)) return null;
+        if (!row.name || !row.slug) return null;
+        if (!row.description) return null;
+        if (!row.longitude || !row.latitude) return null;
+        if (!row.town) return null;
+        if (!row.categories) return null;
+
+        const points = row.points || 1;
+        return { ...row, points, slug: row.slug.trim() };
+      })
+      .filter(row => row !== null);
+
+    return sheetRestaurants;
   }
 }

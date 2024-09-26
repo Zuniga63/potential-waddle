@@ -3,8 +3,9 @@ import { Column, CreateDateColumn, Entity, ManyToMany, OneToMany, PrimaryGenerat
 import { ResourceProvider } from 'src/config';
 import { Review } from 'src/modules/reviews/entities';
 import { PlaceImage } from 'src/modules/places/entities';
-import { LodgingImage } from 'src/modules/lodgings/entities/lodging-image.entity';
-import { ExperienceImage } from 'src/modules/experiences/entities/experience-image.entity';
+import { LodgingImage } from 'src/modules/lodgings/entities';
+import { ExperienceImage } from 'src/modules/experiences/entities';
+import { RestaurantImage } from 'src/modules/restaurants/entities';
 
 @Entity({ name: 'image_resource' })
 export class ImageResource {
@@ -22,6 +23,9 @@ export class ImageResource {
 
   @OneToMany(() => ExperienceImage, experienceImage => experienceImage.imageResource)
   experienceImages: ExperienceImage[];
+
+  @OneToMany(() => RestaurantImage, restaurantImage => restaurantImage.imageResource)
+  restaurantImages?: RestaurantImage[];
 
   @ManyToMany(() => Review, review => review.images)
   review?: Review;

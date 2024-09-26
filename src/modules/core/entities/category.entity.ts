@@ -5,6 +5,7 @@ import { AppIcon } from './app-icon.entity';
 import { Place } from 'src/modules/places/entities';
 import { Lodging } from 'src/modules/lodgings/entities';
 import { Experience } from 'src/modules/experiences/entities';
+import { Restaurant } from 'src/modules/restaurants/entities';
 
 @Entity({ name: 'category' })
 export class Category {
@@ -29,6 +30,9 @@ export class Category {
 
   @ManyToMany(() => Experience, experience => experience.categories)
   experiences: Experience[];
+
+  @ManyToMany(() => Restaurant, restaurant => restaurant.categories)
+  restaurants?: Restaurant[];
   // * ----------------------------------------------------------------------------------------------------------------
   // * MAIN FIELDS
   // * ----------------------------------------------------------------------------------------------------------------

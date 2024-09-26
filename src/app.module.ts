@@ -17,6 +17,7 @@ import { SeedsModule } from './modules/seeds/seeds.module';
 import { ReviewsModule } from './modules/reviews/reviews.module';
 import { LodgingsModule } from './modules/lodgings/lodgings.module';
 import { ExperiencesModule } from './modules/experiences/experiences.module';
+import { RestaurantsModule } from './modules/restaurants/restaurants.module';
 
 @Module({
   imports: [
@@ -54,6 +55,8 @@ import { ExperiencesModule } from './modules/experiences/experiences.module';
     LodgingsModule,
 
     ExperiencesModule,
+
+    RestaurantsModule,
   ],
   controllers: [],
   providers: [],
