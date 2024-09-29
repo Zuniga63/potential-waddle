@@ -8,7 +8,7 @@ export async function createPlacePreset() {
 
   const options: AdminApiOptions = {
     name,
-    folder: 'places',
+    folder: 'place_gallery',
     resource_type: 'image',
     allowed_formats: 'jpg, png, gif, webp, bmp, jpe, jpeg',
     access_mode: 'public',

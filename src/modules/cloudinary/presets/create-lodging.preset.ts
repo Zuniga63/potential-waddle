@@ -8,7 +8,7 @@ export async function createLodgingPreset() {
 
   const options: AdminApiOptions = {
     name,
-    folder: 'lodgings',
+    folder: 'lodging_gallery',
     resource_type: 'image',
     allowed_formats: 'jpg, png, gif, webp, bmp, jpe, jpeg',
     access_mode: 'public',
