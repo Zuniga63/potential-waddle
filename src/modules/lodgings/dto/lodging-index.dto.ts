@@ -118,7 +118,7 @@ export class LodgingIndexDto {
     readOnly: true,
     required: false,
   })
-  openingHours?: string;
+  openingHours?: string[];
 
   @ApiProperty({
     example: 1340,

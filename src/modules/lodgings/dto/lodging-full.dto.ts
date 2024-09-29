@@ -120,16 +120,16 @@ export class LodgingFullDto extends LodgingIndexDto {
     super(lodging, userReview);
 
     if (!lodging) return;
-    this.facilities = lodging.facilities?.map(facility => new FacilityDto(facility.facility)) || [];
+    this.facilities = lodging.facilities?.map(facility => new FacilityDto(facility)) || [];
     this.roomTypes = lodging.roomTypes || [];
     this.address = lodging.address || undefined;
-    this.phones = lodging.phones || [];
+    this.phones = lodging.phoneNumbers || [];
     this.email = lodging.email || undefined;
     this.website = lodging.website || undefined;
     this.facebook = lodging.facebook || undefined;
     this.instagram = lodging.instagram || undefined;
     this.whatsappNumbers = lodging.whatsappNumbers;
-    this.languages = lodging.languageSpoken;
+    this.languages = lodging.spokenLangueges;
     this.longitude = lodging.location?.coordinates[0] || 0;
     this.latitude = lodging.location?.coordinates[1] || 0;
     this.googleMapsUrl = lodging.googleMapsUrl || undefined;

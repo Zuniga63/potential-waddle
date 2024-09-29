@@ -11,11 +11,11 @@ export class Model {
   // * RELATIONSHIPS
   // * ----------------------------------------------------------------------------------------------------------------
   @ManyToMany(() => Category, category => category.models, { onDelete: 'CASCADE' })
-  @JoinTable({ name: 'model_category' })
+  @JoinTable({ name: 'model_category', joinColumn: { name: 'model_id' }, inverseJoinColumn: { name: 'category_id' } })
   categories: Category[];
 
   @ManyToMany(() => Facility, facility => facility.models, { onDelete: 'CASCADE' })
-  @JoinTable({ name: 'model_facility' })
+  @JoinTable({ name: 'model_facility', joinColumn: { name: 'model_id' }, inverseJoinColumn: { name: 'facility_id' } })
   facilities: Facility[];
 
   // * ----------------------------------------------------------------------------------------------------------------

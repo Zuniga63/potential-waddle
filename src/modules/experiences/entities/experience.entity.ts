@@ -29,11 +29,19 @@ export class Experience {
   town: Town;
 
   @ManyToMany(() => Facility, facility => facility.experiences)
-  @JoinTable({ name: 'experience_facility' })
+  @JoinTable({
+    name: 'experience_facility',
+    joinColumn: { name: 'experience_id' },
+    inverseJoinColumn: { name: 'facility_id' },
+  })
   facilities: Facility[];
 
   @ManyToMany(() => Category, category => category.experiences)
-  @JoinTable({ name: 'experience_category' })
+  @JoinTable({
+    name: 'experience_category',
+    joinColumn: { name: 'experience_id' },
+    inverseJoinColumn: { name: 'category_id' },
+  })
   categories: Category[];
 
   @OneToMany(() => ExperienceImage, image => image.experience)

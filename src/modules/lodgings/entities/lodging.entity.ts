@@ -13,10 +13,9 @@ import {
 } from 'typeorm';
 
 import { Town } from 'src/modules/towns/entities';
-import { Category } from 'src/modules/core/entities';
+import { Category, Facility } from 'src/modules/core/entities';
 import { LodgingImage } from './lodging-image.entity';
 import { Review } from 'src/modules/reviews/entities';
-import { LodgingFacility } from './lodging-facility.entity';
 
 @Entity({ name: 'lodging' })
 export class Lodging {
@@ -41,8 +40,13 @@ export class Lodging {
   @OneToMany(() => LodgingImage, image => image.lodging)
   images: LodgingImage[];
 
-  @OneToMany(() => LodgingFacility, facility => facility.lodging)
-  facilities: LodgingFacility[];
+  @ManyToMany(() => Facility, facility => facility.lodgings)
+  @JoinTable({
+    name: 'lodging_facility',
+    joinColumn: { name: 'lodging_id' },
+    inverseJoinColumn: { name: 'facility_id' },
+  })
+  facilities: Facility[];
 
   @OneToMany(() => Review, review => review.lodging)
   reviews: Review[];
@@ -84,8 +88,8 @@ export class Lodging {
   @Column('text', { nullable: true })
   address: string | null;
 
-  @Column('text', { nullable: true, array: true, default: [] })
-  phones: string[];
+  @Column('text', { nullable: true, array: true, default: [], name: 'phone_numbers' })
+  phoneNumbers: string[];
 
   @Column('text', { nullable: true })
   email: string | null;
@@ -102,11 +106,11 @@ export class Lodging {
   @Column('text', { nullable: true, array: true, default: [], name: 'whatsapp_numbers' })
   whatsappNumbers: string[];
 
-  @Column('text', { name: 'opening_hours', nullable: true })
-  openingHours: string | null;
+  @Column('text', { name: 'opening_hours', array: true, nullable: true })
+  openingHours: string[] | null;
 
-  @Column('text', { name: 'language_spoken', nullable: true, array: true, default: [] })
-  languageSpoken: string[];
+  @Column('text', { name: 'spoken_languages', nullable: true, array: true, default: [] })
+  spokenLangueges: string[];
 
   // * ----------------------------------------------------------------------------------------------------------------
   @Column('geometry', { spatialFeatureType: 'Point', srid: 4326 })

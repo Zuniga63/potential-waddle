@@ -15,7 +15,7 @@ import { CloudinaryService } from '../cloudinary/cloudinary.service';
 import { Restaurant, RestaurantImage } from '../restaurants/entities';
 import { Experience, ExperienceImage } from '../experiences/entities';
 import { matchCategoriesByValue, matchFacilitiesByValue } from './utils';
-import { Lodging, LodgingFacility, LodgingImage } from '../lodgings/entities';
+import { Lodging, LodgingImage } from '../lodgings/entities';
 import { AppIcon, Category, Facility, ImageResource, Language, Model } from '../core/entities';
 
 interface SeedMainEntityProps {
@@ -711,14 +711,14 @@ export class SeedsService {
         highestPrice: lodgingData.highestPrice ? +lodgingData.highestPrice : undefined,
         // ------------------------------------------------
         address: lodgingData.address,
-        phones: lodgingData.phones?.split(',').map(p => p.trim()),
+        phoneNumbers: lodgingData.phones?.split(',').map(p => p.trim()),
         email: lodgingData.email,
         website: lodgingData.website,
         facebook: lodgingData.facebook,
         instagram: lodgingData.instagram,
         whatsappNumbers: lodgingData.whatsapps?.split(',').map(w => w.trim()),
-        openingHours: lodgingData.openingHours,
-        languageSpoken: lodgingData.languages?.split(',').map(l => l.trim()),
+        openingHours: lodgingData.openingHours?.split(',').map(o => o.trim()),
+        spokenLangueges: lodgingData.languages?.split(',').map(l => l.trim()),
         // ------------------------------------------------
         location: { type: 'Point', coordinates: [+lodgingData.longitude, +lodgingData.latitude] },
         googleMapsUrl: lodgingData.googleMaps,
@@ -729,6 +729,7 @@ export class SeedsService {
         isPublic: true,
         town: town ? { id: town.id } : undefined,
         categories: lodgingCategories.map(c => ({ id: c.id })),
+        facilities: facilities.map(f => ({ id: f.id })),
       });
 
       // * Save the lodging in the database with only the data from the sheet without images
@@ -737,18 +738,6 @@ export class SeedsService {
       await queryRunner.manager.save(Lodging, lodging);
 
       // * Create the lodging object with the data from the sheet
-      const lodginFacilities = await Promise.all(
-        facilities.map(f => {
-          const facility = queryRunner.manager.create(LodgingFacility, {
-            facility: { id: f.id },
-            lodging: { id: lodging.id },
-          });
-          return queryRunner.manager.save(LodgingFacility, facility);
-        }),
-      );
-
-      lodging.facilities = lodginFacilities;
-      await queryRunner.manager.save(Lodging, lodging);
 
       if (createOrRecreateImages || !existingLodging) {
         // * Remove old images and save the new ones

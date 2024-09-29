@@ -31,11 +31,11 @@ export class Place {
   town: Town;
 
   @ManyToMany(() => Facility, facility => facility.places)
-  @JoinTable({ name: 'place_facility' })
+  @JoinTable({ name: 'place_facility', joinColumn: { name: 'place_id' }, inverseJoinColumn: { name: 'facility_id' } })
   facilities: Facility[];
 
   @ManyToMany(() => Category, category => category.places)
-  @JoinTable({ name: 'place_category' })
+  @JoinTable({ name: 'place_category', joinColumn: { name: 'place_id' }, inverseJoinColumn: { name: 'category_id' } })
   categories: Category[];
 
   @OneToMany(() => PlaceImage, image => image.place)

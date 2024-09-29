@@ -12,9 +12,9 @@ import {
 import { Model } from './model.entity';
 import { AppIcon } from './app-icon.entity';
 import { Place } from 'src/modules/places/entities';
-import { LodgingFacility } from 'src/modules/lodgings/entities/lodging-facility.entity';
 import { Experience } from 'src/modules/experiences/entities';
 import { Restaurant } from 'src/modules/restaurants/entities';
+import { Lodging } from 'src/modules/lodgings/entities';
 
 @Entity({ name: 'facility' })
 export class Facility {
@@ -34,8 +34,8 @@ export class Facility {
   @ManyToMany(() => Place, place => place.facilities)
   places: Place[];
 
-  @OneToMany(() => LodgingFacility, lodging => lodging.facility, { onDelete: 'RESTRICT' })
-  lodgings: LodgingFacility[];
+  @ManyToMany(() => Lodging, lodging => lodging.facilities, { onDelete: 'RESTRICT' })
+  lodgings: Lodging[];
 
   @OneToMany(() => Experience, experience => experience.facilities)
   experiences: Experience[];

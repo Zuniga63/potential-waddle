@@ -30,7 +30,7 @@ export class LodgingsService {
   async findOne({ identifier }: { identifier: string }) {
     const relations: FindOptionsRelations<Lodging> = {
       categories: { icon: true },
-      facilities: { facility: { icon: true } },
+      facilities: { icon: true },
       town: { department: true },
       images: { imageResource: true },
     };
