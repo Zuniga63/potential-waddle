@@ -17,6 +17,7 @@ import { Experience, ExperienceImage } from '../experiences/entities';
 import { matchCategoriesByValue, matchFacilitiesByValue } from './utils';
 import { Lodging, LodgingImage } from '../lodgings/entities';
 import { AppIcon, Category, Facility, ImageResource, Language, Model } from '../core/entities';
+import { BANK_IMAGE_FOLDER, FOLDERS_IMAGE_BANK } from './constants';
 
 interface SeedMainEntityProps {
   workbook: SeedWorkbook;
@@ -528,7 +529,7 @@ export class SeedsService {
       if (existingPlace) this.seedsWS.sendSeedLog('The place already exists', 3);
 
       this.seedsWS.sendSeedLog(`Recover images from cloudinary`, 3);
-      const folderImages = await this.getImagesFromFolder(placeData.cloudinaryFolder);
+      const folderImages = await this.getImagesFromFolder(placeData.cloudinaryFolder, 'places');
       this.seedsWS.sendSeedLog(`Images found: ${folderImages.length}`, 4);
 
       if (folderImages.length === 0 && (!existingPlace || createOrRecreateImages)) {
@@ -830,7 +831,7 @@ export class SeedsService {
       if (existingExperience) this.seedsWS.sendSeedLog('The experience already exists', 3);
 
       this.seedsWS.sendSeedLog(`Recover images from cloudinary`, 3);
-      const folderImages = await this.getImagesFromFolder(experienceData.slug, 'Experiences');
+      const folderImages = await this.getImagesFromFolder(experienceData.slug, 'experiences');
       this.seedsWS.sendSeedLog(`Images found: ${folderImages.length}`, 4);
 
       if (folderImages.length === 0 && (!existingExperience || createOrRecreateImages)) {
@@ -989,7 +990,7 @@ export class SeedsService {
 
       // * Get the images from the cloudinary folder
       this.seedsWS.sendSeedLog(`Recover images from cloudinary`, 3);
-      const folderImages = await this.getImagesFromFolder(restaurantData.slug, 'restaurantes');
+      const folderImages = await this.getImagesFromFolder(restaurantData.slug, 'restaurants');
       this.seedsWS.sendSeedLog(`Images found: ${folderImages.length}`, 4);
 
       // * If no images found and the restaurant already exists, continue with the next restaurant
@@ -1103,23 +1104,31 @@ export class SeedsService {
     this.seedsWS.sendSeedLog('Restaurants saved successfully in the database', 2);
   }
 
-  private async getImagesFromFolder(folder: string, base = 'places') {
-    const url = `banco-de-imagenes/${base}/${folder.trim()}`;
+  // * ----------------------------------------------------------------------------------------------------------------
+  // * SEED UTILS
+  // * ----------------------------------------------------------------------------------------------------------------
+  private async getImagesFromFolder(folder: string, rootFolder?: keyof typeof FOLDERS_IMAGE_BANK) {
+    let url = `${BANK_IMAGE_FOLDER}`;
+
+    if (rootFolder) url += `/${FOLDERS_IMAGE_BANK[rootFolder]}`;
+    url += `/${folder.trim()}`;
+
     const res = await this.cloudinaryService.getResourceFromFolder(url);
-    if (!res || (res.resources.length as number) === 0) return [];
+    if (!res || !res.resources || (res.resources.length as number) === 0) return [];
 
     const { resources } = res;
 
-    const mainIndex = resources.findIndex(
-      ({ public_id, display_name }) => public_id.includes('main') || display_name.includes('main'),
-    );
-
     const images: string[] = [];
-    if (mainIndex !== -1) images.push(res.resources[mainIndex].secure_url);
-    res.resources.forEach((resource, i) => {
-      if (i === mainIndex) return;
-      images.push(resource.secure_url);
+    let mainImage: string | null = null;
+
+    resources.forEach(resource => {
+      const { secure_url, public_id, display_name } = resource;
+
+      if (!mainImage && (public_id.includes('main') || display_name.includes('main'))) mainImage = secure_url;
+      else images.push(secure_url);
     });
+
+    if (mainImage) images.unshift(mainImage);
 
     return images;
   }
