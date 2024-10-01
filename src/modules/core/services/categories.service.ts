@@ -35,28 +35,35 @@ export class CategoriesService {
     const where: FindOptionsWhere<Category> = { isEnabled: true };
     const order: FindOptionsOrder<Category> = { name: 'ASC' };
     const relations: FindOptionsRelations<Category> = { icon: true };
-    if (!modelId) return this.categoriesRepository.find({ order, where, relations: { models: true } });
 
-    where.models = { id: modelId };
     if (innerJoin) {
       if (innerJoin === ModelsEnum.Places) where.places = { id: Not(IsNull()) };
-      // if (innerJoin === ModelsEnum.Restaurants) where.restaurants = { id: Not(IsNull()) };
-      // if (innerJoin === ModelsEnum.Lodgings) where.lodgings = { id: Not(IsNull()) };
-      // if (innerJoin === ModelsEnum.Experiences) where.experiences = { id: Not(IsNull()) };
+      if (innerJoin === ModelsEnum.Restaurants) where.restaurants = { id: Not(IsNull()) };
+      if (innerJoin === ModelsEnum.Lodgings) where.lodgings = { id: Not(IsNull()) };
+      if (innerJoin === ModelsEnum.Experiences) where.experiences = { id: Not(IsNull()) };
+
+      return this.categoriesRepository.find({ where, order, relations });
     }
 
-    const [modelCategories, generalCategories] = await Promise.all([
-      this.categoriesRepository.find({ where, order, relations }),
-      this.categoriesRepository.find({ where: { ...where, models: { id: IsNull() } }, order, relations }),
-    ]);
+    if (modelId) {
+      where.models = { id: modelId };
 
-    const categoryMap = new Map<string, Category>();
-    generalCategories.concat(modelCategories).forEach(category => {
-      categoryMap.set(category.id, category);
-    });
+      const [modelCategories, generalCategories] = await Promise.all([
+        this.categoriesRepository.find({ where, order, relations }),
+        this.categoriesRepository.find({ where: { ...where, models: { id: IsNull() } }, order, relations }),
+      ]);
 
-    return Array.from(categoryMap.values()).sort((a, b) => a.name.localeCompare(b.name));
+      const categoryMap = new Map<string, Category>();
+      modelCategories.forEach(category => categoryMap.set(category.id, category));
+      generalCategories.forEach(category => categoryMap.set(category.id, category));
+
+      return Array.from(categoryMap.values()).sort((a, b) => a.name.localeCompare(b.name));
+    }
+
+    relations.models = true;
+    return this.categoriesRepository.find({ where, order, relations });
   }
+
   // * -------------------------------------------------------------------------------------------------------------
   // * GET CATEGORY BY ID
   // * -------------------------------------------------------------------------------------------------------------

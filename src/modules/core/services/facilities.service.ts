@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Facility, Model } from '../entities';
-import { FindOptionsOrder, FindOptionsWhere, In, IsNull, Not, Repository } from 'typeorm';
+import { FindOptionsOrder, FindOptionsRelations, FindOptionsWhere, In, IsNull, Not, Repository } from 'typeorm';
 import { CreateFacilityDto } from '../dto';
 import { ModelsEnum } from '../enums';
 
@@ -34,28 +34,35 @@ export class FacilitiesService {
   async findAll({ modelId, innerJoin }: { modelId?: string; innerJoin?: ModelsEnum } = {}) {
     const where: FindOptionsWhere<Facility> = { isEnabled: true };
     const order: FindOptionsOrder<Facility> = { name: 'ASC' };
+    const relations: FindOptionsRelations<Facility> = { icon: true };
 
-    if (!modelId) return this.facilitiesRepository.find({ order, relations: { models: true } });
-
-    where.models = { id: modelId };
     if (innerJoin) {
       if (innerJoin === ModelsEnum.Places) where.places = { id: Not(IsNull()) };
-      // if (innerJoin === ModelsEnum.Restaurants) where.restaurants = { id: Not(IsNull()) };
-      // if (innerJoin === ModelsEnum.Lodgings) where.lodgings = { id: Not(IsNull()) };
-      // if (innerJoin === ModelsEnum.Experiences) where.experiences = { id: Not(IsNull()) };
+      if (innerJoin === ModelsEnum.Restaurants) where.restaurants = { id: Not(IsNull()) };
+      if (innerJoin === ModelsEnum.Lodgings) where.lodgings = { id: Not(IsNull()) };
+      if (innerJoin === ModelsEnum.Experiences) where.experiences = { id: Not(IsNull()) };
+
+      return this.facilitiesRepository.find({ where, order, relations });
     }
 
-    const [modelFacilities, generalFacilities] = await Promise.all([
-      this.facilitiesRepository.find({ where, order }),
-      this.facilitiesRepository.find({ where: { ...where, models: { id: IsNull() } }, order }),
-    ]);
+    if (modelId) {
+      where.models = { id: modelId };
 
-    const facilityMap = new Map<string, Facility>();
-    generalFacilities.concat(modelFacilities).forEach(facility => {
-      facilityMap.set(facility.id, facility);
-    });
+      const [modelFacilities, generalFacilities] = await Promise.all([
+        this.facilitiesRepository.find({ where, order, relations }),
+        this.facilitiesRepository.find({ where: { ...where, models: { id: IsNull() } }, order, relations }),
+      ]);
 
-    return Array.from(facilityMap.values()).sort((a, b) => a.name.localeCompare(b.name));
+      const facilityMap = new Map<string, Facility>();
+      modelFacilities.concat(generalFacilities).forEach(facility => {
+        facilityMap.set(facility.id, facility);
+      });
+
+      return Array.from(facilityMap.values()).sort((a, b) => a.name.localeCompare(b.name));
+    }
+
+    relations.models = true;
+    return this.facilitiesRepository.find({ where, order, relations });
   }
   // * -------------------------------------------------------------------------------------------------------------
   // * GET FACILITY BY ID

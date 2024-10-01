@@ -31,16 +31,21 @@ export class FacilitiesController {
   // * GET ALL FACILITY
   // * -------------------------------------------------------------------------------------------------------------
   @Get()
-  @ApiQuery({ name: 'modelId', required: false })
+  @ApiQuery({
+    name: 'modelId',
+    required: false,
+    description: 'UUID model: Retrieves the model categories along with the general categories.',
+    type: String,
+  })
   @ApiQuery({
     name: 'inner-join',
     required: false,
     enum: ModelsEnum,
     description:
-      'Si el id del modelo es enviado, este parametro se encarga de enviar solamente las categorías que tengan una asociación.',
+      'Retrieves the categories assigned to the model. This parameter takes precedence over the model-id parameter.',
   })
   findAll(
-    @Query('modelId', new ParseUUIDPipe({ optional: true })) modelId?: string,
+    @Query('model-id', new ParseUUIDPipe({ optional: true })) modelId?: string,
     @Query('inner-join', new ParseEnumPipe(ModelsEnum, { optional: true })) innerJoin?: ModelsEnum,
   ) {
     return this.facilitiesService.findAll({ modelId, innerJoin });
