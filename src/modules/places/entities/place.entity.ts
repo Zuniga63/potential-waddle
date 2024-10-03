@@ -69,6 +69,9 @@ export class Place {
   @Column('smallint', { default: 0 })
   points: number;
 
+  @Column('smallint', { default: 0 })
+  popularity: number;
+
   @Column('integer', { name: 'review_count', default: 0 })
   reviewCount: number;
 

@@ -139,9 +139,9 @@ export class PlaceDto {
   })
   updatedAt: Date;
 
-  constructor(place?: Place, userReview?: string) {
+  constructor(place?: Place, userReview?: string, maxDistance: number = 0.1) {
     if (!place) return;
-
+    const points = ((place.difficultyLevel * 0.4) + ((place.urbarCenterDistance / maxDistance) * 5 * 0.3) + (((6 - place.popularity) / 5) * 5 * 0.3)) * place.points;
     this.id = place.id;
     this.town = place.town && new TownDto(place.town);
     this.name = place.name;
@@ -154,11 +154,12 @@ export class PlaceDto {
     this.facilities = place.facilities?.map(facility => new FacilityDto(facility));
     this.difficultyLevel = place.difficultyLevel;
     this.rating = place.rating;
-    this.points = place.points;
+    this.points = points;
     this.reviewCount = place.reviewCount;
     this.urbanCenterDistance = place.urbarCenterDistance;
     this.userReview = userReview;
     this.createdAt = place.createdAt;
     this.updatedAt = place.updatedAt;
+    
   }
 }

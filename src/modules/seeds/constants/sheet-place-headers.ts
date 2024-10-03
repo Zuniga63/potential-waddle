@@ -31,4 +31,5 @@ export const SHEET_PLACE_HEADERS: Array<keyof SheetPlace> = [
   'howToDress',
   'internalRecommendations',
   'temperature',
+  'popularity'
 ];

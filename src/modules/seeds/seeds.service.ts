@@ -560,6 +560,7 @@ export class SeedsService {
         description: placeData.description,
         difficultyLevel: placeData.difficulty,
         points: placeData.points,
+        popularity: placeData.popularity,
         location: { type: 'Point', coordinates: [+placeData.longitude, +placeData.latitude] },
         urbarCenterDistance: placeData.distance,
         googleMapsUrl: placeData.googleMapsLink,

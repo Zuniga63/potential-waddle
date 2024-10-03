@@ -105,9 +105,15 @@ export class PlacesService {
       user ? this.placeReviewService.getUserReviews({ userId: user.id }) : Promise.resolve<Review[]>([]),
     ]);
 
+    const maxDistance = places.reduce((acc, place) => {
+      if (!place.location) return acc;
+      const distance = place.urbarCenterDistance;
+      return distance > acc ? distance : acc;
+    }, 0);
+
     return places.map(place => {
       const review = reviews.find(r => r.place.id === place.id);
-      return new PlaceDto(place, review?.id);
+      return new PlaceDto(place, review?.id, maxDistance);
     });
   }
 
