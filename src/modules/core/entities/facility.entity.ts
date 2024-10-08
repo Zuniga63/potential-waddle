@@ -1,13 +1,4 @@
-import {
-  Column,
-  CreateDateColumn,
-  Entity,
-  JoinColumn,
-  ManyToMany,
-  ManyToOne,
-  OneToMany,
-  PrimaryGeneratedColumn,
-} from 'typeorm';
+import { Column, CreateDateColumn, Entity, JoinColumn, ManyToMany, ManyToOne, PrimaryGeneratedColumn } from 'typeorm';
 
 import { Model } from './model.entity';
 import { AppIcon } from './app-icon.entity';
@@ -37,7 +28,7 @@ export class Facility {
   @ManyToMany(() => Lodging, lodging => lodging.facilities, { onDelete: 'RESTRICT' })
   lodgings: Lodging[];
 
-  @OneToMany(() => Experience, experience => experience.facilities)
+  @ManyToMany(() => Experience, experience => experience.facilities)
   experiences: Experience[];
 
   @ManyToMany(() => Restaurant, restaurant => restaurant.facilities)
