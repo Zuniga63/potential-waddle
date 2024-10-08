@@ -32,7 +32,7 @@ export class FacilitiesController {
   // * -------------------------------------------------------------------------------------------------------------
   @Get()
   @ApiQuery({
-    name: 'modelId',
+    name: 'model-id',
     required: false,
     description: 'UUID model: Retrieves the model categories along with the general categories.',
     type: String,
