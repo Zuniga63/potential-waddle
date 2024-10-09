@@ -22,7 +22,12 @@ export class ExperiencesService {
   async findOne(identifier: string) {
     const experience = await this.experienceRepository.findOne({
       where: { slug: identifier },
-      relations: { categories: true, facilities: true, images: { imageResource: true }, town: { department: true } },
+      relations: {
+        categories: { icon: true },
+        facilities: true,
+        images: { imageResource: true },
+        town: { department: true },
+      },
       order: { images: { order: 'ASC' } },
     });
 
