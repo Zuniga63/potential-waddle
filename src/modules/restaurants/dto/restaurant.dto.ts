@@ -83,8 +83,8 @@ export class RestaurantDto {
     this.facebook = data.facebook ?? undefined;
     this.lowestPrice = data.lowestPrice ?? undefined;
     this.highestPrice = data.higherPrice ?? undefined;
-    this.longitude = data.points[0] ?? 0;
-    this.latitude = data.points[1] ?? 0;
+    this.longitude = data.location.coordinates[0] ?? 0;
+    this.latitude = data.location.coordinates[1] ?? 0;
     this.images = data.images?.map(i => i.imageResource.url) || [];
     this.urbanCenterDistance = data.urbanCenterDistance ?? 0;
     this.googleMapsUrl = data.googleMapsUrl ?? undefined;
