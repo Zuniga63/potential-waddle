@@ -66,8 +66,11 @@ export class Place {
   @Column('float', { default: 0 })
   rating: number;
 
-  @Column('smallint', { default: 0 })
+  @Column('float', { default: 0 })
   points: number;
+
+  @Column('float', { name: 'base_points', default: 100 })
+  basePoints: number;
 
   @Column('smallint', { default: 0 })
   popularity: number;
