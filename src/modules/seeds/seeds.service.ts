@@ -18,6 +18,7 @@ import { matchCategoriesByValue, matchFacilitiesByValue } from './utils';
 import { Lodging, LodgingImage } from '../lodgings/entities';
 import { AppIcon, Category, Facility, ImageResource, Language, Model } from '../core/entities';
 import { BANK_IMAGE_FOLDER, FOLDERS_IMAGE_BANK } from './constants';
+import { calculatePoints } from '../core/logic';
 
 interface SeedMainEntityProps {
   workbook: SeedWorkbook;
@@ -522,6 +523,14 @@ export class SeedsService {
     this.seedsWS.sendSeedLog(`File Facilities: ${facilitiesData.length}`, 3);
     this.seedsWS.sendSeedLog(`File Towns: ${townsData.length}`, 3);
 
+    const maxDistance = placesData.reduce((acc, place) => {
+      if (!place.distance) return acc;
+      const distance = place.distance;
+      return distance > acc ? distance : acc;
+    }, 0);
+
+    this.seedsWS.sendSeedLog(`Max distance: ${maxDistance}`, 3);
+
     for (const placeData of placesData) {
       this.seedsWS.sendSeedLog(`Processing place ${placeData.name}`, 2);
 
@@ -552,6 +561,15 @@ export class SeedsService {
       if (!town) this.seedsWS.sendSeedLog('No town found', 3);
       else this.seedsWS.sendSeedLog(`Place town: ${town.name}`, 3);
 
+      const points = calculatePoints({
+        basePoints: placeData.points,
+        difficultyLevel: placeData.difficulty,
+        distance: placeData.distance,
+        maxDistance,
+        popularity: 0,
+        urbarCenterRange: 500,
+      });
+
       // * Create the place object with the data from the sheet
       const newPlace = queryRunner.manager.create(Place, {
         id: placeData.id,
@@ -559,7 +577,8 @@ export class SeedsService {
         slug: placeData.slug,
         description: placeData.description,
         difficultyLevel: placeData.difficulty,
-        points: placeData.points,
+        basePoints: placeData.points,
+        points,
         popularity: placeData.popularity,
         location: { type: 'Point', coordinates: [+placeData.longitude, +placeData.latitude] },
         urbarCenterDistance: placeData.distance,

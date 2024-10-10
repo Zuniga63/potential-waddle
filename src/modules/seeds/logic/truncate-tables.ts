@@ -43,7 +43,8 @@ async function getTables({ queryRunner }: Pick<Params, 'queryRunner'>): Promise<
          FROM information_schema.tables
          WHERE table_schema = 'public'
          AND table_type = 'BASE TABLE'
-         AND table_name != 'migrations'`;
+         AND table_name != 'migrations'
+         AND table_name != 'users'`;
 
   return queryRunner.query(query) as Promise<{ table_name: string }[]>;
 }
