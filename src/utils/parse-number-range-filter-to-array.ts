@@ -1,28 +1,30 @@
 import { isEmpty } from 'class-validator';
-import type { DistanceRange } from 'src/modules/common/types';
+import type { NumberRange } from 'src/modules/common/types';
 
 /**
- * Parse a distance filter string to an array of distance ranges.
+ * Parse a number filter string to an array of number ranges.
  * @param value - Filter value to parse e.g., '1-2,3-4,5-6' or ['1-2', '3-4', '5-6']
- * @returns {DistanceRange[]} - array of distance ranges
+ * @returns {NumberRange[]} - array of number ranges
  * @example
  * parseDistanceFilterToArray('1-2,3-4,5-6'); // [[1, 2], [3, 4], [5, 6]]
  * parseDistanceFilterToArray(['1-2', '3-4', '5-6']); // [[1, 2], [3, 4], [5, 6]]
  * parseDistanceFilterToArray('1-2, 3-4, 5-6'); // [[1, 2], [3, 4], [5, 6]]
  * parseDistanceFilterToArray('1-2, 3-4, 5-6, -8'); // [[1, 2], [3, 4], [5, 6], [undefined, 8]]
  */
-export function parseDistanceFilterToArray(value: unknown): DistanceRange[] {
+export function parseNumberRangeFilterToArray(value: unknown): NumberRange[] {
   if (!value) return [];
 
+  const formatValue = (value: string): string => value.trim().replaceAll('_', '').replaceAll(' ', '');
+
   const parseValue = (value: string): number | undefined => {
-    const distance = isEmpty(value) ? undefined : Number(value);
+    const distance = isEmpty(value) ? undefined : Number(formatValue(value));
     if (distance === undefined) return undefined;
     return isNaN(distance) ? undefined : distance;
   };
 
-  const parseRange = (item: string): DistanceRange | null => {
+  const parseRange = (item: string): NumberRange | null => {
     const [min, max] = item.split('-').map(parseValue);
-    return [min, max] as DistanceRange;
+    return [min, max] as NumberRange;
   };
 
   if (Array.isArray(value)) {
@@ -31,7 +33,7 @@ export function parseDistanceFilterToArray(value: unknown): DistanceRange[] {
         if (typeof item !== 'string') return null;
         return parseRange(item);
       })
-      .filter((item): item is DistanceRange => item !== null);
+      .filter((item): item is NumberRange => item !== null);
   }
 
   if (typeof value === 'string') {
@@ -40,7 +42,7 @@ export function parseDistanceFilterToArray(value: unknown): DistanceRange[] {
       .map(item => item.trim())
       .filter(item => item.length > 0)
       .map(parseRange)
-      .filter((item): item is DistanceRange => item !== null);
+      .filter((item): item is NumberRange => item !== null);
   }
 
   return [];

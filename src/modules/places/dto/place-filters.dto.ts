@@ -2,8 +2,8 @@ import { Transform } from 'class-transformer';
 import { IsArray, IsNotEmpty, IsOptional, IsString, IsUUID, Max, Min, Validate } from 'class-validator';
 
 import { PlaceSortByValidation } from '../utils';
-import { DistanceRange } from 'src/modules/common/types';
-import { parseArrayValue, parseDistanceFilterToArray, parseNumericFilterToArray } from 'src/utils';
+import { NumberRange } from 'src/modules/common/types';
+import { parseArrayValue, parseNumberRangeFilterToArray, parseNumericFilterToArray } from 'src/utils';
 
 export class PlaceFiltersDto {
   @IsOptional()
@@ -48,7 +48,7 @@ export class PlaceFiltersDto {
 
   @IsNotEmpty()
   @IsArray()
-  @Transform(({ value }) => parseDistanceFilterToArray(value))
+  @Transform(({ value }) => parseNumberRangeFilterToArray(value))
   @IsOptional()
-  distanceRanges?: DistanceRange[];
+  distanceRanges?: NumberRange[];
 }

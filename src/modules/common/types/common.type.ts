@@ -1,1 +1,1 @@
-export type DistanceRange = [number | undefined, number | undefined];
+export type NumberRange = [number | undefined, number | undefined];
