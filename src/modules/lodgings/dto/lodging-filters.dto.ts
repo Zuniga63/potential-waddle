@@ -1,9 +1,9 @@
-import { Transform } from 'class-transformer';
+import { Expose, Transform } from 'class-transformer';
 import { IsArray, IsNotEmpty, IsOptional, IsString, IsUUID, Max, Min, Validate } from 'class-validator';
 
 import { LodgingSortByValidation } from '../utils';
-import { DistanceRange } from 'src/modules/common/types';
-import { parseArrayValue, parseDistanceFilterToArray, parseNumericFilterToArray } from 'src/utils';
+import { NumberRange } from 'src/modules/common/types';
+import { parseArrayValue, parseNumberRangeFilterToArray, parseNumericFilterToArray } from 'src/utils';
 
 export class LodgingFiltersDto {
   @IsOptional()
@@ -14,10 +14,12 @@ export class LodgingFiltersDto {
   @IsOptional()
   @Validate(LodgingSortByValidation)
   @IsString()
+  @Expose({ name: 'sort-by' })
   sortBy?: string;
 
   @IsOptional()
   @IsUUID()
+  @Expose({ name: 'town-id' })
   townId?: string;
 
   @IsOptional()
@@ -41,7 +43,14 @@ export class LodgingFiltersDto {
 
   @IsNotEmpty()
   @IsArray()
-  @Transform(({ value }) => parseDistanceFilterToArray(value))
+  @Transform(({ value }) => parseNumberRangeFilterToArray(value))
   @IsOptional()
-  distanceRanges?: DistanceRange[];
+  @Expose({ name: 'distance-ranges' })
+  distanceRanges?: NumberRange[];
+
+  @IsArray()
+  @Transform(({ value }) => parseNumberRangeFilterToArray(value))
+  @IsOptional()
+  @Expose({ name: 'price-ranges' })
+  priceRanges?: NumberRange[];
 }

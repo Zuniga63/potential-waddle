@@ -69,7 +69,7 @@ export class Lodging {
   @Column('integer', { name: 'review_count', default: 0 })
   reviewCount: number;
 
-  @Column('smallint', { default: 0 })
+  @Column('float', { default: 0 })
   rating: number;
 
   @Column('text', { name: 'room_types', array: true, default: [] })

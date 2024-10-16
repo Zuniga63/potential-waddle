@@ -10,11 +10,12 @@ export function LodgingListQueryParamsDocs() {
 
   return applyDecorators(
     ApiQuery({ name: 'search', required: false, type: String }),
-    ApiQuery({ name: 'sortBy', required: false, description: sortByDescription }),
+    ApiQuery({ name: 'sort-by', required: false, description: sortByDescription }),
     ApiQuery({ name: 'townId', required: false, type: String }),
     ApiQuery({ name: 'categories', required: false, type: [String] }),
     ApiQuery({ name: 'ratings', required: false, type: [Number] }),
     ApiQuery({ name: 'facilities', required: false, type: [String] }),
     ApiQuery({ name: 'distanceRanges', required: false, type: [String] }),
+    ApiQuery({ name: 'priceRanges', required: false, type: [String] }),
   );
 }
