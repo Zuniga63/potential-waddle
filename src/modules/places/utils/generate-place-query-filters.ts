@@ -23,6 +23,7 @@ export function generatePlaceQueryFilters(filters: PlaceFiltersDto) {
     if (field === PlaceSortByEnum.RATING) order.rating = sortOrder;
     if (field === PlaceSortByEnum.DIFFICULTY) order.difficultyLevel = sortOrder;
     if (field === PlaceSortByEnum.DISTANCE) order.urbarCenterDistance = sortOrder;
+    if (field === PlaceSortByEnum.POINTS) order.points = sortOrder;
   }
 
   // * Handle town filter
