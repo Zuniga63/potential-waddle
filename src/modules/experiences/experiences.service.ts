@@ -1,8 +1,11 @@
-import { Injectable, NotImplementedException } from '@nestjs/common';
-import { ExperienceDto } from './dto';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Experience } from './entities';
 import { Repository } from 'typeorm';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Injectable, NotImplementedException } from '@nestjs/common';
+
+import { ExperienceDto } from './dto';
+import { Experience } from './entities';
+import type { ExperienceFindAllParams } from './interfaces';
+import { generateExperienceQueryFiltersAndSort } from './logic';
 
 @Injectable()
 export class ExperiencesService {
@@ -10,10 +13,12 @@ export class ExperiencesService {
     @InjectRepository(Experience)
     private readonly experienceRepository: Repository<Experience>,
   ) {}
-  async findAll(): Promise<ExperienceDto[]> {
+  async findAll({ filters }: ExperienceFindAllParams = {}): Promise<ExperienceDto[]> {
+    const { where, order } = generateExperienceQueryFiltersAndSort(filters);
     const experiences = await this.experienceRepository.find({
       relations: { categories: true, images: { imageResource: true }, town: { department: true } },
-      order: { images: { order: 'ASC' } },
+      order,
+      where,
     });
 
     return experiences.map(experience => new ExperienceDto({ data: experience }));

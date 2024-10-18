@@ -1,16 +1,23 @@
-import { Controller, Get, Param } from '@nestjs/common';
-import { ExperiencesService } from './experiences.service';
 import { ApiTags } from '@nestjs/swagger';
-import { SwaggerTags } from 'src/config';
+import { Controller, Get, Param } from '@nestjs/common';
 
-@Controller('experiences')
+import { SwaggerTags } from 'src/config';
+import { OptionalAuth } from '../auth/decorators';
+
+import { ExperiencesService } from './experiences.service';
+import { ExperienceFiltersDto } from './dto';
+import { ExperienceFilters, ExperienceListApiQueries } from './decorators';
+
+@Controller(SwaggerTags.Experiences)
 @ApiTags(SwaggerTags.Experiences)
 export class ExperiencesController {
   constructor(private readonly experiencesService: ExperiencesService) {}
 
   @Get()
-  findAll() {
-    return this.experiencesService.findAll();
+  @OptionalAuth()
+  @ExperienceListApiQueries()
+  findAll(@ExperienceFilters() filters: ExperienceFiltersDto) {
+    return this.experiencesService.findAll({ filters });
   }
 
   @Get(':identifier')
