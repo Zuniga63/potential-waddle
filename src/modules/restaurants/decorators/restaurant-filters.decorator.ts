@@ -4,11 +4,11 @@ import { createParamDecorator, ExecutionContext } from '@nestjs/common';
 
 import { validationPipeConfig } from 'src/config';
 
-import { LodgingFiltersDto } from '../dto';
+import { RestaurantFiltersDto } from '../dto';
 
-export const LodgingFilters = createParamDecorator((data: unknown, ctx: ExecutionContext) => {
+export const RestaurantFilters = createParamDecorator((data: unknown, ctx: ExecutionContext) => {
   const request = ctx.switchToHttp().getRequest();
-  const filters = plainToInstance(LodgingFiltersDto, request.query);
+  const filters = plainToInstance(RestaurantFiltersDto, request.query);
   const errors = validateSync(filters, validationPipeConfig);
 
   errors?.forEach(error => {

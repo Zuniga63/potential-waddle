@@ -1,10 +1,10 @@
 import { ApiQuery } from '@nestjs/swagger';
 import { applyDecorators } from '@nestjs/common';
 
-import { LodgingSortByEnum } from '../constants';
+import { RestaurantSortByEnum } from '../constants';
 
-export function LodgingListQueryParamsDocs() {
-  const sortByDescription = `Valid values are: ${Object.values(LodgingSortByEnum)
+export function RestaurantListApiQueries() {
+  const sortByDescription = `Valid values are: ${Object.values(RestaurantSortByEnum)
     .map(value => `-${value}, ${value}`)
     .join(', ')}`;
 

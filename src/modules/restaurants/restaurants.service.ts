@@ -4,6 +4,8 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 
 import { RestaurantDto } from './dto';
 import { Restaurant } from './entities';
+import { RestaurantFindAllParams } from './interfaces';
+import { generateRestaurantQueryFiltersAndSort } from './logic';
 
 @Injectable()
 export class RestaurantsService {
@@ -12,9 +14,12 @@ export class RestaurantsService {
     private readonly restaurantRepository: Repository<Restaurant>,
   ) {}
 
-  async findAll() {
+  async findAll({ filters }: RestaurantFindAllParams = {}) {
+    const { where, order } = generateRestaurantQueryFiltersAndSort(filters);
     const restaurants = await this.restaurantRepository.find({
       relations: { town: { department: true }, categories: { icon: true }, images: { imageResource: true } },
+      where,
+      order,
     });
 
     return restaurants.map(restaurant => new RestaurantDto({ data: restaurant }));

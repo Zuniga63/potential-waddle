@@ -1,11 +1,12 @@
 import { Controller, Get, Param } from '@nestjs/common';
 import { ApiOkResponse, ApiTags } from '@nestjs/swagger';
 
-import { LodgingFullDto, LodgingIndexDto } from './dto';
 import { SwaggerTags } from 'src/config';
 import { OptionalAuth } from '../auth/decorators';
+
 import { LodgingsService } from './lodgings.service';
 import { LodgingFilters, LodgingListQueryParamsDocs } from './decorators';
+import { LodgingFiltersDto, LodgingFullDto, LodgingIndexDto } from './dto';
 
 @Controller('lodgings')
 @ApiTags(SwaggerTags.Lodgings)
@@ -19,7 +20,7 @@ export class LodgingsController {
   @LodgingListQueryParamsDocs()
   @OptionalAuth()
   @ApiOkResponse({ description: 'Lodging List', type: [LodgingIndexDto] })
-  findAll(@LodgingFilters() filters) {
+  findAll(@LodgingFilters() filters: LodgingFiltersDto) {
     return this.lodgingsService.findAll({ filters });
   }
 
