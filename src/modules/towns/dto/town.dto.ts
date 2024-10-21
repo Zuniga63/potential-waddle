@@ -22,51 +22,18 @@ export class TownDto {
   name: string;
 
   @ApiProperty({
+    example: 'slug-code',
+    description: 'The code of the town',
+    required: false,
+  })
+  code?: string;
+
+  @ApiProperty({
     example: 'San Rafael is a town in the department of Antioquia, Colombia.',
     description: 'The description of the town',
     required: false,
   })
   description?: string;
-
-  @ApiProperty({
-    example: 'https://image.jpg',
-    description: 'The shield of the town',
-    readOnly: true,
-    required: false,
-  })
-  flag?: string;
-
-  @ApiProperty({
-    example: 'https://image.jpg',
-    description: 'The shield of the town',
-    readOnly: true,
-    required: false,
-  })
-  shield?: string;
-
-  @ApiProperty({
-    example: 'https://image.jpg',
-    description: 'The shield of the town',
-    readOnly: true,
-    required: false,
-  })
-  image?: string;
-
-  @ApiProperty({
-    example: '5000',
-    description: 'The postal calling code of the town',
-    readOnly: true,
-    required: false,
-  })
-  postalCode?: string;
-
-  @ApiProperty({
-    example: 'https://wikpedia.com',
-    description: 'The shield of the town',
-    readOnly: true,
-    required: false,
-  })
-  url?: string;
 
   @ApiProperty({
     format: 'date-time',
@@ -87,7 +54,6 @@ export class TownDto {
     this.department = new DepartmentDto(town.department);
     this.name = town.name;
     this.description = town.description;
-    this.url = town.url;
     this.createdAt = town.createdAt;
     this.updatedAt = town.updatedAt;
   }

@@ -56,11 +56,14 @@ export class Town {
   @Column('text', { nullable: false })
   name: string;
 
+  @Column('text', { nullable: true, unique: true })
+  code: string;
+
   @Column('text', { nullable: true })
   description?: string;
 
-  @Column('text', { nullable: true })
-  url?: string;
+  @Column('float', { name: 'urban_area', default: 0 })
+  urbanArea: number;
 
   @Column('geometry', { spatialFeatureType: 'Point', srid: 4326, nullable: true })
   @Index({ spatial: true })
