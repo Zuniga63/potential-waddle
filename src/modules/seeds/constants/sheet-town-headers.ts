@@ -8,4 +8,5 @@ export const SHEET_TOWN_HEADERS: Array<keyof SheetTown> = [
   'enabled',
   'longitude',
   'latitude',
+  'urbanArea',
 ];

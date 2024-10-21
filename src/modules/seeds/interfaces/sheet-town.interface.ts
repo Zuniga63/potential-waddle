@@ -6,4 +6,5 @@ export interface SheetTown {
   enabled?: boolean;
   longitude?: string;
   latitude?: string;
+  urbanArea?: number;
 }

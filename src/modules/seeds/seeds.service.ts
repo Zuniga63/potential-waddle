@@ -391,6 +391,7 @@ export class SeedsService {
           item.longitude && item.latitude
             ? { type: 'Point', coordinates: [+item.longitude, +item.latitude] }
             : undefined,
+        urbanArea: item.urbanArea,
       });
 
       const dbTown = dbTowns.find(t => t.id === town.id);
@@ -567,7 +568,7 @@ export class SeedsService {
         distance: placeData.distance,
         maxDistance,
         popularity: 0,
-        urbarCenterRange: 500,
+        townArea: town?.urbanArea,
       });
 
       // * Create the place object with the data from the sheet
