@@ -1,7 +1,7 @@
-import { Column, CreateDateColumn, Entity, ManyToMany, OneToMany, PrimaryGeneratedColumn } from 'typeorm';
+import { Column, CreateDateColumn, Entity, OneToMany, OneToOne, PrimaryGeneratedColumn } from 'typeorm';
 
 import { ResourceProvider } from 'src/config';
-import { Review } from 'src/modules/reviews/entities';
+import { ReviewImage } from 'src/modules/reviews/entities';
 import { PlaceImage } from 'src/modules/places/entities';
 import { LodgingImage } from 'src/modules/lodgings/entities';
 import { ExperienceImage } from 'src/modules/experiences/entities';
@@ -27,8 +27,8 @@ export class ImageResource {
   @OneToMany(() => RestaurantImage, restaurantImage => restaurantImage.imageResource)
   restaurantImages?: RestaurantImage[];
 
-  @ManyToMany(() => Review, review => review.images)
-  review?: Review;
+  @OneToOne(() => ReviewImage, reviewImage => reviewImage.image, { cascade: true, onDelete: 'CASCADE' })
+  reviewImage?: ReviewImage;
 
   // * ----------------------------------------------------------------------------------------------------------------
   // * MAIN FIELDS

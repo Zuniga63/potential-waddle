@@ -1,18 +1,11 @@
-import {
-  Column,
-  CreateDateColumn,
-  Entity,
-  JoinColumn,
-  JoinTable,
-  ManyToMany,
-  ManyToOne,
-  PrimaryGeneratedColumn,
-} from 'typeorm';
-import { ImageResource } from 'src/modules/core/entities';
+import { Column, CreateDateColumn, Entity, JoinColumn, ManyToOne, OneToMany, PrimaryGeneratedColumn } from 'typeorm';
 import { User } from 'src/modules/users/entities/user.entity';
 import { Place } from 'src/modules/places/entities';
 import { Lodging } from 'src/modules/lodgings/entities';
 import { Experience } from 'src/modules/experiences/entities';
+import { ReviewStatus } from '../enums';
+import { ReviewImage } from './review-image.entity';
+import { ReviewStatusHistory } from './review-status-history.entity';
 
 @Entity({ name: 'review' })
 export class Review {
@@ -22,11 +15,11 @@ export class Review {
   // * ----------------------------------------------------------------------------------------------------------------
   // * RELATIONSHIPS
   // * ----------------------------------------------------------------------------------------------------------------
-  @ManyToOne(() => User, user => user.reviews, { onDelete: 'SET NULL', nullable: true })
+  @ManyToOne(() => User, user => user.reviews, { onDelete: 'CASCADE', nullable: true })
   @JoinColumn({ name: 'user_id' })
   user?: User;
 
-  @ManyToOne(() => Place, place => place.reviews, { onDelete: 'CASCADE' })
+  @ManyToOne(() => Place, place => place.reviews, { onDelete: 'CASCADE', nullable: true })
   @JoinColumn({ name: 'place_id' })
   place?: Place | null;
 
@@ -38,27 +31,33 @@ export class Review {
   @JoinColumn({ name: 'experience_id' })
   experience?: Experience | null;
 
-  @ManyToMany(() => ImageResource, image => image.review, { onDelete: 'RESTRICT' })
-  @JoinTable({ name: 'review_image' })
-  images: ImageResource[];
+  @OneToMany(() => ReviewImage, image => image.review, { cascade: true, onDelete: 'CASCADE' })
+  images: ReviewImage[];
+
+  @ManyToOne(() => User, user => user.approvedReviews, { onDelete: 'SET NULL', nullable: true })
+  @JoinColumn({ name: 'approved_by_id' })
+  approvedBy?: User;
+
+  @OneToMany(() => ReviewStatusHistory, statusHistory => statusHistory.review, { cascade: true, onDelete: 'CASCADE' })
+  statusHistory: ReviewStatusHistory[];
   // * ----------------------------------------------------------------------------------------------------------------
   // * MAIN FIELDS
   // * ----------------------------------------------------------------------------------------------------------------
   @Column('smallint', { name: 'rating', default: 5 })
   rating: number;
 
-  @Column('boolean', { name: 'is_public', default: false })
+  @Column('boolean', { name: 'is_public', default: true })
   isPublic: boolean;
 
-  @Column('text', { default: '' })
-  comment?: string;
+  @Column('text', { nullable: true })
+  comment: string | null;
 
-  @Column('boolean', { default: false })
-  approved: boolean;
+  @Column('enum', { enum: ReviewStatus, default: ReviewStatus.PENDING })
+  status: ReviewStatus;
 
   @CreateDateColumn({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP', name: 'created_at' })
   createdAt: Date;
 
-  @CreateDateColumn({ name: 'updated_at', default: () => 'CURRENT_TIMESTAMP', onUpdate: 'CURRENT_TIMESTAMP' })
-  updatedAt: Date;
+  @Column('timestamp', { name: 'approved_at', nullable: true })
+  approvedAt: Date;
 }
