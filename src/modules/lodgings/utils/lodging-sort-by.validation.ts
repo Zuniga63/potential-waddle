@@ -1,7 +1,7 @@
 import { ValidatorConstraint, ValidatorConstraintInterface } from 'class-validator';
 import { LodgingSortByEnum } from '../constants';
 
-@ValidatorConstraint({ name: 'PlaceSortByValidation', async: false })
+@ValidatorConstraint({ name: 'LodgingsSortByValidation', async: false })
 export class LodgingSortByValidation implements ValidatorConstraintInterface {
   validate(value: any) {
     const regex = new RegExp(`^(-)?(${Object.values(LodgingSortByEnum).join('|')})$`);
