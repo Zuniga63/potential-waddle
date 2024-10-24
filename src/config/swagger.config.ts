@@ -20,6 +20,7 @@ export const swaggerConfig = new DocumentBuilder()
   .addTag(SwaggerTags.Lodgings, 'Route for lodgings administration')
   .addTag(SwaggerTags.Experiences, 'Route for experiences administration')
   .addTag(SwaggerTags.Restaurants, 'Route for restaurants administration')
+  .addTag(SwaggerTags.Reviews, 'Route for reviews administration')
   .addTag(SwaggerTags.Seeds, 'Route for seeds administration')
   .addBearerAuth()
   .build();

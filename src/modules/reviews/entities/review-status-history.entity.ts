@@ -1,5 +1,5 @@
 import { Column, Entity, JoinColumn, ManyToOne, PrimaryGeneratedColumn } from 'typeorm';
-import { ReviewStatus } from '../enums';
+import { ReviewStatusEnum } from '../enums';
 import { Review } from './review.entity';
 
 @Entity({ name: 'review_status_history' })
@@ -17,8 +17,8 @@ export class ReviewStatusHistory {
   // * ----------------------------------------------------------------------------------------------------------------
   // * MAIN FIELDS
   // * ----------------------------------------------------------------------------------------------------------------
-  @Column('enum', { enum: ReviewStatus })
-  status: ReviewStatus;
+  @Column('enum', { enum: ReviewStatusEnum })
+  status: ReviewStatusEnum;
 
   @Column('text', { nullable: true })
   reason: string | null;
