@@ -1,1 +1,1 @@
-export { ReviewStatus } from './review-status.enum';
+export { ReviewStatusEnum } from './review-status.enum';

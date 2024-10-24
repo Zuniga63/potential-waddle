@@ -1,7 +1,7 @@
 import { Column, Entity, JoinColumn, ManyToOne, OneToOne, PrimaryGeneratedColumn } from 'typeorm';
 
 import { Review } from './review.entity';
-import { ReviewStatus } from '../enums';
+import { ReviewStatusEnum } from '../enums';
 import { ImageResource } from 'src/modules/core/entities';
 
 @Entity({ name: 'review_image' })
@@ -23,6 +23,6 @@ export class ReviewImage {
   // * ----------------------------------------------------------------------------------------------------------------
   // * MAIN FIELDS
   // * ----------------------------------------------------------------------------------------------------------------
-  @Column('enum', { enum: ReviewStatus, default: ReviewStatus.PENDING })
-  status: ReviewStatus;
+  @Column('enum', { enum: ReviewStatusEnum, default: ReviewStatusEnum.PENDING })
+  status: ReviewStatusEnum;
 }

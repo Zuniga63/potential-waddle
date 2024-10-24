@@ -3,7 +3,7 @@ import { User } from 'src/modules/users/entities/user.entity';
 import { Place } from 'src/modules/places/entities';
 import { Lodging } from 'src/modules/lodgings/entities';
 import { Experience } from 'src/modules/experiences/entities';
-import { ReviewStatus } from '../enums';
+import { ReviewStatusEnum } from '../enums';
 import { ReviewImage } from './review-image.entity';
 import { ReviewStatusHistory } from './review-status-history.entity';
 
@@ -52,8 +52,8 @@ export class Review {
   @Column('text', { nullable: true })
   comment: string | null;
 
-  @Column('enum', { enum: ReviewStatus, default: ReviewStatus.PENDING })
-  status: ReviewStatus;
+  @Column('enum', { enum: ReviewStatusEnum, default: ReviewStatusEnum.PENDING })
+  status: ReviewStatusEnum;
 
   @CreateDateColumn({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP', name: 'created_at' })
   createdAt: Date;
