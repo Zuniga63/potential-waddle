@@ -32,6 +32,13 @@ export enum AppPermissions {
   UPDATE_TOWN = 'UPDATE_TOWN',
   DELETE_TOWN = 'DELETE_TOWN',
   // ---------------------------------------------------------------
+  // REVIEW PERMISSIONS
+  // ---------------------------------------------------------------
+  READ_REVIEWS = 'READ_REVIEWS',
+  APPROVE_REVIEW = 'APPROVE_REVIEW',
+  REJECT_REVIEW = 'REJECT_REVIEW',
+  DELETE_REVIEW = 'DELETE_REVIEW',
+  // ---------------------------------------------------------------
   // SUPER ADMIN PERMISSIONS
   // ---------------------------------------------------------------
   INSTALL_CLOUDINARY_PRESETS = 'INSTALL_CLOUD_PRESETS',
