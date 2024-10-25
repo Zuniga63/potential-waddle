@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { ReviewsFindAllParams } from '../interfaces';
-import { Repository } from 'typeorm';
+import { FindOptionsWhere, Repository } from 'typeorm';
 import { Review } from '../entities';
 import { InjectRepository } from '@nestjs/typeorm';
 import { AdminReviewsDto } from '../dto';
@@ -17,8 +17,12 @@ export class ReviewsService {
   // * ----------------------------------------------------------------------------------------------------------------
   async findAll({ queries }: ReviewsFindAllParams) {
     const { page = 1, limit = 25 } = queries;
+    const { status } = queries;
 
     const skip = (page - 1) * limit;
+    const where: FindOptionsWhere<Review> = {};
+
+    if (status) where.status = status;
 
     const [reviews, count] = await this.reviewsRepository.findAndCount({
       skip,
@@ -32,6 +36,7 @@ export class ReviewsService {
         user: { username: true, id: true },
         place: { id: true, name: true, images: true },
       },
+      where,
     });
 
     return new AdminReviewsDto({ currentPage: page, pages: Math.ceil(count / limit), count }, reviews);
