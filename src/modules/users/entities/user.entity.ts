@@ -66,6 +66,19 @@ export class User {
   @OneToMany(() => Session, session => session.user)
   sessions?: Session[];
 
+  // * ----------------------------------------------------------------------------------------------------------------
+  // * POINT SYSTEM
+  // * ----------------------------------------------------------------------------------------------------------------
+
+  @Column('int', { default: 0, name: 'total_points' })
+  totalPoints: number;
+
+  @Column('int', { default: 0, name: 'remaining_points' })
+  remainingPoints: number;
+
+  @Column('int', { default: 0, name: 'ranking_points' })
+  rankingPoints: number;
+
   @BeforeInsert()
   emailToLowerCase() {
     this.email = this.email.toLowerCase();
