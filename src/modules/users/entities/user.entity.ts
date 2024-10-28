@@ -14,6 +14,7 @@ import { Role } from 'src/modules/roles/entities/role.entity';
 import { CloudinaryImage } from 'src/modules/cloudinary/interfaces';
 import { Session } from 'src/modules/auth/entities';
 import { Review } from 'src/modules/reviews/entities';
+import { UserPoint } from './user-point.entity';
 
 @Entity({ name: 'users' })
 export class User {
@@ -32,6 +33,9 @@ export class User {
 
   @OneToMany(() => Review, review => review.approvedBy)
   approvedReviews: Review[];
+
+  @OneToMany(() => UserPoint, userPoint => userPoint.user)
+  points?: UserPoint[];
 
   // * ----------------------------------------------------------------------------------------------------------------
   // * MAIN FIELDS
