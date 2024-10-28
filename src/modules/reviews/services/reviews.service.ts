@@ -29,12 +29,12 @@ export class ReviewsService {
       take: limit,
       relations: {
         user: true,
-        place: { images: { imageResource: true } },
+        place: true,
         lodging: { images: { imageResource: true } },
       },
       select: {
         user: { username: true, id: true },
-        place: { id: true, name: true, images: true },
+        place: { id: true, name: true },
       },
       where,
     });

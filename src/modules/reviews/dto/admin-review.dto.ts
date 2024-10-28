@@ -8,9 +8,6 @@ class Place {
 
   @ApiProperty()
   name: string;
-
-  @ApiProperty({ isArray: true, type: String })
-  images: string[];
 }
 
 class User {
@@ -68,13 +65,7 @@ export class AdminReviewDto {
       placesVisited: Math.random() * 100,
     };
 
-    this.place = review.place
-      ? {
-          id: review.place.id,
-          name: review.place.name,
-          images: review.place.images.map(image => image.imageResource.url),
-        }
-      : undefined;
+    this.place = review.place ? { id: review.place.id, name: review.place.name } : undefined;
 
     this.rating = review.rating;
     this.isPublic = review.isPublic;
