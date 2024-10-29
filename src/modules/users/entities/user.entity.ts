@@ -83,6 +83,9 @@ export class User {
   @Column('int', { default: 0, name: 'ranking_points' })
   rankingPoints: number;
 
+  @Column('int', { default: 0, name: 'distance_travelled', comment: 'Distance travelled in meters' })
+  distanceTravelled: number;
+
   @BeforeInsert()
   emailToLowerCase() {
     this.email = this.email.toLowerCase();
