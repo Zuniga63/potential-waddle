@@ -1,12 +1,14 @@
 import { Controller, Get, Param, ParseUUIDPipe, Patch } from '@nestjs/common';
 import { ApiOkResponse, ApiOperation, ApiTags } from '@nestjs/swagger';
 
-import { SwaggerTags } from 'src/config';
+import { AppPermissions, SwaggerTags } from 'src/config';
 import { ReviewSortByEnum } from './enums';
 import { ReviewsService } from './services';
-import { AdminReviewsDto, ReviewFindAllQueriesDto } from './dto';
+import { AdminReviewsDto, ApproveReviewDto, ReviewFindAllQueriesDto } from './dto';
 import { ReviewFindAllApiQueries } from './decorators';
-import { GenericFindAllFilters } from '../common/decorators';
+import { GenericFindAllFilters, GetUser } from '../common/decorators';
+import { Auth } from '../auth/decorators';
+import { User } from '../users/entities';
 // import { Auth } from '../auth/decorators';
 
 @Controller('admin/reviews')
@@ -28,9 +30,9 @@ export class ReviewsController {
   // * ----------------------------------------------------------------------------------------------------------------
   @Patch(':id/approve')
   @ApiOperation({ summary: 'Approve review' })
-  // @Auth(AppPermissions.UPDATE_REVIEW)
-  @ApiOkResponse({ description: 'Approve review', type: AdminReviewsDto })
-  approve(@Param('id', new ParseUUIDPipe()) id: string) {
-    return this.reviewsService.approve({ id });
+  @Auth(AppPermissions.APPROVE_REVIEW)
+  @ApiOkResponse({ description: 'Approve review', type: ApproveReviewDto })
+  approve(@Param('id', new ParseUUIDPipe()) id: string, @GetUser() user: User) {
+    return this.reviewsService.approve({ id, user });
   }
 }

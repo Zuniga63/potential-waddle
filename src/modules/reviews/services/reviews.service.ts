@@ -3,7 +3,7 @@ import { ReviewsFindAllParams } from '../interfaces';
 import { DataSource, FindOptionsWhere, Repository } from 'typeorm';
 import { Review } from '../entities';
 import { InjectRepository } from '@nestjs/typeorm';
-import { AdminReviewsDto } from '../dto';
+import { AdminReviewsDto, ApproveReviewDto } from '../dto';
 import { ReviewStatusEnum } from '../enums';
 import { User, UserPoint } from 'src/modules/users/entities';
 
@@ -49,7 +49,7 @@ export class ReviewsService {
   // * ----------------------------------------------------------------------------------------------------------------
   // * APPROVE REVIEW
   // * ----------------------------------------------------------------------------------------------------------------
-  async approve({ id }: { id: string }) {
+  async approve({ id, user: adminUser }: { id: string; user: User }): Promise<ApproveReviewDto> {
     const queryRunner = this.dataSource.createQueryRunner();
 
     await queryRunner.connect();
@@ -103,7 +103,7 @@ export class ReviewsService {
       // Update review status and approvedBy
       review.status = ReviewStatusEnum.APPROVED;
       review.approvedAt = new Date();
-      review.approvedBy = { id: userId } as User;
+      review.approvedBy = { id: adminUser.id } as User;
 
       await reviewRepository.save(review);
 
@@ -123,7 +123,7 @@ export class ReviewsService {
       // Commit the transaction
       await queryRunner.commitTransaction();
 
-      return { ok: true, message: 'Review approved', status: review.status };
+      return { ok: true, reviewId: review.id, status: review.status };
 
       // TODO
     } catch (error) {
