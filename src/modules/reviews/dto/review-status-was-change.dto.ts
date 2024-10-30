@@ -1,7 +1,7 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { ReviewStatusEnum } from '../enums';
 
-export class ApproveReviewDto {
+export class ReviewStatusWasChangeDto {
   @ApiProperty()
   ok: boolean;
 

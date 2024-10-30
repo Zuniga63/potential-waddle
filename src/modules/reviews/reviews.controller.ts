@@ -1,10 +1,20 @@
-import { Controller, Get, Param, ParseUUIDPipe, Patch } from '@nestjs/common';
-import { ApiOkResponse, ApiOperation, ApiTags } from '@nestjs/swagger';
+import { Body, Controller, Get, Param, ParseUUIDPipe, Post } from '@nestjs/common';
+import {
+  ApiBadRequestResponse,
+  ApiBody,
+  ApiConsumes,
+  ApiNotFoundResponse,
+  ApiOkResponse,
+  ApiOperation,
+  ApiParam,
+  ApiTags,
+  ApiUnprocessableEntityResponse,
+} from '@nestjs/swagger';
 
 import { AppPermissions, SwaggerTags } from 'src/config';
 import { ReviewSortByEnum } from './enums';
 import { ReviewsService } from './services';
-import { AdminReviewsDto, ApproveReviewDto, ReviewFindAllQueriesDto } from './dto';
+import { AdminReviewsDto, ReviewStatusWasChangeDto, ReviewChangeStatusDto, ReviewFindAllQueriesDto } from './dto';
 import { ReviewFindAllApiQueries } from './decorators';
 import { GenericFindAllFilters, GetUser } from '../common/decorators';
 import { Auth } from '../auth/decorators';
@@ -28,11 +38,19 @@ export class ReviewsController {
   // * ----------------------------------------------------------------------------------------------------------------
   // * APPROVE REVIEW
   // * ----------------------------------------------------------------------------------------------------------------
-  @Patch(':id/approve')
-  @ApiOperation({ summary: 'Approve review' })
-  @Auth(AppPermissions.APPROVE_REVIEW)
-  @ApiOkResponse({ description: 'Approve review', type: ApproveReviewDto })
-  approve(@Param('id', new ParseUUIDPipe()) id: string, @GetUser() user: User) {
-    return this.reviewsService.approve({ id, user });
+  @Post(':id/change-status')
+  @Auth(AppPermissions.UPDATE_REVIEW_STATUS)
+  @ApiOperation({ summary: 'This endpoint changes the review status and adds a new entry to the history report.' })
+  @ApiParam({ name: 'id', type: 'string', description: 'Review UUID' })
+  @ApiBody({ type: ReviewChangeStatusDto })
+  @ApiConsumes('application/json', 'application/x-www-form-urlencoded')
+  @ApiOkResponse({ description: 'The review status was changed.', type: ReviewStatusWasChangeDto })
+  @ApiNotFoundResponse({ description: 'If the review not found' })
+  @ApiBadRequestResponse({
+    description: 'If the review does not have a user or the review status is not valid.',
+  })
+  @ApiUnprocessableEntityResponse({ description: 'This endpoint is only available for place reviews.' })
+  approve(@Param('id', new ParseUUIDPipe()) id: string, @GetUser() user: User, @Body() body: ReviewChangeStatusDto) {
+    return this.reviewsService.chnageStatus({ id, user, body });
   }
 }
