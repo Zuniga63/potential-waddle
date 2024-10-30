@@ -35,9 +35,7 @@ export enum AppPermissions {
   // REVIEW PERMISSIONS
   // ---------------------------------------------------------------
   READ_REVIEWS = 'READ_REVIEWS',
-  APPROVE_REVIEW = 'APPROVE_REVIEW',
-  REJECT_REVIEW = 'REJECT_REVIEW',
-  DELETE_REVIEW = 'DELETE_REVIEW',
+  UPDATE_REVIEW_STATUS = 'UPDATE_REVIEW_STATUS',
   // ---------------------------------------------------------------
   // SUPER ADMIN PERMISSIONS
   // ---------------------------------------------------------------
