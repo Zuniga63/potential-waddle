@@ -154,7 +154,7 @@ export class SeedWorkbook {
         if (!row.town) return null;
         if (!row.cloudinaryFolder) return null;
         if (!row.category) return null;
-        if (!row.popularity && row.popularity >= 1 && row.popularity <=5) return null;
+        if (!row.popularity && row.popularity >= 1 && row.popularity <= 5) return null;
 
         const points = row.points || 1;
         const difficulty = row.difficulty ?? 1;
@@ -179,9 +179,8 @@ export class SeedWorkbook {
         if (!row.town) return null;
         if (!row.categories) return null;
 
-        const points = row.points || 1;
         const roomCount = row.roomCount || '1';
-        return { ...row, points, slug: row.slug.trim(), roomCount };
+        return { ...row, slug: row.slug.trim(), roomCount };
       })
       .filter(row => row !== null);
 

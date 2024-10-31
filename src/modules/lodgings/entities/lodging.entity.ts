@@ -75,6 +75,9 @@ export class Lodging {
   @Column('text', { name: 'room_types', array: true, default: [] })
   roomTypes: string[];
 
+  @Column('text', { array: true, default: [] })
+  amenities: string[];
+
   @Column('smallint', { name: 'room_count', default: 0 })
   roomCount: number;
 

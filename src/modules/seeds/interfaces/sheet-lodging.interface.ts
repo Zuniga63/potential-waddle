@@ -31,5 +31,5 @@ export class SheetLodging {
   facebook?: string;
   airbnb?: string;
   instagram?: string;
-  points: number;
+  amenities?: string;
 }

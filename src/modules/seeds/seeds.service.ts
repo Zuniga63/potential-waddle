@@ -728,6 +728,7 @@ export class SeedsService {
         slug: lodgingData.slug,
         description: lodgingData.description,
         roomTypes: lodgingData.roomTypes?.split(',').map(r => r.trim()),
+        amenities: lodgingData.amenities?.split(',').map(a => a.trim()),
         roomCount: +lodgingData.roomCount,
         lowestPrice: lodgingData.lowestPrice ? +lodgingData.lowestPrice : undefined,
         highestPrice: lodgingData.highestPrice ? +lodgingData.highestPrice : undefined,

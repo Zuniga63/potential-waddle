@@ -31,6 +31,7 @@ export const SHEET_LODGING_HEADERS: Array<keyof SheetLodging> = [
   'googleMaps',
   'whatsapps',
   'facebook',
-  'airbnb',
   'instagram',
+  'airbnb',
+  'amenities',
 ];
