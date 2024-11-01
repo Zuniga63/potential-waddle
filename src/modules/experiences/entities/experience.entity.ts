@@ -15,6 +15,7 @@ import {
 } from 'typeorm';
 import { ExperienceImage } from './experience-image.entity';
 import { Review } from 'src/modules/reviews/entities';
+import { ExperienceGuide } from '../interfaces';
 
 @Entity({ name: 'experience' })
 export class Experience {
@@ -117,6 +118,9 @@ export class Experience {
 
   @Column('text', { nullable: true })
   restrictions: string | null;
+
+  @Column('jsonb', { nullable: true, default: [] })
+  guides: ExperienceGuide[];
 
   @CreateDateColumn({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP', name: 'created_at' })
   createdAt: Date;

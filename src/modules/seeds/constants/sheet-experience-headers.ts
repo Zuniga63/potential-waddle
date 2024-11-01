@@ -26,4 +26,5 @@ export const SHEET_EXPERIENCE_HEADERS: Array<keyof SheetExperience> = [
   'recommendations',
   'howToDress',
   'restrictions',
+  'guides',
 ] as const;

@@ -1,6 +1,7 @@
 import { AppIconDto, CategoryDto, FacilityDto } from 'src/modules/core/dto';
 import { Experience } from '../entities';
 import { TownDto } from 'src/modules/towns/dto';
+import { ExperienceGuide } from '../interfaces';
 
 export class ExperienceDto {
   id: string;
@@ -61,6 +62,8 @@ export class ExperienceDto {
 
   icon?: AppIconDto;
 
+  guides: ExperienceGuide[];
+
   constructor({ data }: { data: Experience }) {
     if (!data) return;
 
@@ -96,6 +99,7 @@ export class ExperienceDto {
     this.categories = data.categories?.map(category => new CategoryDto(category));
     this.facilities = data.facilities?.map(facility => new FacilityDto(facility));
     this.images = data.images?.map(image => image.imageResource.url);
+    this.guides = data.guides || [];
 
     this.town = new TownDto(data.town);
   }

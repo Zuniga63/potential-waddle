@@ -203,7 +203,8 @@ export class SeedWorkbook {
         if (!row.totalDistance) return null;
 
         const points = row.points || 1;
-        return { ...row, points, slug: row.slug.trim() };
+        const guides = row.guides?.replaceAll('\n', '') || undefined;
+        return { ...row, points, slug: row.slug.trim(), guides };
       })
       .filter(row => row !== null);
 

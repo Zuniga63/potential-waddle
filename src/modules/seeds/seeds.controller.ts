@@ -30,7 +30,7 @@ export class SeedsController {
   @ApiConsumes('multipart/form-data')
   @ApiBody({ type: FileDto })
   @ApiQuery({ name: 'truncate', required: false, type: Boolean })
-  @ApiQuery({ name: 'colleaction', required: false, enum: FileSheetsEnum })
+  @ApiQuery({ name: 'collection', required: false, enum: FileSheetsEnum })
   @ApiQuery({
     name: 'omit-images',
     required: false,

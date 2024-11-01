@@ -907,6 +907,10 @@ export class SeedsService {
         recommendations: experienceData.recommendations,
         howToDress: experienceData.howToDress,
         restrictions: experienceData.restrictions,
+        guides: experienceData.guides?.split(';').map(guide => {
+          const [name, instagram, phone] = guide.trim().split(',');
+          return { name, instagram, phone };
+        }),
       });
 
       // * Save the experience in the database with only the data from the sheet without images

@@ -24,4 +24,5 @@ export interface SheetExperience {
   recommendations?: string;
   howToDress?: string;
   restrictions?: string;
+  guides?: string;
 }
