@@ -8,7 +8,7 @@ import { CreateUserDto } from '../../users/dto';
 import { SessionService } from './session.service';
 import { UserDto } from '../../users/dto/user.dto';
 import { User } from '../../users/entities/user.entity';
-import { UsersService } from '../../users/users.service';
+import { UsersService } from '../../users/services';
 import { JwtPayload } from '../interfaces/JwtPayload.interface';
 import { ChangePasswordDto } from '../dto/change-password.dto';
 import { GoogleUserDto } from '../dto/google-user.dto';

@@ -6,7 +6,7 @@ import { forwardRef, Inject, Injectable, Logger } from '@nestjs/common';
 import { SeedsGateway } from './seeds.gateway';
 import { User } from '../users/entities/user.entity';
 import { Department, Town } from '../towns/entities';
-import { UsersService } from '../users/users.service';
+import { UsersService } from '../users/services';
 import { SeedWorkbook, truncateTables } from './logic';
 import { Place, PlaceImage } from '../places/entities';
 import { FileSheetsEnum } from './enums/file-sheets.enum';

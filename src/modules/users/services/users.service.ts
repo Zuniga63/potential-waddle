@@ -3,16 +3,16 @@ import { InjectRepository } from '@nestjs/typeorm';
 
 import { Repository } from 'typeorm';
 
-import { User } from './entities/user.entity';
-import { CreateUserDto } from './dto/create-user.dto';
-import { hashPassword } from '../auth/utils/hash-password';
-import { CloudinaryService } from '../cloudinary/cloudinary.service';
-import { CloudinaryImage } from '../cloudinary/interfaces';
-import { CloudinaryPresets } from 'src/config';
-import { UserDto } from './dto/user.dto';
-import { ChangePasswordDto } from '../auth/dto/change-password.dto';
+import { User } from '../entities/user.entity';
+import { CreateUserDto } from '../dto/create-user.dto';
+import { hashPassword } from '../../auth/utils/hash-password';
+import { CloudinaryService } from '../../cloudinary/cloudinary.service';
+import { CloudinaryImage } from '../../cloudinary/interfaces';
+import { CloudinaryPresets } from '../../../config';
+import { UserDto } from '../dto/user.dto';
+import { ChangePasswordDto } from '../../auth/dto/change-password.dto';
 import { compareSync } from 'bcrypt';
-import { GoogleUserDto } from '../auth/dto/google-user.dto';
+import { GoogleUserDto } from '../../auth/dto/google-user.dto';
 
 @Injectable()
 export class UsersService {

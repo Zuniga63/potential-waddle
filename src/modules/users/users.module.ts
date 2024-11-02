@@ -1,16 +1,15 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 
-import { UsersController } from './users.controller';
+import { UsersController, ExplorersController } from './controllers';
 import { CloudinaryModule } from '../cloudinary/cloudinary.module';
-
-import { User } from './entities/user.entity';
-import { UsersService } from './users.service';
+import { UsersService, ExplorersService } from './services';
+import { UserPoint, User } from './entities';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([User]), CloudinaryModule],
-  controllers: [UsersController],
-  providers: [UsersService],
+  imports: [TypeOrmModule.forFeature([User, UserPoint]), CloudinaryModule],
+  controllers: [UsersController, ExplorersController],
+  providers: [UsersService, ExplorersService],
   exports: [UsersService],
 })
 export class UsersModule {}
