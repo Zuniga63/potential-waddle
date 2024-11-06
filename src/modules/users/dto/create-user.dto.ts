@@ -1,6 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger';
 
-import { IsEmail, IsNotEmpty, IsString, Matches, MinLength } from 'class-validator';
+import { IsDate, IsEmail, IsNotEmpty, IsOptional, IsString, Matches, MinLength } from 'class-validator';
 
 import { IsEqualTo } from 'src/modules/common/decorators/is-equal-to.decorator';
 
@@ -30,4 +30,24 @@ export class CreateUserDto {
   @IsNotEmpty()
   @IsEqualTo('password', { message: 'The passwords do not match' })
   passwordConfirmation?: string;
+
+  @ApiProperty({ required: false, example: '1990-01-01' })
+  @IsDate()
+  @IsOptional()
+  birthDate?: Date;
+
+  @ApiProperty({ required: false, example: 'United States' })
+  @IsString()
+  @IsOptional()
+  country?: string;
+
+  @ApiProperty({ required: false, example: 'California' })
+  @IsString()
+  @IsOptional()
+  countryState?: string;
+
+  @ApiProperty({ required: false, example: 'Los Angeles' })
+  @IsString()
+  @IsOptional()
+  city: string;
 }

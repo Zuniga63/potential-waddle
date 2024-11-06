@@ -1,5 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { User } from '../entities/user.entity';
+import { calculateAge } from 'src/utils';
 
 export class UserDto {
   @ApiProperty({ example: 'df5e7f56-ce51-4428-9d43-84e35a077618' })
@@ -29,6 +30,12 @@ export class UserDto {
   @ApiProperty({ example: '2024-06-23T05:13:57.328Z' })
   updatedAt: string;
 
+  @ApiProperty({ example: '1990-01-01' })
+  birthDate?: string;
+
+  @ApiProperty({ example: 30 })
+  age?: number;
+
   constructor(user?: User) {
     if (!user) return;
     this.id = user.id;
@@ -40,5 +47,7 @@ export class UserDto {
     this.isActive = user.isActive || false;
     this.createdAt = user.createdAt.toISOString();
     this.updatedAt = user.updatedAt.toISOString();
+    this.birthDate = user.birthDate?.toISOString() || undefined;
+    this.age = user.birthDate ? calculateAge(user.birthDate) : undefined;
   }
 }

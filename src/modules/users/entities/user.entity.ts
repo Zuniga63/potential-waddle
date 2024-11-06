@@ -49,6 +49,18 @@ export class User {
   @Column('text', { select: false, nullable: true })
   password?: string;
 
+  @Column('timestamp', { nullable: true, name: 'birth_date' })
+  birthDate: Date | null;
+
+  @Column('text', { nullable: true })
+  country: string | null;
+
+  @Column('text', { nullable: true, name: 'country_state' })
+  countryState: string | null;
+
+  @Column('text', { nullable: true })
+  city: string | null;
+
   @Column('json', { nullable: true, name: 'profile_photo' })
   profilePhoto?: CloudinaryImage | null;
 

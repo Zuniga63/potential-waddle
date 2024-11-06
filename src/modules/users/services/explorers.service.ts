@@ -5,6 +5,7 @@ import { UserPoint } from '../entities/user-point.entity';
 import { UserExplorerDto, UserExplorerPlaceDto } from '../dto';
 import { ExplorerDBResult } from '../interfaces';
 import { Place } from 'src/modules/places/entities';
+import { calculateAge } from 'src/utils';
 
 @Injectable()
 export class ExplorersService {
@@ -23,6 +24,7 @@ export class ExplorersService {
         .select([
           'user.id as user_id',
           'user.username as username',
+          'user.birth_date as birth_date',
           'user.profile_photo as profile_photo',
           'COUNT(DISTINCT userPoint.place_id) as visited_places',
           'SUM(userPoint.points_earned) as total_points',
@@ -44,6 +46,7 @@ export class ExplorersService {
         id: explorer.user_id,
         name: explorer.username,
         profileImage: explorer?.profile_photo?.url ?? '',
+        age: explorer.birth_date ? calculateAge(new Date(explorer.birth_date)) : undefined,
         stats: {
           points: Number(explorer.total_points),
           distanceTraveled: Number(explorer.total_distance),
@@ -61,6 +64,7 @@ export class ExplorersService {
       .select('user.id', 'user_id')
       .addSelect('user.username', 'username')
       .addSelect('user.profile_photo', 'profile_photo')
+      .addSelect('user.birth_date', 'birth_date')
       .addSelect('COUNT(DISTINCT userPoint.place_id)', 'visited_places')
       .addSelect('SUM(userPoint.points_earned)', 'total_points')
       .addSelect('SUM(userPoint.distance_travelled)', 'total_distance')
@@ -75,6 +79,7 @@ export class ExplorersService {
       id: explorer.user_id,
       name: explorer.username,
       profileImage: explorer.profile_photo.url,
+      age: explorer.birth_date ? calculateAge(new Date(explorer.birth_date)) : undefined,
       stats: {
         points: Number(explorer.total_points),
         distanceTraveled: Number(explorer.total_distance),

@@ -6,3 +6,4 @@ export { parseNumberRangeFilterToArray } from './parse-number-range-filter-to-ar
 export * from './conversions';
 export * from './circular-area';
 export * from './generate-sort-by-options';
+export { calculateAge } from './calculate-age';

@@ -11,6 +11,9 @@ export class UserExplorerDto {
   @ApiProperty()
   profileImage: string;
 
+  @ApiProperty({ example: 30 })
+  age?: number;
+
   @ApiProperty({ type: UserExplorerStatsDto })
   stats: UserExplorerStatsDto;
 }
