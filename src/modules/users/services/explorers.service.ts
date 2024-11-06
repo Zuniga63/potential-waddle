@@ -43,7 +43,7 @@ export class ExplorersService {
       return explorersRanking.map(explorer => ({
         id: explorer.user_id,
         name: explorer.username,
-        profileImage: explorer.profile_photo.url,
+        profileImage: explorer?.profile_photo?.url ?? '',
         stats: {
           points: Number(explorer.total_points),
           distanceTraveled: Number(explorer.total_distance),
