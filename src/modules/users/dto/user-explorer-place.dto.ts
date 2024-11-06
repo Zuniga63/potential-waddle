@@ -1,4 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
+import { ReviewStatusEnum } from 'src/modules/reviews/enums';
 
 export class UserExplorerPlaceDto {
   @ApiProperty({ description: 'Place ID' })
@@ -21,4 +22,7 @@ export class UserExplorerPlaceDto {
 
   @ApiProperty({ description: 'User rating for the place' })
   rating?: number;
+
+  @ApiProperty({ description: 'Review status', enum: ReviewStatusEnum })
+  status: ReviewStatusEnum;
 }

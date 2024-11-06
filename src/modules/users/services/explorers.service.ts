@@ -6,6 +6,7 @@ import { UserExplorerDto, UserExplorerPlaceDto } from '../dto';
 import { ExplorerDBResult } from '../interfaces';
 import { Place } from 'src/modules/places/entities';
 import { calculateAge } from 'src/utils';
+import { ReviewStatusEnum } from 'src/modules/reviews/enums';
 
 @Injectable()
 export class ExplorersService {
@@ -97,7 +98,7 @@ export class ExplorersService {
         slug: true,
         description: true,
         images: { id: true, imageResource: { url: true } },
-        reviews: { user: { id: true }, rating: true },
+        reviews: { user: { id: true }, rating: true, status: true },
       },
       order: { name: 'ASC' },
     });
@@ -115,6 +116,7 @@ export class ExplorersService {
         description: place.description,
         isVisited: Boolean(userReview),
         rating: userReview?.rating,
+        status: userReview?.status ?? ReviewStatusEnum.PENDING,
       };
     });
   }
