@@ -1,11 +1,10 @@
 import { Place } from 'src/modules/places/entities';
 import { Town } from 'src/modules/towns/entities';
-import { Column, CreateDateColumn, Entity, JoinColumn, ManyToOne, PrimaryGeneratedColumn, Unique } from 'typeorm';
+import { Column, CreateDateColumn, Entity, JoinColumn, ManyToOne, PrimaryGeneratedColumn } from 'typeorm';
 import { User } from './user.entity';
 import { Review } from 'src/modules/reviews/entities';
 
 @Entity({ name: 'user_point' })
-@Unique(['user', 'review', 'place', 'town'])
 export class UserPoint {
   @PrimaryGeneratedColumn('uuid')
   id: string;

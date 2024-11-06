@@ -21,7 +21,6 @@ export async function assignPlacePoints({ user, place, town, review, userReposit
     where: {
       user: { id: user.id },
       town: { id: town.id },
-      review: { id: review.id },
       place: { id: place.id },
     },
   });
