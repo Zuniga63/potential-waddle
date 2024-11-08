@@ -1,6 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger';
 
-import { IsDate, IsEmail, IsNotEmpty, IsOptional, IsString, Matches, MinLength } from 'class-validator';
+import { IsDateString, IsEmail, IsNotEmpty, IsOptional, IsString, Matches, MinLength } from 'class-validator';
 
 import { IsEqualTo } from 'src/modules/common/decorators/is-equal-to.decorator';
 
@@ -32,7 +32,7 @@ export class CreateUserDto {
   passwordConfirmation?: string;
 
   @ApiProperty({ required: false, example: '1990-01-01' })
-  @IsDate()
+  @IsDateString({}, { message: 'Invalid date format' })
   @IsOptional()
   birthDate?: Date;
 
