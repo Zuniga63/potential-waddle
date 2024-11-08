@@ -2,11 +2,12 @@ import { Injectable, InternalServerErrorException, NotFoundException } from '@ne
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { UserPoint } from '../entities/user-point.entity';
-import { UserExplorerDto, UserExplorerPlaceDto } from '../dto';
+import { UserExplorerDto, UserExplorerLocationDto, UserExplorerPlaceDto } from '../dto';
 import { ExplorerDBResult } from '../interfaces';
 import { Place } from 'src/modules/places/entities';
 import { calculateAge } from 'src/utils';
 import { ReviewStatusEnum } from 'src/modules/reviews/enums';
+import { User } from '../entities';
 
 @Injectable()
 export class ExplorersService {
@@ -16,6 +17,9 @@ export class ExplorersService {
 
     @InjectRepository(Place)
     private readonly placeRepository: Repository<Place>,
+
+    @InjectRepository(User)
+    private readonly userRepository: Repository<User>,
   ) {}
 
   async findAllExplorersRanking({ search }: { search?: string } = {}): Promise<UserExplorerDto[]> {
@@ -27,6 +31,8 @@ export class ExplorersService {
           'user.username as username',
           'user.birth_date as birth_date',
           'user.profile_photo as profile_photo',
+          'user.country as country',
+          'user.city as city',
           'COUNT(DISTINCT userPoint.place_id) as visited_places',
           'SUM(userPoint.points_earned) as total_points',
           'SUM(userPoint.distance_travelled) as total_distance',
@@ -53,6 +59,10 @@ export class ExplorersService {
           distanceTraveled: Number(explorer.total_distance),
           visitedPlaces: Number(explorer.visited_places),
         },
+        location: {
+          country: explorer.country,
+          city: explorer.city,
+        },
       }));
     } catch (error) {
       throw new InternalServerErrorException(error);
@@ -60,27 +70,36 @@ export class ExplorersService {
   }
 
   async findOneExplorer(id: string): Promise<UserExplorerDto> {
-    const query = this.userPointRepository
-      .createQueryBuilder('userPoint')
+    const query = this.userRepository
+      .createQueryBuilder('user')
       .select('user.id', 'user_id')
       .addSelect('user.username', 'username')
       .addSelect('user.profile_photo', 'profile_photo')
       .addSelect('user.birth_date', 'birth_date')
-      .addSelect('COUNT(DISTINCT userPoint.place_id)', 'visited_places')
-      .addSelect('SUM(userPoint.points_earned)', 'total_points')
-      .addSelect('SUM(userPoint.distance_travelled)', 'total_distance')
-      .innerJoin('userPoint.user', 'user')
+      .addSelect('user.country', 'country')
+      .addSelect('user.city', 'city')
+      .addSelect('COALESCE(COUNT(DISTINCT userPoint.place_id), 0)', 'visited_places')
+      .addSelect('COALESCE(SUM(userPoint.points_earned), 0)', 'total_points')
+      .addSelect('COALESCE(SUM(userPoint.distance_travelled), 0)', 'total_distance')
+      .leftJoin('user.points', 'userPoint')
       .where('user.id = :id', { id })
-      .groupBy('user.id, user.username');
+      .groupBy('user.id');
 
     const explorer: ExplorerDBResult | undefined = await query.getRawOne();
+    console.log(explorer);
     if (!explorer) throw new NotFoundException('Explorer not found');
+
+    const location: UserExplorerLocationDto = {
+      country: explorer.country,
+      city: explorer.city,
+    };
 
     return {
       id: explorer.user_id,
       name: explorer.username,
-      profileImage: explorer.profile_photo.url,
+      profileImage: explorer.profile_photo?.url ?? '',
       age: explorer.birth_date ? calculateAge(new Date(explorer.birth_date)) : undefined,
+      location,
       stats: {
         points: Number(explorer.total_points),
         distanceTraveled: Number(explorer.total_distance),
