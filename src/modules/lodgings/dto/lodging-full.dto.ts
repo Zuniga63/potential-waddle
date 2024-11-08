@@ -14,6 +14,16 @@ export class LodgingFullDto extends LodgingIndexDto {
   facilities: FacilityDto[];
 
   @ApiProperty({
+    example: ['WiFi', 'Parking', 'Pool'],
+    description: 'List of amenities of the lodging',
+    readOnly: true,
+    required: false,
+    type: 'string',
+    isArray: true,
+  })
+  amenities: string[];
+
+  @ApiProperty({
     example: ['Single', 'Double', 'Triple'],
     description: 'List of room types of the lodging',
     readOnly: true,
@@ -121,6 +131,7 @@ export class LodgingFullDto extends LodgingIndexDto {
 
     if (!lodging) return;
     this.facilities = lodging.facilities?.map(facility => new FacilityDto(facility)) || [];
+    this.amenities = lodging.amenities || [];
     this.roomTypes = lodging.roomTypes || [];
     this.address = lodging.address || undefined;
     this.phones = lodging.phoneNumbers || [];
