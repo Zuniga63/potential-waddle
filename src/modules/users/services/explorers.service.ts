@@ -119,7 +119,7 @@ export class ExplorersService {
         images: { id: true, imageResource: { url: true } },
         reviews: { user: { id: true }, rating: true, status: true },
       },
-      order: { name: 'ASC' },
+      order: { name: 'ASC', images: { order: 'ASC' } },
     });
 
     return places.map(place => {
