@@ -1,5 +1,5 @@
-import { Transform } from 'class-transformer';
-import { IsArray, IsNotEmpty, IsOptional, IsString, IsUUID, Max, Min, Validate } from 'class-validator';
+import { Transform, Type } from 'class-transformer';
+import { IsArray, IsBoolean, IsNotEmpty, IsOptional, IsString, IsUUID, Max, Min, Validate } from 'class-validator';
 
 import { PlaceSortByValidation } from '../utils';
 import { NumberRange } from 'src/modules/common/types';
@@ -51,4 +51,9 @@ export class PlaceFiltersDto {
   @Transform(({ value }) => parseNumberRangeFilterToArray(value))
   @IsOptional()
   distanceRanges?: NumberRange[];
+
+  @IsOptional()
+  @IsBoolean()
+  @Type(() => Boolean)
+  onlyFeatured?: boolean;
 }

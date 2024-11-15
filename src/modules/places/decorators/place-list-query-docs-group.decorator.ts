@@ -16,5 +16,6 @@ export function PlaceListQueryDocsGroup() {
     ApiQuery({ name: 'ratings', required: false, type: [Number] }),
     ApiQuery({ name: 'facilities', required: false, type: [String] }),
     ApiQuery({ name: 'distanceRanges', required: false, type: [String] }),
+    ApiQuery({ name: 'onlyFeatured', required: false, type: Boolean }),
   );
 }
