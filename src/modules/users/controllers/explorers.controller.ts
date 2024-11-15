@@ -17,7 +17,6 @@ export class ExplorersController {
   @ApiQuery({ name: 'town-code', required: false, description: 'Town code to filter explorers' })
   @ApiQuery({ name: 'search', type: String, required: false, description: 'Search by explorer name' })
   findAll(@Query('search') search?: string) {
-    console.log(search);
     return this.explorersService.findAllExplorersRanking({ search });
   }
 
