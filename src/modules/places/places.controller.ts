@@ -12,7 +12,7 @@ import {
   NotImplementedException,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
-import { ApiConsumes, ApiOkResponse, ApiOperation, ApiTags } from '@nestjs/swagger';
+import { ApiConsumes, ApiOkResponse, ApiOperation, ApiParam, ApiTags } from '@nestjs/swagger';
 
 import { PlaceDetailDto, PlaceDto } from './dto';
 import { SwaggerTags } from 'src/config';
@@ -67,6 +67,7 @@ export class PlacesController {
   // * ----------------------------------------------------------------------------------------------------------------
   @Get(':id')
   @OptionalAuth()
+  @ApiParam({ name: 'id', type: 'string', description: 'The UUID of the place or slug' })
   @ApiOkResponse({ description: 'The place has been successfully retrieved.', type: PlaceDetailDto })
   findOne(@Param('id') id: string, @GetUser() user: User | null) {
     return this.placesService.findOne(id, user);

@@ -114,6 +114,20 @@ export class PlaceDetailDto extends PlaceDto {
   })
   recommendations?: Place['recommendations'];
 
+  @ApiProperty({
+    example: false,
+    description: 'Whether the place is featured',
+    required: false,
+  })
+  isFeatured?: Place['isFeatured'];
+
+  @ApiProperty({
+    example: false,
+    description: 'Whether the place location is shown',
+    required: false,
+  })
+  showLocation?: Place['showLocation'];
+
   constructor({ place, reviewId }: Props) {
     super(place, reviewId);
     this.googleMapsUrl = place?.googleMapsUrl;
@@ -131,5 +145,7 @@ export class PlaceDetailDto extends PlaceDto {
     this.restrictions = place?.restrictions;
     this.observations = place?.observations;
     this.recommendations = place?.recommendations;
+    this.isFeatured = place?.isFeatured;
+    this.showLocation = place?.showLocation;
   }
 }

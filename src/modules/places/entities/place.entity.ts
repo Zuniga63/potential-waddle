@@ -134,6 +134,12 @@ export class Place {
   @Column('text', { name: 'observations', nullable: true })
   observations?: string;
 
+  @Column('boolean', { default: false, name: 'is_featured' })
+  isFeatured: boolean;
+
+  @Column('boolean', { default: false, name: 'show_location' })
+  showLocation: boolean;
+
   // * ----------------------------------------------------------------------------------------------------------------
   @Column('boolean', { name: 'state_db', default: true })
   stateDB: boolean;
