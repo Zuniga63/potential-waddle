@@ -77,8 +77,8 @@ export class PlacesController {
   // * UPDATE PLACE
   // * ----------------------------------------------------------------------------------------------------------------
   @Patch(':id')
-  update(@Param('id') id: string, @Body() updatePlaceDto: UpdatePlaceDto) {
-    return this.placesService.update(+id, updatePlaceDto);
+  update(@Param('id', ParseUUIDPipe) id: string, @Body() updatePlaceDto: UpdatePlaceDto) {
+    return this.placesService.update(id, updatePlaceDto);
   }
 
   // * ----------------------------------------------------------------------------------------------------------------

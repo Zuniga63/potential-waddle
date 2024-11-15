@@ -131,8 +131,11 @@ export class PlacesService {
     return new PlaceDetailDto({ place, reviewId: review?.id });
   }
 
-  update(id: number, updatePlaceDto: UpdatePlaceDto) {
-    return { id, ...updatePlaceDto };
+  async update(id: string, updatePlaceDto: UpdatePlaceDto) {
+    const place = await this.placeRepo.findOne({ where: { id } });
+    if (!place) throw new NotFoundException('Place not found');
+
+    return this.placeRepo.save({ id, ...updatePlaceDto });
   }
 
   remove(id: number) {
