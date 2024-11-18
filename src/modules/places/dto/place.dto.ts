@@ -139,6 +139,22 @@ export class PlaceDto {
   })
   updatedAt: Date;
 
+  @ApiProperty({
+    example: true,
+    description: 'Indicates if the place can be shown in the map',
+    readOnly: true,
+    required: false,
+  })
+  showLocation: boolean;
+
+  @ApiProperty({
+    example: true,
+    description: 'Indicates if the place is featured',
+    readOnly: true,
+    required: false,
+  })
+  isFeatured: boolean;
+
   constructor(place?: Place, userReview?: string) {
     if (!place) return;
 
@@ -158,6 +174,8 @@ export class PlaceDto {
     this.reviewCount = place.reviewCount;
     this.urbanCenterDistance = place.urbarCenterDistance;
     this.userReview = userReview;
+    this.showLocation = place.showLocation;
+    this.isFeatured = place.isFeatured;
     this.createdAt = place.createdAt;
     this.updatedAt = place.updatedAt;
   }
