@@ -47,8 +47,6 @@ export class ExplorersService {
 
       const explorersRanking: ExplorerDBResult[] = await query.getRawMany();
 
-      console.log(explorersRanking);
-
       return explorersRanking.map(explorer => ({
         id: explorer.user_id,
         name: explorer.username,
@@ -86,7 +84,6 @@ export class ExplorersService {
       .groupBy('user.id');
 
     const explorer: ExplorerDBResult | undefined = await query.getRawOne();
-    console.log(explorer);
     if (!explorer) throw new NotFoundException('Explorer not found');
 
     const location: UserExplorerLocationDto = {
@@ -119,7 +116,7 @@ export class ExplorersService {
         images: { id: true, imageResource: { url: true } },
         reviews: { user: { id: true }, rating: true, status: true },
       },
-      order: { name: 'ASC' },
+      order: { name: 'ASC', images: { order: 'ASC' } },
     });
 
     return places.map(place => {

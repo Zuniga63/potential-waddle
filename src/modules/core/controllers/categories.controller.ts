@@ -4,8 +4,8 @@ import {
   Delete,
   Get,
   HttpStatus,
+  ParseBoolPipe,
   ParseEnumPipe,
-  ParseUUIDPipe,
   Patch,
   Post,
   Query,
@@ -15,6 +15,7 @@ import { SwaggerTags } from 'src/config';
 import { CreateCategoryDto } from '../dto';
 import { CategoriesService } from '../services';
 import { ModelsEnum } from '../enums';
+import { PublicCategoryDto } from '../dto/categories';
 
 @Controller('categories')
 @ApiTags(SwaggerTags.Categories)
@@ -32,23 +33,36 @@ export class CategoriesController {
   // * -------------------------------------------------------------------------------------------------------------
   @Get()
   @ApiQuery({
-    name: 'model-id',
-    required: false,
-    description: 'UUID model: Retrieves the model categories along with the general categories.',
-    type: String,
-  })
-  @ApiQuery({
-    name: 'inner-join',
+    name: 'model',
     required: false,
     enum: ModelsEnum,
     description:
-      'Retrieves the categories assigned to the model. This parameter takes precedence over the model-id parameter.',
+      'Retrieves the categories assigned to the selected model, ensuring they have at least one relationship',
+  })
+  @ApiQuery({
+    name: 'only-enabled',
+    required: false,
+    type: Boolean,
+    description: 'Retrieves only enabled categories, by default is true.',
+  })
+  @ApiQuery({
+    name: 'only-asigned',
+    required: false,
+    type: Boolean,
+    description:
+      'Retrieves only the categories that have relationships with any reference model. By default, this is set to false. This query parameter is applied only when no specific model is provided, and it ensures that only categories with at least one relationship to a reference model are retrieved.',
+  })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    type: [PublicCategoryDto],
+    description: 'Returns a list of categories',
   })
   findAll(
-    @Query('model-id', new ParseUUIDPipe({ optional: true })) modelId?: string,
-    @Query('inner-join', new ParseEnumPipe(ModelsEnum, { optional: true })) innerJoin?: ModelsEnum,
+    @Query('model', new ParseEnumPipe(ModelsEnum, { optional: true })) model?: ModelsEnum,
+    @Query('only-enabled', new ParseBoolPipe({ optional: true })) onlyEnabled?: boolean,
+    @Query('only-asigned', new ParseBoolPipe({ optional: true })) onlyAsigned?: boolean,
   ) {
-    return this.categoriesService.findAll({ modelId, innerJoin });
+    return this.categoriesService.findAll({ model, onlyEnabled, onlyAsigned });
   }
   // * -------------------------------------------------------------------------------------------------------------
   // * GET CATEGORY BY ID

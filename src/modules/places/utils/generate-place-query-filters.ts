@@ -6,7 +6,8 @@ import { PlaceFiltersDto } from '../dto/place-filters.dto';
 import { BadRequestException } from '@nestjs/common';
 
 export function generatePlaceQueryFilters(filters: PlaceFiltersDto) {
-  const { search, sortBy, townId, categories, facilities, difficulties, ratings, distanceRanges } = filters;
+  const { search, sortBy, townId, categories, facilities, difficulties, ratings, distanceRanges, onlyFeatured } =
+    filters;
   const where: FindOptionsWhere<Place> = {};
   const order: FindOptionsOrder<Place> = { name: 'ASC', images: { order: 'ASC' } };
 
@@ -62,6 +63,9 @@ export function generatePlaceQueryFilters(filters: PlaceFiltersDto) {
     });
     where.urbarCenterDistance = Or(...ranges);
   }
+
+  // * Handle onlyFeatured filter
+  if (onlyFeatured) where.isFeatured = true;
 
   return { where, order };
 }

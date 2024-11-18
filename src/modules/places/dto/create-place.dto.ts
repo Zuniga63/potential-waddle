@@ -287,4 +287,20 @@ export class CreatePlaceDto {
   @IsBoolean()
   @Type(() => Boolean)
   isPublic: boolean;
+
+  @ApiProperty({
+    description: 'Is the place featured',
+    example: false,
+  })
+  @IsBoolean()
+  @Type(() => Boolean)
+  isFeatured: boolean;
+
+  @ApiProperty({
+    description: 'Whether the place location is shown',
+    example: false,
+  })
+  @IsBoolean()
+  @Type(() => Boolean)
+  showLocation: boolean;
 }
