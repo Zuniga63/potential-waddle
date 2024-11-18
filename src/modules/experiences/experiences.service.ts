@@ -16,7 +16,7 @@ export class ExperiencesService {
   async findAll({ filters }: ExperienceFindAllParams = {}): Promise<ExperienceDto[]> {
     const { where, order } = generateExperienceQueryFiltersAndSort(filters);
     const experiences = await this.experienceRepository.find({
-      relations: { categories: true, images: { imageResource: true }, town: { department: true } },
+      relations: { categories: { icon: true }, images: { imageResource: true }, town: { department: true } },
       order,
       where,
     });
