@@ -25,4 +25,6 @@ export const JoiValidationSchema = Joi.object({
   GOOGLE_CLIENT_ID: Joi.string().optional(),
   GOOGLE_CLIENT_SECRET: Joi.string().optional(),
   GOOGLE_CALLBACK_URL: Joi.string().optional(),
+
+  TINYIFY_API_KEY: Joi.string().optional(),
 });

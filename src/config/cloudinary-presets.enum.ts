@@ -5,4 +5,5 @@ export enum CloudinaryPresets {
   DEFAULT = 'ml_default',
   EXPERIENCE_IMAGE = 'experience_image',
   RESTAURANT_IMAGE = 'restaurant_image',
+  REVIEW_IMAGE = 'review_image',
 }

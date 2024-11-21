@@ -18,6 +18,7 @@ import { ReviewsModule } from './modules/reviews/reviews.module';
 import { LodgingsModule } from './modules/lodgings/lodgings.module';
 import { ExperiencesModule } from './modules/experiences/experiences.module';
 import { RestaurantsModule } from './modules/restaurants/restaurants.module';
+import { TinifyModule } from './modules/tinify/tinify.module';
 
 @Module({
   imports: [
@@ -57,6 +58,8 @@ import { RestaurantsModule } from './modules/restaurants/restaurants.module';
     ExperiencesModule,
 
     RestaurantsModule,
+
+    TinifyModule,
   ],
   controllers: [],
   providers: [],

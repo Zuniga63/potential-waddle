@@ -1,6 +1,7 @@
 import { AdminApiOptions } from 'cloudinary';
 
 import { CloudinaryPresets } from 'src/config';
+import { CLOUDINARY_FOLDERS } from 'src/config/cloudinary-folders';
 import { createPreset, updatePreset, verifyIfPresetExist } from '../logic';
 
 export async function createLodgingPreset() {
@@ -8,7 +9,7 @@ export async function createLodgingPreset() {
 
   const options: AdminApiOptions = {
     name,
-    folder: 'lodging_gallery',
+    folder: CLOUDINARY_FOLDERS.LODGING_IMAGE,
     resource_type: 'image',
     allowed_formats: 'jpg, png, gif, webp, bmp, jpe, jpeg',
     access_mode: 'public',

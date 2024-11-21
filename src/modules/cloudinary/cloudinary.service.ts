@@ -18,6 +18,7 @@ import {
   createPlacePreset,
   createProfilePhotosPreset,
   createRestaurantPreset,
+  createReviewPreset,
 } from './presets';
 import { createCloudinaryImageAdapter } from './adapters';
 
@@ -25,6 +26,7 @@ interface UploadImageProps {
   file: Express.Multer.File;
   fileName?: string;
   preset?: string;
+  folder?: string;
 }
 
 @Injectable()
@@ -35,10 +37,11 @@ export class CloudinaryService {
     file,
     fileName,
     preset = CloudinaryPresets.DEFAULT,
+    folder,
   }: UploadImageProps): Promise<CloudinaryImage | undefined> {
     const { mimetype } = file;
     const [fileType] = mimetype.split('/') as ['image' | 'video' | 'raw' | 'auto' | undefined];
-    const options: UploadApiOptions = { upload_preset: preset, resource_type: fileType };
+    const options: UploadApiOptions = { upload_preset: preset, resource_type: fileType, folder };
 
     if (fileName) {
       options.public_id = this.createUniqueFileName(fileName);
@@ -78,6 +81,7 @@ export class CloudinaryService {
       createLodgingPreset(),
       createExperiencePreset(),
       createRestaurantPreset(),
+      createReviewPreset(),
     ]);
     return promises;
   }

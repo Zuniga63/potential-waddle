@@ -4,12 +4,12 @@ import { CloudinaryPresets } from 'src/config';
 import { createPreset, updatePreset, verifyIfPresetExist } from '../logic';
 import { CLOUDINARY_FOLDERS } from 'src/config/cloudinary-folders';
 
-export async function createRestaurantPreset() {
-  const name = CloudinaryPresets.RESTAURANT_IMAGE;
+export async function createReviewPreset() {
+  const name = CloudinaryPresets.REVIEW_IMAGE;
 
   const options: AdminApiOptions = {
     name,
-    folder: CLOUDINARY_FOLDERS.RESTAURANT_IMAGE,
+    folder: CLOUDINARY_FOLDERS.REVIEW_IMAGE,
     resource_type: 'image',
     allowed_formats: 'jpg, png, gif, webp, bmp, jpe, jpeg',
     access_mode: 'public',

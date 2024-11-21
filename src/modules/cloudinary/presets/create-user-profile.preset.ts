@@ -2,13 +2,14 @@ import { AdminApiOptions } from 'cloudinary';
 
 import { CloudinaryPresets } from 'src/config';
 import { createPreset, updatePreset, verifyIfPresetExist } from '../logic';
+import { CLOUDINARY_FOLDERS } from 'src/config/cloudinary-folders';
 
-export async function createProfilePhotosPreset(folder = 'profile_photos') {
+export async function createProfilePhotosPreset() {
   const name = CloudinaryPresets.PROFILE_PHOTO;
 
   const options: AdminApiOptions = {
     name,
-    folder,
+    folder: CLOUDINARY_FOLDERS.USER_PROFILE,
     resource_type: 'image',
     allowed_formats: 'jpg, png, gif, webp, bmp, jpe, jpeg',
     access_mode: 'public',

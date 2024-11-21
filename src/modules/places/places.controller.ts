@@ -10,8 +10,9 @@ import {
   UseInterceptors,
   ParseUUIDPipe,
   NotImplementedException,
+  UploadedFiles,
 } from '@nestjs/common';
-import { FileInterceptor } from '@nestjs/platform-express';
+import { FileInterceptor, FilesInterceptor } from '@nestjs/platform-express';
 import { ApiConsumes, ApiOkResponse, ApiOperation, ApiParam, ApiTags } from '@nestjs/swagger';
 
 import { PlaceDetailDto, PlaceDto } from './dto';
@@ -85,6 +86,7 @@ export class PlacesController {
   // * DELETE PLACE
   // * ----------------------------------------------------------------------------------------------------------------
   @Delete(':id')
+  @ApiOperation({ summary: 'Delete a place', deprecated: true })
   remove(@Param('id') id: string) {
     return this.placesService.remove(+id);
   }
@@ -95,6 +97,7 @@ export class PlacesController {
   @Post(':id/image')
   @UseInterceptors(FileInterceptor('image'))
   @ApiConsumes('multipart/form-data')
+  @ApiOperation({ summary: 'Add a new image to a place', deprecated: true })
   addImage(
     @Param('id', ParseUUIDPipe) id: string,
     @UploadedFile(new ImageFileValidationPipe({ propertyName: 'image' })) image: Express.Multer.File,
@@ -107,6 +110,7 @@ export class PlacesController {
   // * DELETE PLACE IMAGE
   // * ----------------------------------------------------------------------------------------------------------------
   @Delete(':id/image/:imageId')
+  @ApiOperation({ summary: 'Remove a place image', deprecated: true })
   removeImage(@Param('id') id: string, @Param('imageId') imageId: string) {
     console.log(id, imageId);
     throw new NotImplementedException('This action removes a place image');
@@ -117,7 +121,16 @@ export class PlacesController {
   // * ----------------------------------------------------------------------------------------------------------------
   @Post(':id/reviews')
   @Auth()
-  createReview(@Param('id') id: string, @Body() reviewDto: CreateReviewDto, @GetUser() user: User) {
+  @ApiOperation({ summary: 'Create a new review for a place' })
+  @ApiConsumes('application/x-www-form-urlencoded')
+  @UseInterceptors(FilesInterceptor('images'))
+  createReview(
+    @Param('id') id: string,
+    @Body() reviewDto: CreateReviewDto,
+    @GetUser() user: User,
+    @UploadedFiles() images: Array<Express.Multer.File>,
+  ) {
+    reviewDto.images = images;
     return this.placeReviewsService.create({ placeId: id, user, reviewDto });
   }
 
@@ -125,6 +138,7 @@ export class PlacesController {
   // * GET PLACE REVIEWS
   // * ----------------------------------------------------------------------------------------------------------------
   @Get(':id/reviews')
+  @ApiOperation({ summary: 'Get all reviews for a place' })
   getReviews(@Param('id') id: string) {
     console.log(id);
     throw new NotImplementedException('This action returns all place reviews');
@@ -146,13 +160,16 @@ export class PlacesController {
   @Patch(':id/reviews/:reviewId')
   @Auth()
   @ApiOperation({ summary: 'Update a review of a user for a place' })
+  @UseInterceptors(FilesInterceptor('images'))
   updateReview(
     @Param('id') id: string,
     @Param('reviewId') reviewId: string,
     @Body() review: UpdateReviewDto,
     @GetUser() user: User,
+    @UploadedFiles() images: Array<Express.Multer.File>,
   ) {
-    return this.placeReviewsService.update({ reviewId, userId: user.id, placeId: id, reviewDto: review });
+    review.images = images;
+    return this.placeReviewsService.update({ reviewId, user, placeId: id, reviewDto: review });
   }
   // * ----------------------------------------------------------------------------------------------------------------
   // * DELETE PLACE REVIEW
