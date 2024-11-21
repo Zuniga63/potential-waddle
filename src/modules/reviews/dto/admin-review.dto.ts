@@ -49,6 +49,12 @@ export class AdminReviewDto {
   @ApiProperty({ enum: ReviewStatusEnum })
   status: ReviewStatusEnum;
 
+  images: {
+    id: string;
+    url: string;
+    status: ReviewStatusEnum;
+  }[];
+
   @ApiProperty()
   createdAt: Date;
 
@@ -66,6 +72,7 @@ export class AdminReviewDto {
     };
 
     this.place = review.place ? { id: review.place.id, name: review.place.name } : undefined;
+    this.images = review.images.map(image => ({ id: image.id, url: image.image.url, status: image.status }));
 
     this.rating = review.rating;
     this.isPublic = review.isPublic;

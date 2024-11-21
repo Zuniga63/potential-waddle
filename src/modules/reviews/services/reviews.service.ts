@@ -36,10 +36,12 @@ export class ReviewsService {
         user: true,
         place: true,
         lodging: { images: { imageResource: true } },
+        images: { image: true },
       },
       select: {
         user: { username: true, id: true },
         place: { id: true, name: true },
+        images: { id: true },
       },
       where,
     });
