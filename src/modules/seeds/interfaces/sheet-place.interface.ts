@@ -1,4 +1,5 @@
 export interface SheetPlace {
+  check: boolean;
   id: string;
   order: number;
   name: string;

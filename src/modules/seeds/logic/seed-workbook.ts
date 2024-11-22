@@ -147,6 +147,7 @@ export class SeedWorkbook {
 
     const sheetPlaces = json
       .map((row): SheetPlace | null => {
+        if (!row.check) return null;
         if (!isUUID(row.id)) return null;
         if (!row.name || !row.slug) return null;
         if (!row.description) return null;

@@ -1,6 +1,7 @@
 import type { SheetPlace } from '../interfaces';
 
 export const SHEET_PLACE_HEADERS: Array<keyof SheetPlace> = [
+  'check',
   'id',
   'order',
   'name',
@@ -31,5 +32,5 @@ export const SHEET_PLACE_HEADERS: Array<keyof SheetPlace> = [
   'howToDress',
   'internalRecommendations',
   'temperature',
-  'popularity'
+  'popularity',
 ];
