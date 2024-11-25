@@ -1,3 +1,3 @@
-import type { SheetCategory } from '../interfaces';
+import type { SheetCategoryData } from '../interfaces';
 
-export const SHEET_CATEGORY_HEADERS: Array<keyof SheetCategory> = ['id', 'name', 'slug', 'icon', 'models'];
+export const SHEET_CATEGORY_HEADERS: Array<keyof SheetCategoryData> = ['checked', 'name', 'slug', 'iconName', 'models'];

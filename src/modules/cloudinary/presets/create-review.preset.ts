@@ -9,7 +9,7 @@ export async function createReviewPreset() {
 
   const options: AdminApiOptions = {
     name,
-    folder: CLOUDINARY_FOLDERS.REVIEW_IMAGE,
+    folder: CLOUDINARY_FOLDERS.REVIEW_GALLERY,
     resource_type: 'image',
     allowed_formats: 'jpg, png, gif, webp, bmp, jpe, jpeg',
     access_mode: 'public',

@@ -1,5 +1,4 @@
-export interface SheetTown {
-  id: string;
+interface SheetTownBase {
   name: string;
   description?: string;
   departmentNumber?: number;
@@ -7,4 +6,12 @@ export interface SheetTown {
   longitude?: string;
   latitude?: string;
   urbanArea?: number;
+}
+
+export interface SheetTownData extends SheetTownBase {
+  checked: boolean;
+}
+
+export interface SheetTown extends SheetTownBase {
+  id: string;
 }

@@ -1,10 +1,10 @@
-import type { SheetCategory } from '../interfaces';
+import type { Category } from 'src/modules/core/entities';
 
 interface Params {
   /** Represents a string containing IDs, names, or slugs separated by commas */
   value?: string;
   /** List of workbook categories */
-  categories: SheetCategory[];
+  categories: Category[];
 }
 
 /**
@@ -13,10 +13,10 @@ interface Params {
  * @param categories List of workbook categories
  * @returns List of matched categories
  */
-export function matchCategoriesByValue({ value, categories }: Params): SheetCategory[] {
+export function matchCategoriesByValue({ value, categories }: Params): Category[] {
   if (!value) return [];
 
-  const result: SheetCategory[] = [];
+  const result: Category[] = [];
   const identifiers = value.split(',').map(id => id.trim().toLocaleLowerCase());
 
   identifiers.forEach(identifier => {

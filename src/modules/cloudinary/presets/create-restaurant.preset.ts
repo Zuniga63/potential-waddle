@@ -9,7 +9,7 @@ export async function createRestaurantPreset() {
 
   const options: AdminApiOptions = {
     name,
-    folder: CLOUDINARY_FOLDERS.RESTAURANT_IMAGE,
+    folder: CLOUDINARY_FOLDERS.RESTAURANT_GALLERY,
     resource_type: 'image',
     allowed_formats: 'jpg, png, gif, webp, bmp, jpe, jpeg',
     access_mode: 'public',

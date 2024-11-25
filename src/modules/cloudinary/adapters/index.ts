@@ -1,1 +1,4 @@
-export { createCloudinaryImageAdapter } from './create-cloudinary-image.adapter';
+export {
+  createCloudinaryImageAdapter,
+  createCloudinaryImageFromResourceApiResponse,
+} from './create-cloudinary-image.adapter';

@@ -9,7 +9,7 @@ export async function createPlacePreset() {
 
   const options: AdminApiOptions = {
     name,
-    folder: CLOUDINARY_FOLDERS.PLACE_IMAGE,
+    folder: CLOUDINARY_FOLDERS.PLACE_GALLERY,
     resource_type: 'image',
     allowed_formats: 'jpg, png, gif, webp, bmp, jpe, jpeg',
     access_mode: 'public',

@@ -1,5 +1,4 @@
-export class SheetLodging {
-  id: string;
+interface SheetLodgingBase {
   name: string;
   slug: string;
   town: string;
@@ -32,4 +31,12 @@ export class SheetLodging {
   airbnb?: string;
   instagram?: string;
   amenities?: string;
+}
+
+export interface SheetLodgingData extends SheetLodgingBase {
+  checked: boolean;
+}
+
+export interface SheetLodging extends SheetLodgingBase {
+  id: string;
 }

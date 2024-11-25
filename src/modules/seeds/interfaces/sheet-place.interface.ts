@@ -1,6 +1,4 @@
-export interface SheetPlace {
-  check: boolean;
-  id: string;
+interface SheetPlaceBase {
   order: number;
   name: string;
   slug: string;
@@ -31,4 +29,12 @@ export interface SheetPlace {
   internalRecommendations?: string;
   temperature?: string;
   popularity: number;
+}
+
+export interface SheetPlaceData extends SheetPlaceBase {
+  checked: boolean;
+}
+
+export interface SheetPlace extends SheetPlaceBase {
+  id: string;
 }

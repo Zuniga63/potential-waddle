@@ -1,7 +1,7 @@
-import type { SheetExperience } from '../interfaces';
+import type { SheetExperienceData } from '../interfaces';
 
-export const SHEET_EXPERIENCE_HEADERS: Array<keyof SheetExperience> = [
-  'id',
+export const SHEET_EXPERIENCE_HEADERS: Array<keyof SheetExperienceData> = [
+  'checked',
   'town',
   'categories',
   'facilities',

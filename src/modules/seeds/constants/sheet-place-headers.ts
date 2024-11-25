@@ -1,8 +1,7 @@
-import type { SheetPlace } from '../interfaces';
+import type { SheetPlaceData } from '../interfaces';
 
-export const SHEET_PLACE_HEADERS: Array<keyof SheetPlace> = [
-  'check',
-  'id',
+export const SHEET_PLACE_HEADERS: Array<keyof SheetPlaceData> = [
+  'checked',
   'order',
   'name',
   'slug',

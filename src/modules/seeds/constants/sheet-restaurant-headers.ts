@@ -1,7 +1,7 @@
-import { SheetRestaurant } from '../interfaces';
+import type { SheetRestaurantData } from '../interfaces';
 
-export const SHEET_RESTAURANT_HEADERS: Array<keyof SheetRestaurant> = [
-  'id',
+export const SHEET_RESTAURANT_HEADERS: Array<keyof SheetRestaurantData> = [
+  'checked',
   'town',
   'categories',
   'facilities',

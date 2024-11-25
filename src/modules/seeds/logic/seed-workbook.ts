@@ -1,18 +1,29 @@
-import { isUUID } from 'class-validator';
 import { read, utils, type WorkBook } from 'xlsx';
+import { v4 as uuidv4 } from 'uuid';
 
 import type {
   SheetCategory,
+  SheetCategoryData,
   SheetDepartment,
+  SheetDepartmentData,
   SheetExperience,
+  SheetExperienceData,
   SheetFacility,
+  SheetFacilityData,
   SheetIcon,
+  SheetIconData,
   SheetLanguage,
+  SheetLanguageData,
   SheetLodging,
+  SheetLodgingData,
   SheetModel,
+  SheetModelData,
   SheetPlace,
+  SheetPlaceData,
   SheetRestaurant,
+  SheetRestaurantData,
   SheetTown,
+  SheetTownData,
 } from '../interfaces';
 import {
   SHEET_CATEGORY_HEADERS,
@@ -38,128 +49,141 @@ export class SeedWorkbook {
 
   public getIcons(): SheetIcon[] {
     const sheet = this.workbook.Sheets[FileSheetsEnum.icons];
-    const json = utils.sheet_to_json<SheetIcon>(sheet, { header: SHEET_ICON_HEADERS, range: 1 });
+    const json = utils.sheet_to_json<SheetIconData>(sheet, { header: SHEET_ICON_HEADERS, range: 1 });
 
     const icons = json
-      .map(row => {
-        if (!isUUID(row.id)) return null;
-        if (!row.name || !row.code) return null;
-        return row;
+      .map(({ checked, ...data }) => {
+        if (!checked) return null;
+        if (!data.name || !data.code) return null;
+
+        const id = uuidv4();
+        return { id, ...data };
       })
-      .filter((row): row is SheetIcon => row !== null);
+      .filter(row => row !== null);
 
     return icons;
   }
 
-  public getLanguages(): SheetLanguage[] {
-    const sheet = this.workbook.Sheets[FileSheetsEnum.languages];
-    const json = utils.sheet_to_json<SheetLanguage>(sheet, { header: SHEET_LANGUAGE_HEADERS, range: 1 });
-
-    const languages = json
-      .map(row => {
-        if (!isUUID(row.id)) return null;
-        if (!row.name || !row.code) return null;
-        return row;
-      })
-      .filter((row): row is SheetLanguage => row !== null);
-
-    return languages;
-  }
-
   public getModels(): SheetModel[] {
     const sheet = this.workbook.Sheets[FileSheetsEnum.models];
-    const json = utils.sheet_to_json<SheetModel>(sheet, { header: SHEET_MODEL_HEADERS, range: 1 });
+    const json = utils.sheet_to_json<SheetModelData>(sheet, { header: SHEET_MODEL_HEADERS, range: 1 });
 
     const models = json
-      .map(row => {
-        if (!isUUID(row.id)) return null;
-        if (!row.name || !row.slug) return null;
-        return row;
+      .map(({ checked, ...data }) => {
+        if (!checked) return null;
+        if (!data.name || !data.slug) return null;
+
+        const id = uuidv4();
+        return { id, ...data };
       })
-      .filter((row): row is SheetModel => row !== null);
+      .filter(row => row !== null);
 
     return models;
   }
 
+  public getLanguages(): SheetLanguage[] {
+    const sheet = this.workbook.Sheets[FileSheetsEnum.languages];
+    const json = utils.sheet_to_json<SheetLanguageData>(sheet, { header: SHEET_LANGUAGE_HEADERS, range: 1 });
+
+    const languages = json
+      .map(({ checked, ...data }) => {
+        if (!checked) return null;
+        if (!data.name || !data.code) return null;
+
+        const id = uuidv4();
+        return { id, ...data };
+      })
+      .filter(row => row !== null);
+
+    return languages;
+  }
+
   public getDepartments(): SheetDepartment[] {
     const sheet = this.workbook.Sheets[FileSheetsEnum.departments];
-    const json = utils.sheet_to_json<SheetDepartment>(sheet, { header: SHEET_DEPARTMENT_HEADERS, range: 1 });
+    const json = utils.sheet_to_json<SheetDepartmentData>(sheet, { header: SHEET_DEPARTMENT_HEADERS, range: 1 });
 
     const departments = json
-      .map(row => {
-        if (!isUUID(row.id)) return null;
-        if (!row.name) return null;
-        return row;
+      .map(({ checked, ...data }) => {
+        if (!checked) return null;
+        if (!data.name) return null;
+
+        const id = uuidv4();
+        return { id, ...data };
       })
-      .filter((row): row is SheetDepartment => row !== null);
+      .filter(row => row !== null);
 
     return departments;
   }
 
   public getTowns(): SheetTown[] {
     const sheet = this.workbook.Sheets[FileSheetsEnum.towns];
-    const json = utils.sheet_to_json<SheetTown>(sheet, { header: SHEET_TOWN_HEADERS, range: 1 });
+    const json = utils.sheet_to_json<SheetTownData>(sheet, { header: SHEET_TOWN_HEADERS, range: 1 });
 
     const towns = json
-      .map(row => {
-        if (!isUUID(row.id)) return null;
-        if (!row.name) return null;
-        return row;
+      .map(({ checked, ...data }) => {
+        if (!checked) return null;
+        if (!data.name) return null;
+
+        const id = uuidv4();
+        return { id, ...data };
       })
-      .filter((row): row is SheetTown => row !== null);
+      .filter(row => row !== null);
 
     return towns;
   }
 
   public getCategories(): SheetCategory[] {
     const sheet = this.workbook.Sheets[FileSheetsEnum.categories];
-    const json = utils.sheet_to_json<SheetCategory>(sheet, { header: SHEET_CATEGORY_HEADERS, range: 1 });
+    const json = utils.sheet_to_json<SheetCategoryData>(sheet, { header: SHEET_CATEGORY_HEADERS, range: 1 });
 
     const categories = json
-      .map(row => {
-        if (!isUUID(row.id)) return null;
-        if (!row.name || !row.slug) return null;
-        return row;
+      .map(({ checked, ...data }) => {
+        if (!checked) return null;
+        if (!data.name || !data.slug) return null;
+
+        const id = uuidv4();
+        return { id, ...data };
       })
-      .filter((row): row is SheetCategory => row !== null);
+      .filter(row => row !== null);
 
     return categories;
   }
 
   public getFacilities(): SheetFacility[] {
     const sheet = this.workbook.Sheets[FileSheetsEnum.facilities];
-    const json = utils.sheet_to_json<SheetFacility>(sheet, { header: SHEET_FACILITY_HEADERS, range: 1 });
+    const json = utils.sheet_to_json<SheetFacilityData>(sheet, { header: SHEET_FACILITY_HEADERS, range: 1 });
 
     const facilities = json
-      .map(row => {
-        if (!isUUID(row.id)) return null;
-        if (!row.name || !row.slug) return null;
-        return row;
+      .map(({ checked, ...data }) => {
+        if (!checked) return null;
+        if (!data.name || !data.slug) return null;
+
+        const id = uuidv4();
+        return { id, ...data };
       })
-      .filter((row): row is SheetFacility => row !== null);
+      .filter(row => row !== null);
 
     return facilities;
   }
 
   public getPlaces(): SheetPlace[] {
     const sheet = this.workbook.Sheets[FileSheetsEnum.places];
-    const json = utils.sheet_to_json<SheetPlace>(sheet, { header: SHEET_PLACE_HEADERS, range: 1 });
+    const json = utils.sheet_to_json<SheetPlaceData>(sheet, { header: SHEET_PLACE_HEADERS, range: 1 });
 
     const sheetPlaces = json
-      .map((row): SheetPlace | null => {
-        if (!row.check) return null;
-        if (!isUUID(row.id)) return null;
-        if (!row.name || !row.slug) return null;
-        if (!row.description) return null;
-        if (!row.longitude || !row.latitude) return null;
-        if (!row.town) return null;
-        if (!row.cloudinaryFolder) return null;
-        if (!row.category) return null;
-        if (!row.popularity && row.popularity >= 1 && row.popularity <= 5) return null;
+      .map(({ checked, ...data }) => {
+        if (!checked) return null;
+        if (!data.name || !data.slug) return null;
+        if (!data.description) return null;
+        if (!data.longitude || !data.latitude) return null;
+        if (!data.town) return null;
+        if (!data.category) return null;
+        if (!data.popularity || data.popularity < 1 || data.popularity > 5) return null;
 
-        const points = row.points || 1;
-        const difficulty = row.difficulty ?? 1;
-        return { ...row, difficulty, points, slug: row.slug.trim() };
+        const id = uuidv4();
+        const points = data.points || 1;
+        const difficulty = data.difficulty ?? 1;
+        return { id, ...data, difficulty, points, slug: data.slug.trim() };
       })
       .filter(row => row !== null);
 
@@ -168,20 +192,20 @@ export class SeedWorkbook {
 
   public getLodgings(): SheetLodging[] {
     const sheet = this.workbook.Sheets[FileSheetsEnum.lodgings];
-    const json = utils.sheet_to_json<SheetLodging>(sheet, { header: SHEET_LODGING_HEADERS, range: 1 });
+    const json = utils.sheet_to_json<SheetLodgingData>(sheet, { header: SHEET_LODGING_HEADERS, range: 1 });
 
     const sheetLodgings = json
-      .map((row): SheetLodging | null => {
-        // console.log(row);
-        if (!isUUID(row.id)) return null;
-        if (!row.name || !row.slug) return null;
-        if (!row.description) return null;
-        if (!row.longitude || !row.latitude) return null;
-        if (!row.town) return null;
-        if (!row.categories) return null;
+      .map(({ checked, ...data }) => {
+        if (!checked) return null;
+        if (!data.name || !data.slug) return null;
+        if (!data.description) return null;
+        if (!data.longitude || !data.latitude) return null;
+        if (!data.town) return null;
+        if (!data.categories) return null;
 
-        const roomCount = row.roomCount || '1';
-        return { ...row, slug: row.slug.trim(), roomCount };
+        const id = uuidv4();
+        const roomCount = data.roomCount || '1';
+        return { id, ...data, slug: data.slug.trim(), roomCount };
       })
       .filter(row => row !== null);
 
@@ -190,22 +214,26 @@ export class SeedWorkbook {
 
   public getExperiences(): SheetExperience[] {
     const sheet = this.workbook.Sheets[FileSheetsEnum.experiences];
-    const json = utils.sheet_to_json<SheetExperience>(sheet, { header: SHEET_EXPERIENCE_HEADERS, range: 1 });
+    const json = utils.sheet_to_json<SheetExperienceData>(sheet, { header: SHEET_EXPERIENCE_HEADERS, range: 1 });
 
     const sheetExperiences = json
-      .map((row): SheetExperience | null => {
-        if (!isUUID(row.id)) return null;
-        if (!row.title || !row.slug) return null;
-        if (!row.description) return null;
-        if (!row.departureLongitude || !row.departureLatitude) return null;
-        if (!row.arrivalLongitude || !row.arrivalLatitude) return null;
-        if (!row.town) return null;
-        if (!row.categories) return null;
-        if (!row.totalDistance) return null;
+      .map(({ checked, ...data }) => {
+        if (!checked) return null;
 
-        const points = row.points || 1;
-        const guides = row.guides?.replaceAll('\n', '') || undefined;
-        return { ...row, points, slug: row.slug.trim(), guides };
+        if (!data.title || !data.slug) return null;
+        if (!data.description) return null;
+        if (!data.departureLongitude || !data.departureLatitude) return null;
+        if (!data.arrivalLongitude || !data.arrivalLatitude) return null;
+        if (!data.town) return null;
+        if (!data.categories) return null;
+        if (!data.totalDistance) return null;
+
+        const id = uuidv4();
+        const points = data.points || 1;
+        const guides = data.guides?.replaceAll('\n', '') || '';
+
+        const experiences: SheetExperience = { id, ...data, points, slug: data.slug.trim(), guides };
+        return experiences;
       })
       .filter(row => row !== null);
 
@@ -214,19 +242,21 @@ export class SeedWorkbook {
 
   public getRestaurants(): SheetRestaurant[] {
     const sheet = this.workbook.Sheets[FileSheetsEnum.restaurants];
-    const json = utils.sheet_to_json<SheetRestaurant>(sheet, { header: SHEET_RESTAURANT_HEADERS, range: 1 });
+    const json = utils.sheet_to_json<SheetRestaurantData>(sheet, { header: SHEET_RESTAURANT_HEADERS, range: 1 });
 
     const sheetRestaurants = json
-      .map((row): SheetRestaurant | null => {
-        if (!isUUID(row.id)) return null;
-        if (!row.name || !row.slug) return null;
-        if (!row.description) return null;
-        if (!row.longitude || !row.latitude) return null;
-        if (!row.town) return null;
-        if (!row.categories) return null;
+      .map(({ checked, ...data }) => {
+        if (!checked) return null;
+        if (!data.name || !data.slug) return null;
+        if (!data.description) return null;
+        if (!data.longitude || !data.latitude) return null;
+        if (!data.town) return null;
+        if (!data.categories) return null;
 
-        const points = row.points || 1;
-        return { ...row, points, slug: row.slug.trim() };
+        const id = uuidv4();
+        const points = data.points || 1;
+        const restaurants: SheetRestaurant = { id, ...data, points, slug: data.slug.trim() };
+        return restaurants;
       })
       .filter(row => row !== null);
 

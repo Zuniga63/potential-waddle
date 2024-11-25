@@ -104,6 +104,9 @@ importers:
       typeorm:
         specifier: 0.3.20
         version: 0.3.20(pg@8.12.0)(ts-node@10.9.2(@types/node@22.5.2)(typescript@5.5.4))
+      uuid:
+        specifier: 11.0.3
+        version: 11.0.3
       xlsx:
         specifier: 0.18.5
         version: 0.18.5
@@ -3427,6 +3430,10 @@ packages:
 
   uuid@10.0.0:
     resolution: {integrity: sha512-8XkAphELsDnEGrDxUOHB3RGvXz6TeuYSGEZBOjtTtPm2lwhGBjLgOzLHB63IUWfBpNucQjND6d3AOudO+H3RWQ==}
+    hasBin: true
+
+  uuid@11.0.3:
+    resolution: {integrity: sha512-d0z310fCWv5dJwnX1Y/MncBAqGMKEzlBb1AOf7z9K8ALnd0utBX/msg/fA0+sbyN1ihbMsLhrBlnl1ak7Wa0rg==}
     hasBin: true
 
   uuid@9.0.1:
@@ -7321,6 +7328,8 @@ snapshots:
   utils-merge@1.0.1: {}
 
   uuid@10.0.0: {}
+
+  uuid@11.0.3: {}
 
   uuid@9.0.1: {}
 

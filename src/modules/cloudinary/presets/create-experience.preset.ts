@@ -9,7 +9,7 @@ export async function createExperiencePreset() {
 
   const options: AdminApiOptions = {
     name,
-    folder: CLOUDINARY_FOLDERS.EXPERIENCE_IMAGE,
+    folder: CLOUDINARY_FOLDERS.EXPERIENCE_GALLERY,
     resource_type: 'image',
     allowed_formats: 'jpg, png, gif, webp, bmp, jpe, jpeg',
     access_mode: 'public',

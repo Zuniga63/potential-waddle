@@ -17,8 +17,10 @@ import { Experience, ExperienceImage } from '../experiences/entities';
 import { matchCategoriesByValue, matchFacilitiesByValue } from './utils';
 import { Lodging, LodgingImage } from '../lodgings/entities';
 import { AppIcon, Category, Facility, ImageResource, Language, Model } from '../core/entities';
-import { BANK_IMAGE_FOLDER, FOLDERS_IMAGE_BANK } from './constants';
 import { calculatePoints } from '../core/logic';
+import { CLOUDINARY_FOLDERS } from 'src/config/cloudinary-folders';
+import { CloudinaryImage } from '../cloudinary/interfaces';
+import { createCloudinaryImageFromResourceApiResponse } from '../cloudinary/adapters';
 
 interface SeedMainEntityProps {
   workbook: SeedWorkbook;
@@ -274,8 +276,8 @@ export class SeedsService {
     this.seedsWS.sendSeedLog(`File Icons: ${sheetIcons.length}`, 3);
 
     const icons: AppIcon[] = sheetIcons.map(item => {
-      const icon = queryRunner.manager.create(AppIcon, { id: item.id, name: item.name, code: item.code });
-      const dbIcon = dbIcons.find(i => i.id === icon.id);
+      const icon = queryRunner.manager.create(AppIcon, { name: item.name, code: item.code });
+      const dbIcon = dbIcons.find(i => i.code === icon.code);
       if (!dbIcon) return icon;
 
       return queryRunner.manager.merge(AppIcon, dbIcon, icon);
@@ -284,31 +286,6 @@ export class SeedsService {
     this.seedsWS.sendSeedLog('Saving icons...', 2);
     await queryRunner.manager.save(AppIcon, icons);
     this.seedsWS.sendSeedLog('Icons saved successfully in the database', 2);
-  }
-
-  // * ----------------------------------------------------------------------------------------------------------------
-  // * SEED LANGUAGES
-  // * ----------------------------------------------------------------------------------------------------------------
-  private async seedLanguagesFromWorkbook(workbook: SeedWorkbook, queryRunner: QueryRunner) {
-    this.seedsWS.sendSeedLog('Creating languages...', 1);
-    const sheetLanguages = workbook.getLanguages();
-
-    this.seedsWS.sendSeedLog('Get all languages from the database', 2);
-    const dbLanguages = await queryRunner.manager.find(Language, {});
-    this.seedsWS.sendSeedLog(`DB Languages: ${dbLanguages.length}`, 3);
-    this.seedsWS.sendSeedLog(`File Languages: ${sheetLanguages.length}`, 3);
-
-    const languages: Language[] = sheetLanguages.map(item => {
-      const language = queryRunner.manager.create(Language, { id: item.id, name: item.name, code: item.code });
-      const dbLanguage = dbLanguages.find(l => l.id === language.id);
-      if (!dbLanguage) return language;
-
-      return queryRunner.manager.merge(Language, dbLanguage, language);
-    });
-
-    this.seedsWS.sendSeedLog('Saving languages...', 2);
-    await queryRunner.manager.save(Language, languages);
-    this.seedsWS.sendSeedLog('Languages saved successfully in the database', 2);
   }
 
   // * ----------------------------------------------------------------------------------------------------------------
@@ -324,8 +301,8 @@ export class SeedsService {
     this.seedsWS.sendSeedLog(`File Models: ${sheetModel.length}`, 3);
 
     const models: Model[] = sheetModel.map(item => {
-      const model = queryRunner.manager.create(Model, { id: item.id, name: item.name, slug: item.slug });
-      const dbModel = dbModels.find(m => m.id === model.id);
+      const model = queryRunner.manager.create(Model, { name: item.name, slug: item.slug });
+      const dbModel = dbModels.find(m => m.slug === model.slug);
       if (!dbModel) return model;
 
       return queryRunner.manager.merge(Model, dbModel, model);
@@ -334,6 +311,31 @@ export class SeedsService {
     this.seedsWS.sendSeedLog('Saving models...', 2);
     await queryRunner.manager.save(Model, models);
     this.seedsWS.sendSeedLog('Models saved successfully in the database', 2);
+  }
+
+  // * ----------------------------------------------------------------------------------------------------------------
+  // * SEED LANGUAGES
+  // * ----------------------------------------------------------------------------------------------------------------
+  private async seedLanguagesFromWorkbook(workbook: SeedWorkbook, queryRunner: QueryRunner) {
+    this.seedsWS.sendSeedLog('Creating languages...', 1);
+    const sheetLanguages = workbook.getLanguages();
+
+    this.seedsWS.sendSeedLog('Get all languages from the database', 2);
+    const dbLanguages = await queryRunner.manager.find(Language, {});
+    this.seedsWS.sendSeedLog(`DB Languages: ${dbLanguages.length}`, 3);
+    this.seedsWS.sendSeedLog(`File Languages: ${sheetLanguages.length}`, 3);
+
+    const languages: Language[] = sheetLanguages.map(item => {
+      const language = queryRunner.manager.create(Language, { name: item.name, code: item.code });
+      const dbLanguage = dbLanguages.find(l => l.code === language.code);
+      if (!dbLanguage) return language;
+
+      return queryRunner.manager.merge(Language, dbLanguage, language);
+    });
+
+    this.seedsWS.sendSeedLog('Saving languages...', 2);
+    await queryRunner.manager.save(Language, languages);
+    this.seedsWS.sendSeedLog('Languages saved successfully in the database', 2);
   }
 
   // * ----------------------------------------------------------------------------------------------------------------
@@ -350,11 +352,10 @@ export class SeedsService {
 
     const departments: Department[] = sheetDepartments.map(item => {
       const department = queryRunner.manager.create(Department, {
-        id: item.id,
         name: item.name,
         capital: item.capital,
       });
-      const dbDepartment = dbDepartments.find(d => d.id === department.id);
+      const dbDepartment = dbDepartments.find(d => d.name === department.name);
       if (!dbDepartment) return department;
 
       return queryRunner.manager.merge(Department, dbDepartment, department);
@@ -375,17 +376,19 @@ export class SeedsService {
 
     this.seedsWS.sendSeedLog('Get all towns from the database', 2);
     const dbTowns = await queryRunner.manager.find(Town, {});
+    const dbDepartments = await queryRunner.manager.find(Department, {});
+
     this.seedsWS.sendSeedLog(`Towns DB: ${dbTowns.length}`, 3);
     this.seedsWS.sendSeedLog(`File Towns: ${sheetTowns.length}`, 3);
 
     const towns: Town[] = sheetTowns.map(item => {
       const department = sheetDepartments.find(d => d.number === item.departmentNumber);
+      const dbDepartment = dbDepartments.find(d => d.name === department?.name);
 
       const town = queryRunner.manager.create(Town, {
-        id: item.id,
         name: item.name,
         description: item.description,
-        department: department ? { id: department.id } : undefined,
+        department: dbDepartment ? { id: dbDepartment.id } : undefined,
         isEnable: Boolean(item.enabled),
         location:
           item.longitude && item.latitude
@@ -394,7 +397,7 @@ export class SeedsService {
         urbanArea: item.urbanArea,
       });
 
-      const dbTown = dbTowns.find(t => t.id === town.id);
+      const dbTown = dbTowns.find(t => t.name === town.name);
       if (!dbTown) return town;
 
       return queryRunner.manager.merge(Town, dbTown, town);
@@ -411,30 +414,28 @@ export class SeedsService {
   private async seedCategoriesFromWorkbook(workbook: SeedWorkbook, queryRunner: QueryRunner) {
     this.seedsWS.sendSeedLog('Creating categories: For create caegoría require models and icons', 1);
     const sheetCategories = workbook.getCategories();
-    const sheetModels = workbook.getModels();
-    const sheetIcons = workbook.getIcons();
 
     this.seedsWS.sendSeedLog('Get all categories from the database', 2);
     const dbCategories = await queryRunner.manager.find(Category, {});
+    const dbModels = await queryRunner.manager.find(Model, {});
+    const dbIcons = await queryRunner.manager.find(AppIcon, {});
+
     this.seedsWS.sendSeedLog(`Categories DB: ${dbCategories.length}`, 3);
     this.seedsWS.sendSeedLog(`File Categories: ${sheetCategories.length}`, 3);
-    this.seedsWS.sendSeedLog(`File Models: ${sheetModels.length}`, 3);
-    this.seedsWS.sendSeedLog(`File Icons: ${sheetIcons.length}`, 3);
 
     const categories: Category[] = sheetCategories.map(item => {
-      const icon = sheetIcons.find(i => i.name.toLocaleLowerCase() === item.icon?.toLocaleLowerCase());
+      const icon = dbIcons.find(i => i.name.toLocaleLowerCase() === item.iconName?.toLocaleLowerCase());
       const modelsIds: string[] =
         item.models
           ?.split(',')
           .map(m => m.trim())
           .map(modelSlug => {
-            const modelFound = sheetModels.find(m => m.slug.toLocaleLowerCase() === modelSlug.toLocaleLowerCase());
+            const modelFound = dbModels.find(m => m.slug?.toLocaleLowerCase() === modelSlug.toLocaleLowerCase());
             return modelFound ? modelFound.id : null;
           })
           .filter(id => id !== null) || [];
 
       const category = queryRunner.manager.create(Category, {
-        id: item.id,
         name: item.name,
         slug: item.slug,
         icon: icon ? { id: icon.id } : undefined,
@@ -442,7 +443,7 @@ export class SeedsService {
         isEnabled: true,
       });
 
-      const dbCategory = dbCategories.find(c => c.id === category.id);
+      const dbCategory = dbCategories.find(c => c.slug === category.slug);
       if (!dbCategory) return category;
 
       return queryRunner.manager.merge(Category, dbCategory, category);
@@ -459,13 +460,13 @@ export class SeedsService {
   private async seedFacilitiesFromWorkbook(workbook: SeedWorkbook, queryRunner: QueryRunner) {
     this.seedsWS.sendSeedLog('Creating facilities: This seed require models, icons is not avaliable', 1);
     const sheetFacilities = workbook.getFacilities();
-    const sheetModels = workbook.getModels();
 
     this.seedsWS.sendSeedLog('Get all facilities from the database', 2);
     const dbFacilities = await queryRunner.manager.find(Facility, {});
+    const dbModels = await queryRunner.manager.find(Model, {});
+
     this.seedsWS.sendSeedLog(`Facilities DB: ${dbFacilities.length}`, 3);
     this.seedsWS.sendSeedLog(`File Facilities: ${sheetFacilities.length}`, 3);
-    this.seedsWS.sendSeedLog(`File Models: ${sheetModels.length}`, 3);
 
     const facilities: Facility[] = sheetFacilities.map(item => {
       const modelsIds: string[] =
@@ -473,20 +474,19 @@ export class SeedsService {
           ?.split(',')
           .map(m => m.trim())
           .map(modelSlug => {
-            const modelFound = sheetModels.find(m => m.slug.toLocaleLowerCase() === modelSlug.toLocaleLowerCase());
+            const modelFound = dbModels.find(m => m.slug?.toLocaleLowerCase() === modelSlug.toLocaleLowerCase());
             return modelFound ? modelFound.id : null;
           })
           .filter(id => id !== null) || [];
 
       const facility = queryRunner.manager.create(Facility, {
-        id: item.id,
         name: item.name,
         slug: item.slug,
         models: modelsIds.map(id => ({ id })),
         isEnabled: true,
       });
 
-      const dbFacility = dbFacilities.find(f => f.id === facility.id);
+      const dbFacility = dbFacilities.find(f => f.slug === facility.slug);
       if (!dbFacility) return facility;
 
       return queryRunner.manager.merge(Facility, dbFacility, facility);
@@ -510,19 +510,18 @@ export class SeedsService {
     this.seedsWS.sendSeedLog('Creating places: For seed place require categories, facilities and towns', 1);
 
     const placesData = workbook.getPlaces();
-    const categoriesData = workbook.getCategories();
-    const facilitiesData = workbook.getFacilities();
-    const townsData = workbook.getTowns();
 
     this.seedsWS.sendSeedLog('Get all places from database', 2);
     const dbPlaces = await queryRunner.manager.find(Place, {
       relations: { categories: true, facilities: true, images: { imageResource: true } },
     });
+
+    const dbCategories = await queryRunner.manager.find(Category, {});
+    const dbFacilities = await queryRunner.manager.find(Facility, {});
+    const dbTowns = await queryRunner.manager.find(Town, {});
+
     this.seedsWS.sendSeedLog(`Place DB: ${dbPlaces.length}`, 3);
     this.seedsWS.sendSeedLog(`File Place: ${placesData.length}`, 3);
-    this.seedsWS.sendSeedLog(`File Categories: ${categoriesData.length}`, 3);
-    this.seedsWS.sendSeedLog(`File Facilities: ${facilitiesData.length}`, 3);
-    this.seedsWS.sendSeedLog(`File Towns: ${townsData.length}`, 3);
 
     const maxDistance = placesData.reduce((acc, place) => {
       if (!place.distance) return acc;
@@ -535,30 +534,31 @@ export class SeedsService {
     for (const placeData of placesData) {
       this.seedsWS.sendSeedLog(`Processing place ${placeData.name}`, 2);
 
-      const existingPlace = dbPlaces.find(p => p.id === placeData.id);
+      const existingPlace = dbPlaces.find(p => p.slug === placeData.slug);
       if (existingPlace) this.seedsWS.sendSeedLog('The place already exists', 3);
 
       this.seedsWS.sendSeedLog(`Recover images from cloudinary`, 3);
-      const folderImages = await this.getImagesFromFolder(placeData.cloudinaryFolder, 'places');
-      this.seedsWS.sendSeedLog(`Images found: ${folderImages.length}`, 4);
+      const repositoryFolder = `${CLOUDINARY_FOLDERS.PLACE_IMAGE_REPOSITORY}/${placeData.slug}`;
+      const imageRepository = await this.getImagesFromFolder(repositoryFolder);
+      this.seedsWS.sendSeedLog(`Images found: ${imageRepository.length}`, 4);
 
-      if (folderImages.length === 0 && (!existingPlace || createOrRecreateImages)) {
+      if (imageRepository.length === 0 && (!existingPlace || createOrRecreateImages)) {
         this.seedsWS.sendSeedLog('No images found, continue with the next place', 3);
         continue;
       }
 
       // * Get the category ids using the category names
-      const placeCategories = matchCategoriesByValue({ value: placeData.category, categories: categoriesData });
+      const placeCategories = matchCategoriesByValue({ value: placeData.category, categories: dbCategories });
       if (placeCategories.length === 0) this.seedsWS.sendSeedLog('No category found', 3);
       else this.seedsWS.sendSeedLog(`Place categories: ${placeCategories.map(c => c.name).join(', ')}`, 3);
 
       // * Get the facility ids using the facility names
-      const facilities = matchFacilitiesByValue({ value: placeData.facilities, facilities: facilitiesData });
+      const facilities = matchFacilitiesByValue({ value: placeData.facilities, facilities: dbFacilities });
       if (facilities.length === 0) this.seedsWS.sendSeedLog('No facility found', 3);
       else this.seedsWS.sendSeedLog(`Place facilities: ${facilities.map(f => f.name).join(', ')}`, 3);
 
       // * Get the town id using the town name
-      const town = townsData.find(t => t.name.toLocaleLowerCase() === placeData.town.toLocaleLowerCase());
+      const town = dbTowns.find(t => t.name.toLocaleLowerCase() === placeData.town.toLocaleLowerCase());
       if (!town) this.seedsWS.sendSeedLog('No town found', 3);
       else this.seedsWS.sendSeedLog(`Place town: ${town.name}`, 3);
 
@@ -573,7 +573,6 @@ export class SeedsService {
 
       // * Create the place object with the data from the sheet
       const newPlace = queryRunner.manager.create(Place, {
-        id: placeData.id,
         name: placeData.name,
         slug: placeData.slug,
         description: placeData.description,
@@ -621,9 +620,14 @@ export class SeedsService {
 
         this.seedsWS.sendSeedLog(`Save images...`, 3);
         const cloudinaryRes = await Promise.all(
-          folderImages.map(url =>
-            this.cloudinaryService.uploadImageFromUrl(url, `${place.name}`, CloudinaryPresets.PLACE_IMAGE),
-          ),
+          imageRepository.map(image => {
+            return this.cloudinaryService.uploadImageFromUrl(
+              image.url,
+              image.displayName || place.slug,
+              CloudinaryPresets.PLACE_IMAGE,
+              `${CLOUDINARY_FOLDERS.PLACE_GALLERY}/${place.slug}`,
+            );
+          }),
         );
 
         this.seedsWS.sendSeedLog(`Save ${cloudinaryRes.length} images in cloudinary!`, 3);
@@ -677,9 +681,6 @@ export class SeedsService {
     this.seedsWS.sendSeedLog('Creating lodgings: this seed require categories, facilities and town', 1);
 
     const lodgingsData = workbook.getLodgings();
-    const categoriesData = workbook.getCategories();
-    const facilitiesData = workbook.getFacilities();
-    const townsData = workbook.getTowns();
 
     this.seedsWS.sendSeedLog(`Records of file: ${lodgingsData.length}`, 2);
 
@@ -687,43 +688,45 @@ export class SeedsService {
     const dbLodgings = await queryRunner.manager.find(Lodging, {
       relations: { categories: true, facilities: true, images: { imageResource: true } },
     });
+    const dbCategories = await queryRunner.manager.find(Category, {});
+    const dbFacilities = await queryRunner.manager.find(Facility, {});
+    const dbTowns = await queryRunner.manager.find(Town, {});
+
     this.seedsWS.sendSeedLog(`DB lodging found: ${dbLodgings.length}`, 3);
     this.seedsWS.sendSeedLog(`File Lodgings: ${lodgingsData.length}`, 3);
-    this.seedsWS.sendSeedLog(`File Categories: ${categoriesData.length}`, 3);
-    this.seedsWS.sendSeedLog(`File Facilities: ${facilitiesData.length}`, 3);
 
     for (const lodgingData of lodgingsData) {
       this.seedsWS.sendSeedLog(`Processing lodging ${lodgingData.name}`, 2);
 
-      const existingLodging = dbLodgings.find(l => l.id === lodgingData.id);
+      const existingLodging = dbLodgings.find(l => l.slug === lodgingData.slug);
       if (existingLodging) this.seedsWS.sendSeedLog('The lodging already exists', 3);
 
       this.seedsWS.sendSeedLog(`Recover images from cloudinary`, 3);
-      const folderImages = await this.getImagesFromFolder(lodgingData.slug, 'lodgings');
-      this.seedsWS.sendSeedLog(`Images found: ${folderImages.length}`, 4);
+      const repositoryFolder = `${CLOUDINARY_FOLDERS.LODGING_IMAGE_REPOSITORY}/${lodgingData.slug}`;
+      const imageRepository = await this.getImagesFromFolder(repositoryFolder);
+      this.seedsWS.sendSeedLog(`Images found: ${imageRepository.length}`, 4);
 
-      if (folderImages.length === 0 && (!existingLodging || createOrRecreateImages)) {
+      if (imageRepository.length === 0 && (!existingLodging || createOrRecreateImages)) {
         this.seedsWS.sendSeedLog('No images found, continue with the next lodging', 4);
         continue;
       }
 
       // * Get the category ids using the category names
-      const lodgingCategories = matchCategoriesByValue({ value: lodgingData.categories, categories: categoriesData });
+      const lodgingCategories = matchCategoriesByValue({ value: lodgingData.categories, categories: dbCategories });
       if (lodgingCategories.length === 0) this.seedsWS.sendSeedLog('No category found', 3);
       else this.seedsWS.sendSeedLog(`Lodging categories: ${lodgingCategories.map(c => c.name).join(', ')}`, 3);
 
       // * Get the facility ids using the facility names
-      const facilities = matchFacilitiesByValue({ value: lodgingData.facilities, facilities: facilitiesData });
+      const facilities = matchFacilitiesByValue({ value: lodgingData.facilities, facilities: dbFacilities });
       if (facilities.length === 0) this.seedsWS.sendSeedLog('No facility found', 3);
       else this.seedsWS.sendSeedLog(`Lodging facilities: ${facilities.map(f => f.name).join(', ')}`, 3);
 
       // * Get the town id using the town name
-      const town = townsData.find(t => t.name.toLocaleLowerCase() === lodgingData.town.toLocaleLowerCase());
+      const town = dbTowns.find(t => t.name.toLocaleLowerCase() === lodgingData.town.toLocaleLowerCase());
       if (!town) this.seedsWS.sendSeedLog('No town found', 3);
       else this.seedsWS.sendSeedLog(`Lodging town: ${town.name}`, 3);
 
       const newLodging = queryRunner.manager.create(Lodging, {
-        id: lodgingData.id,
         name: lodgingData.name,
         slug: lodgingData.slug,
         description: lodgingData.description,
@@ -777,8 +780,13 @@ export class SeedsService {
 
         this.seedsWS.sendSeedLog(`Save images...`, 3);
         const cloudinaryRes = await Promise.all(
-          folderImages.map(url =>
-            this.cloudinaryService.uploadImageFromUrl(url, `${lodging.name}`, CloudinaryPresets.LODGING_IMAGE),
+          imageRepository.map(image =>
+            this.cloudinaryService.uploadImageFromUrl(
+              image.url,
+              image.displayName || lodging.slug,
+              CloudinaryPresets.LODGING_IMAGE,
+              `${CLOUDINARY_FOLDERS.LODGING_GALLERY}/${lodging.slug}`,
+            ),
           ),
         );
 
@@ -832,53 +840,51 @@ export class SeedsService {
   }: SeedMainEntityProps) {
     this.seedsWS.sendSeedLog('Creating experiences: this seed require categories, facilities and town', 1);
     const experiencesData = workbook.getExperiences();
-    const categoriesData = workbook.getCategories();
-    const facilitiesData = workbook.getFacilities();
-    const townsData = workbook.getTowns();
 
     this.seedsWS.sendSeedLog('Get experiences from database', 2);
     const dbExperiences = await queryRunner.manager.find(Experience, {
       relations: { categories: true, facilities: true, images: { imageResource: true } },
     });
+    const dbCategories = await queryRunner.manager.find(Category, {});
+    const dbFacilities = await queryRunner.manager.find(Facility, {});
+    const dbTowns = await queryRunner.manager.find(Town, {});
 
     this.seedsWS.sendSeedLog(`DB experiences found: ${dbExperiences.length}`, 3);
     this.seedsWS.sendSeedLog(`File experiences: ${experiencesData.length}`, 3);
-    this.seedsWS.sendSeedLog(`File Categories: ${categoriesData.length}`, 3);
-    this.seedsWS.sendSeedLog(`File Facilities: ${facilitiesData.length}`, 3);
 
     for (const experienceData of experiencesData) {
       this.seedsWS.sendSeedLog(`Processing experience ${experienceData.title}`, 2);
 
-      const existingExperience = dbExperiences.find(e => e.id === experienceData.id);
+      const existingExperience = dbExperiences.find(e => e.slug === experienceData.slug);
       if (existingExperience) this.seedsWS.sendSeedLog('The experience already exists', 3);
 
       this.seedsWS.sendSeedLog(`Recover images from cloudinary`, 3);
-      const folderImages = await this.getImagesFromFolder(experienceData.slug, 'experiences');
-      this.seedsWS.sendSeedLog(`Images found: ${folderImages.length}`, 4);
+      const repositoryFolder = `${CLOUDINARY_FOLDERS.EXPERIENCE_IMAGE_REPOSITORY}/${experienceData.slug}`;
+      const imageRepository = await this.getImagesFromFolder(repositoryFolder);
+      this.seedsWS.sendSeedLog(`Images found: ${imageRepository.length}`, 4);
 
-      if (folderImages.length === 0 && (!existingExperience || createOrRecreateImages)) {
+      if (imageRepository.length === 0 && (!existingExperience || createOrRecreateImages)) {
         this.seedsWS.sendSeedLog('No images found, continue with the next experience', 4);
         continue;
       }
 
       // * Get the category ids using the category names
-      const categories = matchCategoriesByValue({ value: experienceData.categories, categories: categoriesData });
+      const categories = matchCategoriesByValue({ value: experienceData.categories, categories: dbCategories });
       if (categories.length === 0) this.seedsWS.sendSeedLog('No category found', 3);
       else this.seedsWS.sendSeedLog(`Experience categories: ${categories.map(c => c.name).join(', ')}`, 3);
 
       // * Get the facility ids using the facility names
-      const facilities = matchFacilitiesByValue({ value: experienceData.facilities, facilities: facilitiesData });
+      const facilities = matchFacilitiesByValue({ value: experienceData.facilities, facilities: dbFacilities });
       if (facilities.length === 0) this.seedsWS.sendSeedLog('No facility found', 3);
       else this.seedsWS.sendSeedLog(`Experience facilities: ${facilities.map(f => f.name).join(', ')}`, 3);
 
       // * Get the town id using the town name
-      const town = townsData.find(t => t.name.toLocaleLowerCase() === experienceData.town.toLocaleLowerCase());
+      const town = dbTowns.find(t => t.name.toLocaleLowerCase() === experienceData.town.toLocaleLowerCase());
       if (!town) this.seedsWS.sendSeedLog('No town found', 3);
       else this.seedsWS.sendSeedLog(`Experience town: ${town.name}`, 3);
 
       // * Create the experience object with the data from the sheet
       const newExperience = queryRunner.manager.create(Experience, {
-        id: experienceData.id,
         town: town ? { id: town.id } : undefined,
         categories: categories.map(c => ({ id: c.id })),
         facilities: facilities.map(f => ({ id: f.id })),
@@ -935,8 +941,13 @@ export class SeedsService {
 
         this.seedsWS.sendSeedLog(`Save images...`, 3);
         const cloudinaryRes = await Promise.all(
-          folderImages.map(url =>
-            this.cloudinaryService.uploadImageFromUrl(url, `${experience.title}`, CloudinaryPresets.EXPERIENCE_IMAGE),
+          imageRepository.map(image =>
+            this.cloudinaryService.uploadImageFromUrl(
+              image.url,
+              image.displayName || experience.title,
+              CloudinaryPresets.EXPERIENCE_IMAGE,
+              `${CLOUDINARY_FOLDERS.EXPERIENCE_GALLERY}/${experience.slug}`,
+            ),
           ),
         );
 
@@ -991,58 +1002,56 @@ export class SeedsService {
     this.seedsWS.sendSeedLog('Creating restaurants: this seed require categories, facilities and town', 1);
     // * Get the data from the workbook
     const restaurantsData = workbook.getRestaurants();
-    const categoriesData = workbook.getCategories();
-    const facilitiesData = workbook.getFacilities();
-    const townsData = workbook.getTowns();
 
     // * Get all the restaurants from the database
     this.seedsWS.sendSeedLog('Get restaurants from the database', 2);
     const dbRestaurants = await queryRunner.manager.find(Restaurant, {
       relations: { categories: true, facilities: true, images: { imageResource: true } },
     });
+    const dbCategories = await queryRunner.manager.find(Category, {});
+    const dbFacilities = await queryRunner.manager.find(Facility, {});
+    const dbTowns = await queryRunner.manager.find(Town, {});
 
     this.seedsWS.sendSeedLog(`DB restaurants found: ${dbRestaurants.length}`, 3);
     this.seedsWS.sendSeedLog(`File restaurants: ${restaurantsData.length}`, 3);
-    this.seedsWS.sendSeedLog(`File Categories: ${categoriesData.length}`, 3);
-    this.seedsWS.sendSeedLog(`File Facilities: ${facilitiesData.length}`, 3);
 
     // * Process each restaurant from the workbook
     for (const restaurantData of restaurantsData) {
       this.seedsWS.sendSeedLog(`Processing restaurant ${restaurantData.name}`, 2);
 
       // * Check if the restaurant already exists in the database
-      const existingRestaurant = dbRestaurants.find(r => r.id === restaurantData.id);
+      const existingRestaurant = dbRestaurants.find(r => r.slug === restaurantData.slug);
       if (existingRestaurant) this.seedsWS.sendSeedLog('The restaurant already exists', 3);
 
       // * Get the images from the cloudinary folder
       this.seedsWS.sendSeedLog(`Recover images from cloudinary`, 3);
-      const folderImages = await this.getImagesFromFolder(restaurantData.slug, 'restaurants');
-      this.seedsWS.sendSeedLog(`Images found: ${folderImages.length}`, 4);
+      const repositoryFolder = `${CLOUDINARY_FOLDERS.RESTAURANT_IMAGE_REPOSITORY}/${restaurantData.slug}`;
+      const imageRepository = await this.getImagesFromFolder(repositoryFolder);
+      this.seedsWS.sendSeedLog(`Images found: ${imageRepository.length}`, 4);
 
       // * If no images found and the restaurant already exists, continue with the next restaurant
-      if (folderImages.length === 0 && (!existingRestaurant || createOrRecreateImages)) {
+      if (imageRepository.length === 0 && (!existingRestaurant || createOrRecreateImages)) {
         this.seedsWS.sendSeedLog('No images found, continue with the next restaurant', 4);
         continue;
       }
 
       // * Get the category ids using the category names
-      const categories = matchCategoriesByValue({ value: restaurantData.categories, categories: categoriesData });
+      const categories = matchCategoriesByValue({ value: restaurantData.categories, categories: dbCategories });
       if (categories.length === 0) this.seedsWS.sendSeedLog('No category found', 3);
       else this.seedsWS.sendSeedLog(`Restaurant categories: ${categories.map(c => c.name).join(', ')}`, 3);
 
       // * Get the facility ids using the facility names
-      const facilities = matchFacilitiesByValue({ value: restaurantData.facilities, facilities: facilitiesData });
+      const facilities = matchFacilitiesByValue({ value: restaurantData.facilities, facilities: dbFacilities });
       if (facilities.length === 0) this.seedsWS.sendSeedLog('No facility found', 3);
       else this.seedsWS.sendSeedLog(`Restaurant facilities: ${facilities.map(f => f.name).join(', ')}`, 3);
 
       // * Get the town id using the town name
-      const town = townsData.find(t => t.name.toLocaleLowerCase() === restaurantData.town.toLocaleLowerCase());
+      const town = dbTowns.find(t => t.name.toLocaleLowerCase() === restaurantData.town.toLocaleLowerCase());
       if (!town) this.seedsWS.sendSeedLog('No town found', 3);
       else this.seedsWS.sendSeedLog(`Restaurant town: ${town.name}`, 3);
 
       // * Create the restaurant object with the data from the sheet
       const newRestaurant = queryRunner.manager.create(Restaurant, {
-        id: restaurantData.id,
         town: town ? { id: town.id } : undefined,
         categories: categories.map(c => ({ id: c.id })),
         facilities: facilities.map(f => ({ id: f.id })),
@@ -1087,8 +1096,13 @@ export class SeedsService {
 
         this.seedsWS.sendSeedLog(`Save images...`, 3);
         const cloudinaryRes = await Promise.all(
-          folderImages.map(url =>
-            this.cloudinaryService.uploadImageFromUrl(url, `${restaurant.name}`, CloudinaryPresets.RESTAURANT_IMAGE),
+          imageRepository.map(image =>
+            this.cloudinaryService.uploadImageFromUrl(
+              image.url,
+              image.displayName || restaurant.slug,
+              CloudinaryPresets.RESTAURANT_IMAGE,
+              `${CLOUDINARY_FOLDERS.RESTAURANT_GALLERY}/${restaurant.slug}`,
+            ),
           ),
         );
 
@@ -1133,25 +1147,21 @@ export class SeedsService {
   // * ----------------------------------------------------------------------------------------------------------------
   // * SEED UTILS
   // * ----------------------------------------------------------------------------------------------------------------
-  private async getImagesFromFolder(folder: string, rootFolder?: keyof typeof FOLDERS_IMAGE_BANK) {
-    let url = `${BANK_IMAGE_FOLDER}`;
-
-    if (rootFolder) url += `/${FOLDERS_IMAGE_BANK[rootFolder]}`;
-    url += `/${folder.trim()}`;
-
-    const res = await this.cloudinaryService.getResourceFromFolder(url);
+  private async getImagesFromFolder(folder: string) {
+    const res = await this.cloudinaryService.getResourceFromFolder(folder);
     if (!res || !res.resources || (res.resources.length as number) === 0) return [];
 
     const { resources } = res;
 
-    const images: string[] = [];
-    let mainImage: string | null = null;
+    const images: CloudinaryImage[] = [];
+    let mainImage: CloudinaryImage | null = null;
 
     resources.forEach(resource => {
-      const { secure_url, public_id, display_name } = resource;
+      const cloudinaryImage = createCloudinaryImageFromResourceApiResponse(resource);
 
-      if (!mainImage && (public_id.includes('main') || display_name.includes('main'))) mainImage = secure_url;
-      else images.push(secure_url);
+      if (!mainImage && (cloudinaryImage.publicId.includes('main') || cloudinaryImage.url.includes('main')))
+        mainImage = cloudinaryImage;
+      else images.push(cloudinaryImage);
     });
 
     if (mainImage) images.unshift(mainImage);

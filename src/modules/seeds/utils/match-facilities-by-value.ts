@@ -1,16 +1,16 @@
-import type { SheetFacility } from '../interfaces';
+import type { Facility } from 'src/modules/core/entities';
 
 interface Params {
   /** Represents a string containing IDs, names, or slugs separated by commas */
   value?: string;
   /** List of workbook facilities */
-  facilities: SheetFacility[];
+  facilities: Facility[];
 }
 
-export function matchFacilitiesByValue({ value, facilities }: Params): SheetFacility[] {
+export function matchFacilitiesByValue({ value, facilities }: Params): Facility[] {
   if (!value) return [];
 
-  const result: SheetFacility[] = [];
+  const result: Facility[] = [];
   const identifiers = value.split(',').map(id => id.trim().toLocaleLowerCase());
 
   identifiers.forEach(identifier => {

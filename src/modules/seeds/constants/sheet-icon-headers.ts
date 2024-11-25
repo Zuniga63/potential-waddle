@@ -1,2 +1,3 @@
-import type { SheetIcon } from '../interfaces';
-export const SHEET_ICON_HEADERS: Array<keyof SheetIcon> = ['id', 'name', 'code'];
+import type { SheetIconData } from '../interfaces';
+
+export const SHEET_ICON_HEADERS: Array<keyof SheetIconData> = ['checked', 'name', 'code'];

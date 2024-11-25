@@ -1,5 +1,4 @@
-export interface SheetRestaurant {
-  id: string;
+interface SheetRestaurantBase {
   town: string;
   categories?: string;
   facilities?: string;
@@ -24,4 +23,12 @@ export interface SheetRestaurant {
   googleMapsUrl?: string;
   howToGetThere?: string;
   townZone?: string;
+}
+
+export interface SheetRestaurantData extends SheetRestaurantBase {
+  checked: boolean;
+}
+
+export interface SheetRestaurant extends SheetRestaurantBase {
+  id: string;
 }

@@ -1,5 +1,4 @@
-export interface SheetExperience {
-  id: string;
+interface SheetExperienceBase {
   town: string;
   categories: string;
   facilities: string;
@@ -25,4 +24,12 @@ export interface SheetExperience {
   howToDress?: string;
   restrictions?: string;
   guides?: string;
+}
+
+export interface SheetExperienceData extends SheetExperienceBase {
+  checked: boolean;
+}
+
+export interface SheetExperience extends SheetExperienceBase {
+  id: string;
 }

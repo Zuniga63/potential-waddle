@@ -222,7 +222,7 @@ export class PlaceReviewsService {
         this.cloudinaryService.uploadImage({
           file: { ...image, buffer: compressedImages[index] },
           fileName: `${place.slug}-${index}`,
-          folder: `${CLOUDINARY_FOLDERS.REVIEW_IMAGE}/${user.username}-${user.id}/${place.slug}`,
+          folder: `${CLOUDINARY_FOLDERS.REVIEW_GALLERY}/${user.username}-${user.id}/${place.slug}`,
           preset: CloudinaryPresets.REVIEW_IMAGE,
         }),
       ),

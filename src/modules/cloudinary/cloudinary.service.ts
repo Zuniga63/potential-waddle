@@ -63,8 +63,9 @@ export class CloudinaryService {
     url: string,
     fileName?: string,
     preset = CloudinaryPresets.DEFAULT,
+    folder?: string,
   ): Promise<CloudinaryImage | undefined> {
-    const options: UploadApiOptions = { upload_preset: preset };
+    const options: UploadApiOptions = { upload_preset: preset, folder };
 
     if (fileName) {
       options.public_id = this.createUniqueFileName(fileName);

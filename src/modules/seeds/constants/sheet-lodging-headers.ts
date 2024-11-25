@@ -1,7 +1,7 @@
-import { SheetLodging } from '../interfaces';
+import type { SheetLodgingData } from '../interfaces';
 
-export const SHEET_LODGING_HEADERS: Array<keyof SheetLodging> = [
-  'id',
+export const SHEET_LODGING_HEADERS: Array<keyof SheetLodgingData> = [
+  'checked',
   'name',
   'slug',
   'town',
