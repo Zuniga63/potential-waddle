@@ -17,7 +17,7 @@ export async function createProfilePhotosPreset() {
     auto_tagging: 0.7,
     overwrite: true,
 
-    transformation: [{ width: 200, height: 200, crop: 'thumb', gravity: 'face' }],
+    transformation: [{ width: 200, height: 200, crop: 'thumb' }],
   };
 
   const presetExist = await verifyIfPresetExist(name);
