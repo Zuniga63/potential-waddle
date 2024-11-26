@@ -15,6 +15,7 @@ import { GoogleUserDto } from '../dto/google-user.dto';
 import { OAuth2Client } from 'google-auth-library';
 import { ConfigService } from '@nestjs/config';
 import { EnvironmentVariables } from 'src/config';
+import { UpdateProfileDto } from '../dto';
 
 @Injectable()
 export class AuthService {
@@ -81,6 +82,10 @@ export class AuthService {
     }
 
     return this.usersService.changePassword(user.email, changePasswordDto);
+  }
+
+  async updateProfile(user: User, updateProfileDto: UpdateProfileDto) {
+    return this.usersService.updateProfile(user.id, updateProfileDto);
   }
 
   private createAccessToken({ user, session_id }: { user: User; session_id: string }) {

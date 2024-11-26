@@ -42,6 +42,8 @@ export class UserDto {
   constructor(user?: User) {
     if (!user) return;
 
+    const birthDate = user.birthDate ? new Date(user.birthDate) : undefined;
+
     this.id = user.id;
     this.username = user.username;
     this.email = user.email;
@@ -49,8 +51,8 @@ export class UserDto {
     this.emailVerifiedAt = user.emailVerifiedAt?.toISOString() || undefined;
     this.isSuperUser = user.isSuperUser || false;
     this.isActive = user.isActive || false;
-    this.age = user.birthDate ? calculateAge(user.birthDate) : undefined;
-    this.birthDate = user.birthDate?.toISOString() || undefined;
+    this.age = birthDate ? calculateAge(birthDate) : undefined;
+    this.birthDate = birthDate?.toISOString() || undefined;
     this.hasPassword = user.hasPassword || false;
     this.createdAt = user.createdAt.toISOString();
     this.updatedAt = user.updatedAt.toISOString();

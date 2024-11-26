@@ -28,7 +28,7 @@ import { SwaggerTags } from 'src/config';
 import { UserDto } from '../users/dto/user.dto';
 import { Auth } from './decorators';
 import { GetUser } from '../common/decorators/get-user.decorator';
-import { ProfilePhotoDto } from './dto';
+import { ProfilePhotoDto, UpdateProfileDto } from './dto';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { User } from '../users/entities/user.entity';
 import { ChangePasswordDto } from './dto/change-password.dto';
@@ -58,6 +58,17 @@ export class ProfileController {
   })
   getProfile(@GetUser() user: User) {
     return new UserDto(user);
+  }
+
+  // * ----------------------------------------------------------------------------------------------------------------
+  // * UPDATE USER PROFILE
+  // * ----------------------------------------------------------------------------------------------------------------
+  @Patch()
+  @ApiOperation({ summary: 'Update user profile', description: 'This end point update the user profile' })
+  @ApiOkResponse({ description: 'User Info', type: UserDto })
+  @ApiConsumes(ContentTypes.FORM_URLENCODED, ContentTypes.JSON)
+  updateProfile(@Body() updateProfileDto: UpdateProfileDto, @GetUser() user: User) {
+    return this.authService.updateProfile(user, updateProfileDto);
   }
 
   // * ----------------------------------------------------------------------------------------------------------------

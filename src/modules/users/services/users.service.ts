@@ -13,6 +13,7 @@ import { UserDto } from '../dto/user.dto';
 import { ChangePasswordDto } from '../../auth/dto/change-password.dto';
 import { compareSync } from 'bcrypt';
 import { GoogleUserDto } from '../../auth/dto/google-user.dto';
+import { UpdateProfileDto } from 'src/modules/auth/dto';
 
 @Injectable()
 export class UsersService {
@@ -165,5 +166,13 @@ export class UsersService {
 
     user.password = hashPassword(newPassword);
     await this.usersRepository.save(user);
+  }
+
+  async updateProfile(id: string, updateProfileDto: UpdateProfileDto) {
+    const user = await this.findOne(id);
+    if (!user) throw new NotFoundException('User not found');
+
+    const userUpdated = await this.usersRepository.save({ ...user, ...updateProfileDto });
+    return new UserDto(userUpdated);
   }
 }
