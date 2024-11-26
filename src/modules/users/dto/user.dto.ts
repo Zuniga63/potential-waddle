@@ -24,11 +24,8 @@ export class UserDto {
   @ApiProperty({ example: true })
   isActive: boolean;
 
-  @ApiProperty({ example: '2024-06-23T05:13:57.328Z' })
-  createdAt: string;
-
-  @ApiProperty({ example: '2024-06-23T05:13:57.328Z' })
-  updatedAt: string;
+  @ApiProperty({ example: false })
+  hasPassword: boolean;
 
   @ApiProperty({ example: '1990-01-01' })
   birthDate?: string;
@@ -36,8 +33,15 @@ export class UserDto {
   @ApiProperty({ example: 30 })
   age?: number;
 
+  @ApiProperty({ example: '2024-06-23T05:13:57.328Z' })
+  createdAt: string;
+
+  @ApiProperty({ example: '2024-06-23T05:13:57.328Z' })
+  updatedAt: string;
+
   constructor(user?: User) {
     if (!user) return;
+
     this.id = user.id;
     this.username = user.username;
     this.email = user.email;
@@ -45,9 +49,10 @@ export class UserDto {
     this.emailVerifiedAt = user.emailVerifiedAt?.toISOString() || undefined;
     this.isSuperUser = user.isSuperUser || false;
     this.isActive = user.isActive || false;
+    this.age = user.birthDate ? calculateAge(user.birthDate) : undefined;
+    this.birthDate = user.birthDate?.toISOString() || undefined;
+    this.hasPassword = user.hasPassword || false;
     this.createdAt = user.createdAt.toISOString();
     this.updatedAt = user.updatedAt.toISOString();
-    this.birthDate = user.birthDate?.toISOString() || undefined;
-    this.age = user.birthDate ? calculateAge(user.birthDate) : undefined;
   }
 }

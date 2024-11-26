@@ -1,4 +1,7 @@
 import {
+  AfterInsert,
+  AfterLoad,
+  AfterUpdate,
   BeforeInsert,
   BeforeUpdate,
   Column,
@@ -48,6 +51,8 @@ export class User {
 
   @Column('text', { select: false, nullable: true })
   password?: string;
+
+  hasPassword?: boolean;
 
   @Column('timestamp', { nullable: true, name: 'birth_date' })
   birthDate: Date | null;
@@ -99,12 +104,15 @@ export class User {
   distanceTravelled: number;
 
   @BeforeInsert()
+  @BeforeUpdate()
   emailToLowerCase() {
     this.email = this.email.toLowerCase();
   }
 
-  @BeforeUpdate()
-  emailToLowerCaseOnUpdate() {
-    this.email = this.email.toLowerCase();
+  @AfterLoad()
+  @AfterInsert()
+  @AfterUpdate()
+  setHasPassword() {
+    this.hasPassword = this.password ? true : false;
   }
 }

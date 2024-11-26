@@ -42,6 +42,8 @@ export class AuthService {
   async signUp(createUserDto: CreateUserDto) {
     createUserDto.birthDate = createUserDto.birthDate ? new Date(createUserDto.birthDate) : undefined;
     const user = await this.usersService.create(createUserDto);
+
+    console.log('user', user);
     return new UserDto(user);
   }
 
