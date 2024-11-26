@@ -1,28 +1,31 @@
 import { ApiProperty } from '@nestjs/swagger';
 
-import { IsNotEmpty, IsString, Matches, MinLength } from 'class-validator';
+import { IsOptional, IsString, Matches, MinLength } from 'class-validator';
 
 import { IsEqualTo } from 'src/modules/common/decorators/is-equal-to.decorator';
 
-export const strongPass = /(?=.*[a-z])(?=.*[A-Z])(?=.*[0-9])(?=.*[^A-Za-z0-9])(?=.{8,})/;
-
 export class ChangePasswordDto {
-  @ApiProperty({ required: true, example: 'Clave123*' })
-  @IsNotEmpty()
+  @ApiProperty({
+    required: false,
+    example: 'Clave123*',
+    description: 'Current password if the user has one, in this case is required',
+  })
   @IsString()
+  @IsOptional()
   password: string;
 
   @ApiProperty({ required: true, example: 'Clave123*' })
   @IsString()
-  @Matches(strongPass, {
-    message: 'Password is too weak',
-  })
-  @MinLength(8)
+  @Matches(/^.*[a-z].*$/, { message: 'La contraseña debe contener al menos una letra minúscula' })
+  @Matches(/^.*[A-Z].*$/, { message: 'La contraseña debe contener al menos una letra mayúscula' })
+  @Matches(/^.*[0-9].*$/, { message: 'La contraseña debe contener al menos un número' })
+  @Matches(/^.*[^A-Za-z0-9].*$/, { message: 'La contraseña debe contener al menos un carácter especial' })
+  @MinLength(8, { message: 'La contraseña debe tener al menos 8 caracteres' })
   newPassword: string;
 
   @ApiProperty({ required: true, example: 'Clave123*' })
   @IsString()
-  @IsNotEmpty()
+  @IsOptional()
   @IsEqualTo('newPassword', { message: 'The passwords do not match' })
   passwordConfirmation: string;
 }

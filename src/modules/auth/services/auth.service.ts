@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 
 import { compareSync } from 'bcrypt';
@@ -76,6 +76,10 @@ export class AuthService {
   }
 
   async changePassword(user: User, changePasswordDto: ChangePasswordDto) {
+    if (user.hasPassword && !changePasswordDto.password) {
+      throw new BadRequestException('Current password is required');
+    }
+
     return this.usersService.changePassword(user.email, changePasswordDto);
   }
 

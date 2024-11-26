@@ -6,11 +6,11 @@ import {
   UploadedFile,
   UseInterceptors,
   Delete,
-  Put,
   HttpCode,
   HttpStatus,
   Param,
   ParseUUIDPipe,
+  Patch,
 } from '@nestjs/common';
 import {
   ApiBadRequestResponse,
@@ -33,6 +33,7 @@ import { FileInterceptor } from '@nestjs/platform-express';
 import { User } from '../users/entities/user.entity';
 import { ChangePasswordDto } from './dto/change-password.dto';
 import { SessionService } from './services';
+import { ContentTypes } from '../common/constants';
 
 @Controller('auth/profile')
 @Auth()
@@ -64,7 +65,7 @@ export class ProfileController {
   // * ----------------------------------------------------------------------------------------------------------------
   @Post('photo')
   @UseInterceptors(FileInterceptor('file'))
-  @ApiConsumes('multipart/form-data')
+  @ApiConsumes(ContentTypes.MULTIPART_FORM_DATA)
   @ApiBody({ type: ProfilePhotoDto })
   @ApiOkResponse({
     description: 'User Info',
@@ -89,10 +90,14 @@ export class ProfileController {
   // * ----------------------------------------------------------------------------------------------------------------
   // * CHANGE USER PASSWORD
   // * ----------------------------------------------------------------------------------------------------------------
-  @Put('change-password')
+  @Patch('change-password')
   @HttpCode(HttpStatus.NO_CONTENT)
-  @ApiOperation({ summary: 'Change user password', description: 'This end point change the current password' })
+  @ApiOperation({
+    summary: 'Change user password',
+    description: 'This end point change the current password or add a new one',
+  })
   @ApiNoContentResponse({ description: 'Password has been changed' })
+  @ApiConsumes(ContentTypes.FORM_URLENCODED, ContentTypes.JSON)
   changePassword(@Body() changePasswordDto: ChangePasswordDto, @GetUser() user: User) {
     return this.authService.changePassword(user, changePasswordDto);
   }
