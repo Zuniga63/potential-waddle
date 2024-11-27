@@ -30,6 +30,15 @@ export class UserDto {
   @ApiProperty({ example: '1990-01-01' })
   birthDate?: string;
 
+  @ApiProperty({ example: 'CO' })
+  country?: string;
+
+  @ApiProperty({ example: 'ANT' })
+  countryState?: string;
+
+  @ApiProperty({ example: 'Medellín' })
+  city?: string;
+
   @ApiProperty({ example: 30 })
   age?: number;
 
@@ -52,6 +61,9 @@ export class UserDto {
     this.isSuperUser = user.isSuperUser || false;
     this.isActive = user.isActive || false;
     this.age = birthDate ? calculateAge(birthDate) : undefined;
+    this.country = user.country || undefined;
+    this.countryState = user.countryState || undefined;
+    this.city = user.city || undefined;
     this.birthDate = birthDate?.toISOString() || undefined;
     this.hasPassword = user.hasPassword || false;
     this.createdAt = user.createdAt.toISOString();

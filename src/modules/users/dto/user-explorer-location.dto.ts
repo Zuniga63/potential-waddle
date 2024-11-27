@@ -5,5 +5,8 @@ export class UserExplorerLocationDto {
   country?: string;
 
   @ApiProperty({ required: false })
+  countryState?: string | null;
+
+  @ApiProperty({ required: false })
   city?: string | null;
 }

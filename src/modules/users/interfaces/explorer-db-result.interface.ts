@@ -5,6 +5,7 @@ export interface ExplorerDBResult {
   username: string;
   birth_date: string;
   country?: string;
+  country_state?: string;
   city?: string;
   profile_photo: CloudinaryImage;
   visited_places: string;

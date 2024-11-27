@@ -32,6 +32,7 @@ export class ExplorersService {
           'user.birth_date as birth_date',
           'user.profile_photo as profile_photo',
           'user.country as country',
+          'user.country_state as country_state',
           'user.city as city',
           'COUNT(DISTINCT userPoint.place_id) as visited_places',
           'SUM(userPoint.points_earned) as total_points',
@@ -60,6 +61,7 @@ export class ExplorersService {
         location: {
           country: explorer.country,
           city: explorer.city,
+          countryState: explorer.country_state,
         },
       }));
     } catch (error) {
@@ -75,6 +77,7 @@ export class ExplorersService {
       .addSelect('user.profile_photo', 'profile_photo')
       .addSelect('user.birth_date', 'birth_date')
       .addSelect('user.country', 'country')
+      .addSelect('user.country_state', 'country_state')
       .addSelect('user.city', 'city')
       .addSelect('COALESCE(COUNT(DISTINCT userPoint.place_id), 0)', 'visited_places')
       .addSelect('COALESCE(SUM(userPoint.points_earned), 0)', 'total_points')
@@ -88,6 +91,7 @@ export class ExplorersService {
 
     const location: UserExplorerLocationDto = {
       country: explorer.country,
+      countryState: explorer.country_state,
       city: explorer.city,
     };
 
