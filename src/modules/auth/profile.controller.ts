@@ -57,6 +57,7 @@ export class ProfileController {
     description: 'User Info',
   })
   getProfile(@GetUser() user: User) {
+    console.log('user', user);
     return new UserDto(user);
   }
 

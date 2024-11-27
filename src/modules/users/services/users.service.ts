@@ -91,6 +91,7 @@ export class UsersService {
       .leftJoinAndSelect('user.role', 'role')
       .where('user.id = :id', { id })
       .andWhere('session.id = :sessionId', { sessionId })
+      .addSelect('user.password')
       .getOne();
   }
 

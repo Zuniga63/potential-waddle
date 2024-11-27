@@ -39,7 +39,7 @@ export class ReviewsService {
         images: { image: true },
       },
       select: {
-        user: { username: true, id: true },
+       /*  user: { username: true, id: true, profilePhoto: true }, */
         place: { id: true, name: true },
         images: { id: true },
       },
