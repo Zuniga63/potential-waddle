@@ -1,6 +1,8 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { User } from '../entities/user.entity';
 import { calculateAge } from 'src/utils';
+import { UserLocationDto } from './user-location.dto';
+import { UserExplorerStatsDto } from './user-explorer-stats.dto';
 
 export class UserDto {
   @ApiProperty({ example: 'df5e7f56-ce51-4428-9d43-84e35a077618' })
@@ -48,6 +50,12 @@ export class UserDto {
   @ApiProperty({ example: '2024-06-23T05:13:57.328Z' })
   updatedAt: string;
 
+  @ApiProperty({ type: UserLocationDto })
+  location: UserLocationDto;
+
+  @ApiProperty({ type: UserExplorerStatsDto })
+  stats: UserExplorerStatsDto;
+
   constructor(user?: User) {
     if (!user) return;
 
@@ -68,5 +76,16 @@ export class UserDto {
     this.hasPassword = user.hasPassword || false;
     this.createdAt = user.createdAt.toISOString();
     this.updatedAt = user.updatedAt.toISOString();
+    this.location = {
+      country: user.country,
+      countryState: user.countryState,
+      city: user.city,
+    };
+
+    this.stats = {
+      points: user.totalPoints,
+      distanceTraveled: user.distanceTravelled,
+      visitedPlaces: 0,
+    };
   }
 }

@@ -1,6 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger';
 
-import { IsOptional, IsString, Matches, MinLength } from 'class-validator';
+import { IsNotEmpty, IsOptional, IsString, Matches, MinLength } from 'class-validator';
 
 import { IsEqualTo } from 'src/modules/common/decorators/is-equal-to.decorator';
 
@@ -21,6 +21,7 @@ export class ChangePasswordDto {
   @Matches(/^.*[0-9].*$/, { message: 'La contraseña debe contener al menos un número' })
   @Matches(/^.*[^A-Za-z0-9].*$/, { message: 'La contraseña debe contener al menos un carácter especial' })
   @MinLength(8, { message: 'La contraseña debe tener al menos 8 caracteres' })
+  @IsNotEmpty({ message: 'La contraseña es requerida' })
   newPassword: string;
 
   @ApiProperty({ required: true, example: 'Clave123*' })
