@@ -18,6 +18,7 @@ import { TownFestivity } from './town-festivity.entity';
 import { Lodging } from 'src/modules/lodgings/entities';
 import { Experience } from 'src/modules/experiences/entities';
 import { Restaurant } from 'src/modules/restaurants/entities';
+import { Transport } from 'src/modules/transport/entities/transport.entity';
 
 @Entity({ name: 'town' })
 export class Town {
@@ -49,6 +50,9 @@ export class Town {
 
   @OneToMany(() => Restaurant, restaurant => restaurant.town)
   restaurants?: Restaurant[];
+
+  @OneToMany(() => Transport, transport => transport.town)
+  transports?: Transport[];
 
   // * ----------------------------------------------------------------------------------------------------------------
   // * MAIN FIELDS

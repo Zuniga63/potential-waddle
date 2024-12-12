@@ -10,6 +10,7 @@ import {
   JoinColumn,
   ManyToOne,
   OneToMany,
+  OneToOne,
   PrimaryGeneratedColumn,
 } from 'typeorm';
 
@@ -18,6 +19,7 @@ import { CloudinaryImage } from 'src/modules/cloudinary/interfaces';
 import { Session } from 'src/modules/auth/entities';
 import { Review } from 'src/modules/reviews/entities';
 import { UserPoint } from './user-point.entity';
+import { Transport } from 'src/modules/transport/entities/transport.entity';
 
 @Entity({ name: 'users' })
 export class User {
@@ -39,6 +41,9 @@ export class User {
 
   @OneToMany(() => UserPoint, userPoint => userPoint.user)
   points?: UserPoint[];
+
+  @OneToOne(() => Transport, transport => transport.user)
+  transport?: Transport;
 
   // * ----------------------------------------------------------------------------------------------------------------
   // * MAIN FIELDS
