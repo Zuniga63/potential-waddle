@@ -25,6 +25,9 @@ class User {
 
   @ApiProperty()
   placesVisited: number;
+
+  @ApiProperty()
+  profilePhoto?: string;
 }
 
 export class AdminReviewDto {
@@ -62,6 +65,7 @@ export class AdminReviewDto {
   approvedAt?: Date;
 
   constructor(review: Review) {
+    console.log('review', review);
     this.id = review.id;
     this.user = {
       id: review.user?.id || '',
@@ -69,6 +73,7 @@ export class AdminReviewDto {
       points: Math.random() * 100,
       distanceTravelled: Math.random() * 1000,
       placesVisited: Math.random() * 100,
+      profilePhoto: review.user?.profilePhoto?.url,
     };
 
     this.place = review.place ? { id: review.place.id, name: review.place.name } : undefined;
