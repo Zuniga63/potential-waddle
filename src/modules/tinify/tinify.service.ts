@@ -2,6 +2,7 @@ import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { EnvironmentVariables } from 'src/config';
 import * as tinify from 'tinify';
+import { CompressionStateDto } from './dtos/compression-state.dto';
 
 @Injectable()
 export class TinifyService implements OnModuleInit {
@@ -34,5 +35,15 @@ export class TinifyService implements OnModuleInit {
     const converted = source.convert({ type: ['image/webp', 'image/jpeg'] });
     const compressed = await converted.toBuffer();
     return Buffer.from(compressed);
+  }
+
+  async getCompresionCount(): Promise<CompressionStateDto> {
+    const count = tinify.compressionCount || 0;
+
+    return {
+      currentCompressions: count,
+      maxCompressions: 500,
+      remainingCompressions: 500 - count,
+    };
   }
 }
