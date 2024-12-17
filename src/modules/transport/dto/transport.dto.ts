@@ -2,10 +2,21 @@ import { CategoryDto } from 'src/modules/core/dto';
 import { TownDto } from 'src/modules/towns/dto';
 import { Transport } from '../entities/transport.entity';
 import { UserDto } from 'src/modules/users/dto/user.dto';
+import { ApiProperty } from '@nestjs/swagger';
 
 export class TransportDto {
   id: string;
+
+  @ApiProperty({
+    example: 'john.doe@example.com',
+    description: 'Email address of the transport',
+  })
   email: string;
+
+  @ApiProperty({
+    example: 'John',
+    description: 'The first name of the transport',
+  })
   firstName: string;
   lastName: string;
   documentType: string;

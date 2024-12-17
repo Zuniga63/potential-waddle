@@ -42,37 +42,37 @@ export class Transport {
   // * MAIN FIELDS
   // * ----------------------------------------------------------------------------------------------------------------
 
-  @Column('text', { nullable: false })
+  @Column('text', { name: 'email', nullable: false })
   email: string;
 
-  @Column('text', { nullable: false })
+  @Column('text', { name: 'first_name', nullable: false })
   firstName: string;
 
-  @Column('text', { nullable: false })
+  @Column('text', { name: 'last_name', nullable: false })
   lastName: string;
 
-  @Column('text', { nullable: false })
+  @Column('text', { name: 'document_type', nullable: false })
   documentType: string;
 
-  @Column('text', { nullable: false })
+  @Column('text', { name: 'document', nullable: false })
   document: string;
 
-  @Column('text', { nullable: false })
+  @Column('text', { name: 'phone', nullable: false })
   phone: string;
 
-  @Column('text', { nullable: true })
+  @Column('text', { name: 'whatsapp', nullable: true })
   whatsapp?: string;
 
-  @Column('time', { name: 'start_time', nullable: false })
+  @Column('text', { name: 'start_time', nullable: false })
   startTime: string;
 
-  @Column('time', { name: 'end_time', nullable: false })
+  @Column('text', { name: 'end_time', nullable: false })
   endTime: string;
 
-  @Column('boolean', { nullable: false, default: true })
+  @Column('boolean', { name: 'is_available', nullable: false, default: true })
   isAvailable: boolean;
 
-  @Column('text', { nullable: false })
+  @Column('text', { name: 'license_plate', nullable: false })
   licensePlate: string;
 
   @CreateDateColumn({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP', name: 'created_at' })

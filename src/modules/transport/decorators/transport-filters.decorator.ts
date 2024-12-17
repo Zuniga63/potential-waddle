@@ -10,7 +10,6 @@ export const TransportFilters = createParamDecorator((data: unknown, ctx: Execut
   const request = ctx.switchToHttp().getRequest();
   const filters = plainToInstance(TransportFiltersDto, request.query);
   const errors = validateSync(filters, validationPipeConfig);
-
   errors?.forEach(error => {
     delete filters[error.property];
   });

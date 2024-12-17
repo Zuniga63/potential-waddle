@@ -1,11 +1,11 @@
 import { MigrationInterface, QueryRunner } from 'typeorm';
 
-export class AddTransportTable1734049983532 implements MigrationInterface {
-  name = 'AddTransportTable1734049983532';
+export class AddTransportTable1734062201821 implements MigrationInterface {
+  name = 'AddTransportTable1734062201821';
 
   public async up(queryRunner: QueryRunner): Promise<void> {
     await queryRunner.query(
-      `CREATE TABLE "transport" ("id" uuid NOT NULL DEFAULT uuid_generate_v4(), "email" text NOT NULL, "firstName" text NOT NULL, "lastName" text NOT NULL, "documentType" text NOT NULL, "document" text NOT NULL, "phone" text NOT NULL, "whatsapp" text, "start_time" TIME NOT NULL, "end_time" TIME NOT NULL, "isAvailable" boolean NOT NULL DEFAULT true, "licensePlate" text NOT NULL, "created_at" TIMESTAMP NOT NULL DEFAULT now(), "updated_at" TIMESTAMP NOT NULL DEFAULT now(), "town_id" uuid NOT NULL, "user_id" uuid NOT NULL, CONSTRAINT "REL_d4f2ffd31b71e58ebec3627290" UNIQUE ("user_id"), CONSTRAINT "PK_298d9594bee72eca3d7a4032a39" PRIMARY KEY ("id"))`,
+      `CREATE TABLE "transport" ("id" uuid NOT NULL DEFAULT uuid_generate_v4(), "email" text NOT NULL, "first_name" text NOT NULL, "last_name" text NOT NULL, "document_type" text NOT NULL, "document" text NOT NULL, "phone" text NOT NULL, "whatsapp" text, "start_time" text NOT NULL, "end_time" text NOT NULL, "is_available" boolean NOT NULL DEFAULT true, "license_plate" text NOT NULL, "created_at" TIMESTAMP NOT NULL DEFAULT now(), "updated_at" TIMESTAMP NOT NULL DEFAULT now(), "town_id" uuid NOT NULL, "user_id" uuid NOT NULL, CONSTRAINT "REL_d4f2ffd31b71e58ebec3627290" UNIQUE ("user_id"), CONSTRAINT "PK_298d9594bee72eca3d7a4032a39" PRIMARY KEY ("id"))`,
     );
     await queryRunner.query(
       `CREATE TABLE "transport_category" ("transport_id" uuid NOT NULL, "category_id" uuid NOT NULL, CONSTRAINT "PK_854c9e9d7b23fff77abd6943937" PRIMARY KEY ("transport_id", "category_id"))`,

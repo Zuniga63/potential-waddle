@@ -4,6 +4,7 @@ import { SwaggerTags } from 'src/config';
 import { ApiTags } from '@nestjs/swagger';
 import { TransportFiltersDto } from './dto';
 import { TransportFilters } from './decorators';
+import { TransportListQueryDocsGroup } from './decorators/transport-list-query-docs-group.decorator';
 
 @Controller('transport')
 @ApiTags(SwaggerTags.Transport)
@@ -16,6 +17,7 @@ export class TransportController {
   }
 
   @Get()
+  @TransportListQueryDocsGroup()
   findAll(@TransportFilters() filters: TransportFiltersDto) {
     return this.transportService.findAll({ filters });
   }

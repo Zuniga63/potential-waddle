@@ -16,9 +16,10 @@ export class TransportService {
     private readonly transportRepository: Repository<Transport>,
   ) {}
   async findAll({ filters }: TransportFindAllParams = {}): Promise<TransportDto[]> {
-    const { where } = generateTransportQueryFiltersAndSort(filters);
+    const { where, order } = generateTransportQueryFiltersAndSort(filters);
     const transports = await this.transportRepository.find({
       relations: { categories: { icon: true }, town: { department: true } },
+      order,
       where,
     });
 
