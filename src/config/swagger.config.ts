@@ -23,5 +23,6 @@ export const swaggerConfig = new DocumentBuilder()
   .addTag(SwaggerTags.Reviews, 'Route for reviews administration')
   .addTag(SwaggerTags.Seeds, 'Route for seeds administration')
   .addTag(SwaggerTags.ImageResources, 'Route for image resources administration')
+  .addTag(SwaggerTags.Transport, 'Route for transport administration')
   .addBearerAuth()
   .build();
