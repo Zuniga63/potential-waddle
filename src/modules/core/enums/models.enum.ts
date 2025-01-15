@@ -3,4 +3,5 @@ export enum ModelsEnum {
   Restaurants = 'restaurants',
   Lodgings = 'lodgings',
   Experiences = 'experiences',
+  Transports = 'transport',
 }

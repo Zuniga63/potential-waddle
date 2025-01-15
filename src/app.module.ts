@@ -19,6 +19,7 @@ import { LodgingsModule } from './modules/lodgings/lodgings.module';
 import { ExperiencesModule } from './modules/experiences/experiences.module';
 import { RestaurantsModule } from './modules/restaurants/restaurants.module';
 import { TinifyModule } from './modules/tinify/tinify.module';
+import { TransportModule } from './modules/transport/transport.module';
 
 @Module({
   imports: [
@@ -60,6 +61,8 @@ import { TinifyModule } from './modules/tinify/tinify.module';
     RestaurantsModule,
 
     TinifyModule,
+
+    TransportModule,
   ],
   controllers: [],
   providers: [],

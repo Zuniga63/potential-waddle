@@ -6,6 +6,7 @@ import { Place } from 'src/modules/places/entities';
 import { Lodging } from 'src/modules/lodgings/entities';
 import { Experience } from 'src/modules/experiences/entities';
 import { Restaurant } from 'src/modules/restaurants/entities';
+import { Transport } from 'src/modules/transport/entities/transport.entity';
 
 @Entity({ name: 'category' })
 export class Category {
@@ -33,6 +34,9 @@ export class Category {
 
   @ManyToMany(() => Restaurant, restaurant => restaurant.categories)
   restaurants?: Restaurant[];
+
+  @ManyToMany(() => Transport, transport => transport.categories)
+  transports?: Transport[];
   // * ----------------------------------------------------------------------------------------------------------------
   // * MAIN FIELDS
   // * ----------------------------------------------------------------------------------------------------------------
