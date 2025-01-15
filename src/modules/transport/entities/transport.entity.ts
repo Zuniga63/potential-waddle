@@ -26,7 +26,7 @@ export class Transport {
   @JoinColumn({ name: 'town_id' })
   town: Town;
 
-  @OneToOne(() => User, user => user.transport, { nullable: false })
+  @OneToOne(() => User, user => user.transport, { nullable: true })
   @JoinColumn({ name: 'user_id' })
   user: User;
 
@@ -60,13 +60,13 @@ export class Transport {
   @Column('text', { name: 'phone', nullable: false })
   phone: string;
 
-  @Column('text', { name: 'whatsapp', nullable: true })
+  @Column('text', { name: 'whatsapp', nullable: false })
   whatsapp?: string;
 
-  @Column('text', { name: 'start_time', nullable: false })
+  @Column('text', { name: 'start_time', nullable: true })
   startTime: string;
 
-  @Column('text', { name: 'end_time', nullable: false })
+  @Column('text', { name: 'end_time', nullable: true })
   endTime: string;
 
   @Column('boolean', { name: 'is_available', nullable: false, default: true })

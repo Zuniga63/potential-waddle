@@ -9,6 +9,8 @@ export function TransportListQueryDocsGroup() {
 
   return applyDecorators(
     ApiQuery({ name: 'search', required: false, type: String }),
+    ApiQuery({ name: 'townId', required: false, type: String }),
+    ApiQuery({ name: 'categories', required: false, type: [String] }),
     ApiQuery({ name: 'sortBy', required: false, description: sortByDescription }),
     ApiQuery({ name: 'page', required: false, type: Number }),
     ApiQuery({ name: 'limit', required: false, type: Number }),

@@ -78,16 +78,16 @@ export class CreateTransportDto {
     description: 'Start time of service availability',
   })
   @IsString()
-  @IsNotEmpty()
-  startTime: string;
+  @IsOptional()
+  startTime?: string;
 
   @ApiProperty({
     example: '18:00',
     description: 'End time of service availability',
   })
   @IsString()
-  @IsNotEmpty()
-  endTime: string;
+  @IsOptional()
+  endTime?: string;
 
   @ApiProperty({
     example: true,
@@ -96,15 +96,16 @@ export class CreateTransportDto {
   })
   @IsBoolean()
   @Type(() => Boolean)
-  isAvailable: boolean;
+  @IsOptional()
+  isAvailable?: boolean;
 
   @ApiProperty({
     example: 'ABC123',
     description: 'License plate of the vehicle',
   })
   @IsString()
-  @IsNotEmpty()
-  licensePlate: string;
+  @IsOptional()
+  licensePlate?: string;
 
   // * ----------------------------------------------------------------------------------------------------------------
   // * -------------------------------------- RELATIONSHIPS ----------------------------------------------------------
@@ -122,7 +123,7 @@ export class CreateTransportDto {
     example: '123e4567-e89b-12d3-a456-426614174000',
   })
   @IsUUID('4')
-  @IsNotEmpty()
+  @IsOptional()
   userId: string;
 
   @ApiProperty({

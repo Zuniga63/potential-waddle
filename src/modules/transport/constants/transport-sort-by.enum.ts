@@ -1,3 +1,3 @@
 export enum TransportSortByEnum {
-  NAME = 'name',
+  NAME = 'first_name',
 }

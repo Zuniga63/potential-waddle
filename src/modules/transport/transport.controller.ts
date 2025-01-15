@@ -1,7 +1,7 @@
 import { Controller, Get, Post, Patch, Param, Delete, Body, ParseUUIDPipe } from '@nestjs/common';
 import { TransportService } from './transport.service';
 import { SwaggerTags } from 'src/config';
-import { ApiOkResponse, ApiOperation, ApiParam, ApiTags } from '@nestjs/swagger';
+import { ApiOkResponse, ApiOperation, ApiParam, ApiTags, ApiBody } from '@nestjs/swagger';
 import { TransportFiltersDto } from './dto';
 import { TransportFilters } from './decorators';
 import { TransportListQueryDocsGroup } from './decorators/transport-list-query-docs-group.decorator';
@@ -21,7 +21,6 @@ export class TransportController {
   @ApiOperation({ summary: 'Create a new transport' })
   @ApiOkResponse({ description: 'The transport has been successfully created.', type: TransportDto })
   create(@Body() createTransportDto: CreateTransportDto) {
-    console.log(createTransportDto);
     return this.transportService.create(createTransportDto);
   }
 
@@ -58,8 +57,27 @@ export class TransportController {
   // * DELETE TRANSPORT
   // * ----------------------------------------------------------------------------------------------------------------
   @Delete(':id')
-  @ApiOperation({ summary: 'Delete a transport', deprecated: true })
+  @ApiOperation({ summary: 'Delete a transport' })
   remove(@Param('id') id: string) {
     return this.transportService.remove(id);
+  }
+
+  // * ----------------------------------------------------------------------------------------------------------------
+  // * UPDATE TRANSPORT AVAILABILITY
+  // * ----------------------------------------------------------------------------------------------------------------
+  @Patch(':id/availability')
+  @ApiOperation({ summary: 'Update transport availability status' })
+  @ApiParam({ name: 'id', type: 'string', description: 'The UUID of the transport' })
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        isAvailable: { type: 'boolean' },
+      },
+    },
+  })
+  @ApiOkResponse({ description: 'The transport availability has been successfully updated.', type: TransportDto })
+  updateAvailability(@Param('id', ParseUUIDPipe) id: string, @Body('isAvailable') isAvailable: boolean) {
+    return this.transportService.updateAvailability(id, isAvailable);
   }
 }

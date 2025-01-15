@@ -23,12 +23,12 @@ export class TransportDto {
   document: string;
   phone: string;
   whatsapp?: string;
-  startTime: string;
-  endTime: string;
-  isAvailable: boolean;
-  licensePlate: string;
-  createdAt: Date;
-  updatedAt: Date;
+  startTime?: string;
+  endTime?: string;
+  isAvailable?: boolean;
+  licensePlate?: string;
+  createdAt?: Date;
+  updatedAt?: Date;
 
   // Relationships
   town?: TownDto;

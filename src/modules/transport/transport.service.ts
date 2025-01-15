@@ -34,14 +34,12 @@ export class TransportService {
     const town = townId ? await this.townRepo.findOneBy({ id: townId }) : undefined;
     if (!town) throw new NotFoundException('Town not found');
     const user = restDto.userId ? await this.userRepo.findOneBy({ id: restDto.userId }) : undefined;
-    if (!user) throw new NotFoundException('User not found');
 
-    console.log(createTransportDto);
     const transport = this.transportRepository.create({
       ...restDto,
       categories,
       town,
-      user,
+      user: user ?? undefined,
     });
 
     return await this.transportRepository.save(transport);
@@ -54,7 +52,7 @@ export class TransportService {
     const [transports, count] = await this.transportRepository.findAndCount({
       skip,
       take: limit,
-      relations: { categories: { icon: true }, town: { department: true } },
+      relations: { categories: { icon: true }, town: { department: true }, user: true },
       order,
       where,
     });
@@ -75,10 +73,18 @@ export class TransportService {
   }
 
   async update(id: string, updateTransportDto: UpdateTransportDto) {
+    const { categoryIds, townId, ...restDto } = updateTransportDto;
+    const categories = categoryIds ? await this.categoryRepo.findBy({ id: In(categoryIds) }) : [];
+    const town = townId ? await this.townRepo.findOneBy({ id: townId }) : undefined;
     const transport = await this.transportRepository.findOne({ where: { id } });
     if (!transport) throw new NotFoundException('Transport not found');
 
-    return this.transportRepository.save({ id, ...updateTransportDto });
+    return this.transportRepository.save({
+      ...transport,
+      ...restDto,
+      categories: categories || [],
+      town: town || undefined,
+    });
   }
 
   async remove(id: string) {
@@ -86,5 +92,15 @@ export class TransportService {
     if (!transport) throw new NotFoundException('Transport not found');
 
     return this.transportRepository.remove(transport);
+  }
+
+  async updateAvailability(id: string, isAvailable: boolean) {
+    const transport = await this.transportRepository.findOne({ where: { id } });
+    if (!transport) throw new NotFoundException('Transport not found');
+
+    return this.transportRepository.save({
+      ...transport,
+      isAvailable,
+    });
   }
 }

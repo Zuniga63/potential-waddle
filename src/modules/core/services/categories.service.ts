@@ -74,6 +74,7 @@ export class CategoriesService {
     if (model === ModelsEnum.Restaurants) modelWhere.restaurants = { id: Not(IsNull()) };
     if (model === ModelsEnum.Lodgings) modelWhere.lodgings = { id: Not(IsNull()) };
     if (model === ModelsEnum.Experiences) modelWhere.experiences = { id: Not(IsNull()) };
+    if (model === ModelsEnum.Transports) modelWhere.transports = { id: Not(IsNull()) };
 
     const [modelCategories, categoriesWithoutModel] = await Promise.all([
       this.categoriesRepository.find({ where: modelWhere, order, relations, select }),
