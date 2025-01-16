@@ -176,4 +176,9 @@ export class UsersService {
     const userUpdated = await this.usersRepository.save({ ...user, ...updateProfileDto });
     return new UserDto(userUpdated);
   }
+
+  async getUserTransport(id: string) {
+    const user = await this.usersRepository.findOne({ where: { id }, relations: ['transport'] });
+    return user?.transport;
+  }
 }

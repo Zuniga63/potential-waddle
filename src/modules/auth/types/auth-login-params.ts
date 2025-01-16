@@ -4,4 +4,5 @@ export type AuthLoginParams = {
   user: User;
   ip?: string;
   userAgent?: string;
+  signInType?: string;
 };

@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 
 import { compareSync } from 'bcrypt';
@@ -16,6 +16,7 @@ import { OAuth2Client } from 'google-auth-library';
 import { ConfigService } from '@nestjs/config';
 import { EnvironmentVariables } from 'src/config';
 import { UpdateProfileDto } from '../dto';
+import { UserTransportDto } from 'src/modules/users/dto/user-transport.dto';
 
 @Injectable()
 export class AuthService {
@@ -34,10 +35,13 @@ export class AuthService {
     return user;
   }
 
-  async signIn({ user, ip, userAgent }: AuthLoginParams) {
+  async signIn({ user, ip, userAgent, signInType }: AuthLoginParams) {
     const session = await this.sessionService.createSession({ user, ip, userAgent });
     const access_token = this.createAccessToken({ user, session_id: session.id });
-    return { user: new UserDto(user), access_token };
+    if (!signInType || signInType !== 'transport') return { user: new UserDto(user), access_token };
+    const transport = await this.usersService.getUserTransport(user.id);
+    if (!transport) throw new NotFoundException('Transport not found');
+    return { user: new UserTransportDto(user, transport), access_token };
   }
 
   async signUp(createUserDto: CreateUserDto) {

@@ -42,13 +42,19 @@ export class AuthController {
   })
   @ApiBody({ type: LoginUserDto })
   @ApiHeaders([{ name: 'user-agent', required: false }])
+  @ApiQuery({ name: 'signInType', required: false })
   @ApiOkResponse({
     description: 'The user has been successfully login.',
     schema: AuthResponseSchema,
   })
   @ApiUnauthorizedResponse({ description: 'Email or password invalid.' })
-  async localLogin(@GetUser() user: User, @Ip() ip: string, @Headers('user-agent') userAgent: string) {
-    return this.authService.signIn({ user, ip, userAgent });
+  async localLogin(
+    @GetUser() user: User,
+    @Ip() ip: string,
+    @Headers('user-agent') userAgent: string,
+    @Query('signInType') signInType?: string,
+  ) {
+    return this.authService.signIn({ user, ip, userAgent, signInType });
   }
 
   // * ----------------------------------------------------------------------------------------------------------------
