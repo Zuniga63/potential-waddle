@@ -64,18 +64,19 @@ export class TransportService {
     const relations: FindOptionsRelations<Transport> = {
       categories: { icon: true },
       town: { department: true },
+      user: true,
     };
 
     const transport = await this.transportRepository.findOne({ where: { id: identifier }, relations });
     if (!transport) throw new NotFoundException('Transport not found');
-
     return new TransportDto({ data: transport });
   }
 
   async update(id: string, updateTransportDto: UpdateTransportDto) {
-    const { categoryIds, townId, ...restDto } = updateTransportDto;
+    const { categoryIds, townId, userId, ...restDto } = updateTransportDto;
     const categories = categoryIds ? await this.categoryRepo.findBy({ id: In(categoryIds) }) : [];
     const town = townId ? await this.townRepo.findOneBy({ id: townId }) : undefined;
+    const user = userId ? await this.userRepo.findOneBy({ id: userId }) : undefined;
     const transport = await this.transportRepository.findOne({ where: { id } });
     if (!transport) throw new NotFoundException('Transport not found');
 
@@ -84,6 +85,7 @@ export class TransportService {
       ...restDto,
       categories: categories || [],
       town: town || undefined,
+      user: user || undefined,
     });
   }
 
