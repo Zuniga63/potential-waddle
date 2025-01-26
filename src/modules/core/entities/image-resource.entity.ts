@@ -6,6 +6,7 @@ import { PlaceImage } from 'src/modules/places/entities';
 import { LodgingImage } from 'src/modules/lodgings/entities';
 import { ExperienceImage } from 'src/modules/experiences/entities';
 import { RestaurantImage } from 'src/modules/restaurants/entities';
+import { CommerceImage } from 'src/modules/commerce/entities';
 
 @Entity({ name: 'image_resource' })
 export class ImageResource {
@@ -29,6 +30,9 @@ export class ImageResource {
 
   @OneToOne(() => ReviewImage, reviewImage => reviewImage.image, { cascade: true, onDelete: 'CASCADE' })
   reviewImage?: ReviewImage;
+
+  @OneToMany(() => CommerceImage, commerceImage => commerceImage.imageResource)
+  commerceImages: CommerceImage[];
 
   // * ----------------------------------------------------------------------------------------------------------------
   // * MAIN FIELDS

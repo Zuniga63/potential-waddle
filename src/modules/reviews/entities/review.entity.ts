@@ -6,6 +6,7 @@ import { Experience } from 'src/modules/experiences/entities';
 import { ReviewStatusEnum } from '../enums';
 import { ReviewImage } from './review-image.entity';
 import { ReviewStatusHistory } from './review-status-history.entity';
+import { Commerce } from 'src/modules/commerce/entities';
 
 @Entity({ name: 'review' })
 export class Review {
@@ -37,6 +38,10 @@ export class Review {
   @ManyToOne(() => User, user => user.approvedReviews, { onDelete: 'SET NULL', nullable: true })
   @JoinColumn({ name: 'approved_by_id' })
   approvedBy?: User;
+
+  @ManyToOne(() => Commerce, commerce => commerce.reviews, { onDelete: 'CASCADE', nullable: true })
+  @JoinColumn({ name: 'commerce_id' })
+  commerce?: Commerce | null;
 
   @OneToMany(() => ReviewStatusHistory, statusHistory => statusHistory.review, { cascade: true, onDelete: 'CASCADE' })
   statusHistory: ReviewStatusHistory[];
