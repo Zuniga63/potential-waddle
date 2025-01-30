@@ -1,7 +1,7 @@
 import { MigrationInterface, QueryRunner } from 'typeorm';
 
-export class AddCommerceTable1737900958968 implements MigrationInterface {
-  name = 'AddCommerceTable1737900958968';
+export class AddCommerceTable1738263447721 implements MigrationInterface {
+  name = 'AddCommerceTable1738263447721';
 
   public async up(queryRunner: QueryRunner): Promise<void> {
     await queryRunner.query(
@@ -52,7 +52,7 @@ export class AddCommerceTable1737900958968 implements MigrationInterface {
       `ALTER TABLE "commerce_facility" ADD CONSTRAINT "FK_c439a5d769c7417c6e066f10a1b" FOREIGN KEY ("commerce_id") REFERENCES "commerce"("id") ON DELETE CASCADE ON UPDATE CASCADE`,
     );
     await queryRunner.query(
-      `ALTER TABLE "commerce_facility" ADD CONSTRAINT "FK_5e3a4ce55fc50fb8ee4bea1b0cc" FOREIGN KEY ("facility_id") REFERENCES "facility"("id") ON DELETE RESTRICT ON UPDATE NO ACTION`,
+      `ALTER TABLE "commerce_facility" ADD CONSTRAINT "FK_5e3a4ce55fc50fb8ee4bea1b0cc" FOREIGN KEY ("facility_id") REFERENCES "facility"("id") ON DELETE NO ACTION ON UPDATE NO ACTION`,
     );
   }
 

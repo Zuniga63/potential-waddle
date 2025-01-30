@@ -59,6 +59,7 @@ export class CategoriesService {
           { ...where, restaurants: { id: Not(IsNull()) } },
           { ...where, lodgings: { id: Not(IsNull()) } },
           { ...where, experiences: { id: Not(IsNull()) } },
+          { ...where, commerces: { id: Not(IsNull()) } },
         ];
       }
 
@@ -75,6 +76,7 @@ export class CategoriesService {
     if (model === ModelsEnum.Lodgings) modelWhere.lodgings = { id: Not(IsNull()) };
     if (model === ModelsEnum.Experiences) modelWhere.experiences = { id: Not(IsNull()) };
     if (model === ModelsEnum.Transports) modelWhere.transports = { id: Not(IsNull()) };
+    if (model === ModelsEnum.Commerce) modelWhere.commerces = { id: Not(IsNull()) };
 
     const [modelCategories, categoriesWithoutModel] = await Promise.all([
       this.categoriesRepository.find({ where: modelWhere, order, relations, select }),

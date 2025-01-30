@@ -3,6 +3,7 @@ import { ApiProperty } from '@nestjs/swagger';
 import { Commerce } from '../entities';
 import { CategoryDto } from 'src/modules/core/dto';
 import { TownDto } from 'src/modules/towns/dto';
+import { Point } from 'typeorm';
 
 export class CommerceIndexDto {
   @ApiProperty({
@@ -150,6 +151,27 @@ export class CommerceIndexDto {
   })
   whatsappNumbers: string[];
 
+  @ApiProperty({
+    example: 'Av. Principal 123',
+    description: 'Physical address of the commerce',
+    required: false,
+  })
+  address: string | null;
+
+  @ApiProperty({
+    example: { type: 'Point', coordinates: [-34.603722, -58.381592] },
+    description: 'Geographic location of the commerce',
+    required: false,
+  })
+  location: Point;
+
+  @ApiProperty({
+    example: 'https://goo.gl/maps/example',
+    description: 'Google Maps URL of the commerce',
+    required: false,
+  })
+  googleMapsUrl: string | null;
+
   constructor(commerce?: Commerce, userReview?: string) {
     if (!commerce) return;
     this.id = commerce.id;
@@ -171,5 +193,8 @@ export class CommerceIndexDto {
     this.facebook = commerce.facebook;
     this.instagram = commerce.instagram;
     this.whatsappNumbers = commerce.whatsappNumbers || [];
+    this.address = commerce.address;
+    this.location = commerce.location;
+    this.googleMapsUrl = commerce.googleMapsUrl;
   }
 }

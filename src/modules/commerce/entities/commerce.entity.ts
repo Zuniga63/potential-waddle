@@ -25,11 +25,11 @@ export class Commerce {
   // * ----------------------------------------------------------------------------------------------------------------
   // * RELATIONSHIPS
   // * ----------------------------------------------------------------------------------------------------------------
-  @ManyToOne(() => Town, town => town.lodgings, { nullable: true, onDelete: 'SET NULL' })
+  @ManyToOne(() => Town, town => town.commerces, { nullable: true, onDelete: 'SET NULL' })
   @JoinColumn({ name: 'town_id' })
   town: Town;
 
-  @ManyToMany(() => Category, category => category.lodgings)
+  @ManyToMany(() => Category, category => category.commerces)
   @JoinTable({
     name: 'commerce_category',
     joinColumn: { name: 'commerce_id' },
@@ -40,7 +40,7 @@ export class Commerce {
   @OneToMany(() => CommerceImage, image => image.commerce)
   images: CommerceImage[];
 
-  @ManyToMany(() => Facility, facility => facility.lodgings)
+  @ManyToMany(() => Facility, facility => facility.commerces)
   @JoinTable({
     name: 'commerce_facility',
     joinColumn: { name: 'commerce_id' },
