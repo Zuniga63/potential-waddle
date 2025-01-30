@@ -24,6 +24,8 @@ import type {
   SheetRestaurantData,
   SheetTown,
   SheetTownData,
+  SheetCommerce,
+  SheetCommerceData,
 } from '../interfaces';
 import {
   SHEET_CATEGORY_HEADERS,
@@ -37,6 +39,7 @@ import {
   SHEET_PLACE_HEADERS,
   SHEET_RESTAURANT_HEADERS,
   SHEET_TOWN_HEADERS,
+  SHEET_COMMERCE_HEADERS,
 } from '../constants';
 import { FileSheetsEnum } from '../enums';
 
@@ -261,5 +264,27 @@ export class SeedWorkbook {
       .filter(row => row !== null);
 
     return sheetRestaurants;
+  }
+
+  public getCommerce(): SheetCommerce[] {
+    const sheet = this.workbook.Sheets[FileSheetsEnum.commerce];
+    const json = utils.sheet_to_json<SheetCommerceData>(sheet, { header: SHEET_COMMERCE_HEADERS, range: 1 });
+
+    const sheetCommerce = json
+      .map(({ checked, ...data }) => {
+        if (!checked) return null;
+        if (!data.name || !data.slug) return null;
+        if (!data.description) return null;
+        if (!data.town) return null;
+        if (!data.categories) return null;
+
+        const id = uuidv4();
+        const points = data.points || 1;
+        const commerce: SheetCommerce = { id, ...data, points, slug: data.slug.trim() };
+        return commerce;
+      })
+      .filter(row => row !== null);
+
+    return sheetCommerce;
   }
 }

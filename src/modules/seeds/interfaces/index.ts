@@ -9,3 +9,4 @@ export type { SheetPlace, SheetPlaceData } from './sheet-place.interface';
 export type { SheetLodging, SheetLodgingData } from './sheet-lodging.interface';
 export type { SheetExperience, SheetExperienceData } from './sheet-experience.interface';
 export type { SheetRestaurant, SheetRestaurantData } from './sheet-restaurant.interface';
+export type { SheetCommerce, SheetCommerceData } from './sheet-commerce.interface';

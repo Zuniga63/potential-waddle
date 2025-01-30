@@ -9,5 +9,6 @@ export { SHEET_PLACE_HEADERS } from './sheet-place-headers';
 export { SHEET_LODGING_HEADERS } from './sheet-lodging-headers';
 export { SHEET_EXPERIENCE_HEADERS } from './sheet-experience-headers';
 export { SHEET_RESTAURANT_HEADERS } from './sheet-restaurant-headers';
+export { SHEET_COMMERCE_HEADERS } from './sheet-commerce-headers';
 export { FOLDERS_IMAGE_BANK } from './folders-image-bank';
 export { BANK_IMAGE_FOLDER } from './folders-image-bank';

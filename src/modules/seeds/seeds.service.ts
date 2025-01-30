@@ -21,6 +21,7 @@ import { calculatePoints } from '../core/logic';
 import { CLOUDINARY_FOLDERS } from 'src/config/cloudinary-folders';
 import { CloudinaryImage } from '../cloudinary/interfaces';
 import { createCloudinaryImageFromResourceApiResponse } from '../cloudinary/adapters';
+import { Commerce, CommerceImage } from '../commerce/entities';
 
 interface SeedMainEntityProps {
   workbook: SeedWorkbook;
@@ -230,6 +231,17 @@ export class SeedsService {
       // * SEED RESTAURANTS
       if (!collection || collection === FileSheetsEnum.restaurants) {
         await this.seedRestaurantsFromWorkbook({
+          workbook,
+          queryRunner,
+          createOrRecreateImages,
+          addTempImage,
+          addImageToDelete,
+        });
+      }
+
+      // * SEED COMMERCE
+      if (!collection || collection === FileSheetsEnum.commerce) {
+        await this.seedCommerceFromWorkbook({
           workbook,
           queryRunner,
           createOrRecreateImages,
@@ -679,7 +691,6 @@ export class SeedsService {
     createOrRecreateImages,
   }: SeedMainEntityProps) {
     this.seedsWS.sendSeedLog('Creating lodgings: this seed require categories, facilities and town', 1);
-
     const lodgingsData = workbook.getLodgings();
 
     this.seedsWS.sendSeedLog(`Records of file: ${lodgingsData.length}`, 2);
@@ -1167,5 +1178,158 @@ export class SeedsService {
     if (mainImage) images.unshift(mainImage);
 
     return images;
+  }
+
+  // * ----------------------------------------------------------------------------------------------------------------
+  // * SEED COMMERCE
+  // * ----------------------------------------------------------------------------------------------------------------
+  private async seedCommerceFromWorkbook({
+    workbook,
+    queryRunner,
+    addImageToDelete,
+    addTempImage,
+    createOrRecreateImages,
+  }: SeedMainEntityProps) {
+    this.seedsWS.sendSeedLog('Creating commerce: this seed require categories, facilities and town', 1);
+    const commercesData = workbook.getCommerce();
+    this.seedsWS.sendSeedLog(`Records of file: ${commercesData.length}`, 2);
+
+    this.seedsWS.sendSeedLog('Get all commerce from database', 2);
+    const dbCommerce = await queryRunner.manager.find(Commerce, {
+      relations: { categories: true, facilities: true, images: { imageResource: true } },
+    });
+    const dbCategories = await queryRunner.manager.find(Category, {});
+    const dbFacilities = await queryRunner.manager.find(Facility, {});
+    const dbTowns = await queryRunner.manager.find(Town, {});
+
+    this.seedsWS.sendSeedLog(`DB commerce found: ${dbCommerce.length}`, 3);
+    this.seedsWS.sendSeedLog(`File commerce: ${commercesData.length}`, 3);
+
+    for (const commerceData of commercesData) {
+      this.seedsWS.sendSeedLog(`Processing commerce ${commerceData.name}`, 2);
+      const existingCommerce = dbCommerce.find(c => c.slug === commerceData.slug);
+      if (existingCommerce) this.seedsWS.sendSeedLog('The commerce already exists', 3);
+
+      this.seedsWS.sendSeedLog(`Recover images from cloudinary`, 3);
+      const repositoryFolder = `${CLOUDINARY_FOLDERS.COMMERCE_IMAGE_REPOSITORY}/${commerceData.slug}`;
+      const imageRepository = await this.getImagesFromFolder(repositoryFolder);
+      this.seedsWS.sendSeedLog(`Images found: ${imageRepository.length}`, 4);
+      console.log('commercesData', 'commercesData', commercesData);
+      if (imageRepository.length === 0 && (!existingCommerce || createOrRecreateImages)) {
+        this.seedsWS.sendSeedLog('No images found, continue with the next commerce', 4);
+        continue;
+      }
+
+      // * Get the category ids using the category names
+      const commerceCategories = matchCategoriesByValue({ value: commerceData.categories, categories: dbCategories });
+      if (commerceCategories.length === 0) this.seedsWS.sendSeedLog('No category found', 3);
+      else this.seedsWS.sendSeedLog(`Commerce categories: ${commerceCategories.map(c => c.name).join(', ')}`, 3);
+
+      // * Get the facility ids using the facility names
+      const facilities = matchFacilitiesByValue({ value: commerceData.facilities, facilities: dbFacilities });
+      if (facilities.length === 0) this.seedsWS.sendSeedLog('No facility found', 3);
+      else this.seedsWS.sendSeedLog(`Commerce facilities: ${facilities.map(f => f.name).join(', ')}`, 3);
+
+      // * Get the town id using the town name
+      const town = dbTowns.find(t => t.name.toLocaleLowerCase() === commerceData.town.toLocaleLowerCase());
+      if (!town) this.seedsWS.sendSeedLog('No town found', 3);
+      else this.seedsWS.sendSeedLog(`Commerce town: ${town.name}`, 3);
+
+      const newCommerce = queryRunner.manager.create(Commerce, {
+        name: commerceData.name,
+        slug: commerceData.slug,
+        description: commerceData.description,
+        // ------------------------------------------------
+        address: commerceData.address,
+        email: commerceData.email,
+        website: commerceData.website,
+        facebook: commerceData.facebook,
+        instagram: commerceData.instagram,
+        whatsappNumbers: commerceData.whatsapps?.split(',').map(w => w.trim()),
+        openingHours: commerceData.openingHours?.split(',').map(o => o.trim()),
+        spokenLangueges: commerceData.languages?.split(',').map(l => l.trim()),
+        // ------------------------------------------------
+        location: { type: 'Point', coordinates: [+commerceData.longitude, +commerceData.latitude] },
+        googleMapsUrl: commerceData.googleMaps,
+        urbanCenterDistance: commerceData.distance,
+        howToGetThere: commerceData.howToGetThere,
+        arrivalReference: commerceData.zone,
+        // ------------------------------------------------
+        isPublic: true,
+        town: town ? { id: town.id } : undefined,
+        categories: commerceCategories.map(c => ({ id: c.id })),
+        facilities: facilities.map(f => ({ id: f.id })),
+      });
+
+      // * Save the lodging in the database with only the data from the sheet without images
+      this.seedsWS.sendSeedLog('Save lodging in the database with sheet data', 3);
+      const commerce = existingCommerce
+        ? queryRunner.manager.merge(Commerce, existingCommerce, newCommerce)
+        : newCommerce;
+      await queryRunner.manager.save(Commerce, commerce);
+
+      // * Create the lodging object with the data from the sheet
+
+      if (createOrRecreateImages || !existingCommerce) {
+        // * Remove old images and save the new ones
+        this.seedsWS.sendSeedLog(`Remove old images...`, 3);
+        if (commerce.images) {
+          const promises: Promise<any>[] = [];
+          commerce.images.forEach(image => {
+            const { imageResource } = image;
+            if (imageResource && imageResource.publicId) addImageToDelete(imageResource.publicId);
+            promises.push(queryRunner.manager.remove(image));
+          });
+          await Promise.all(promises);
+        }
+
+        this.seedsWS.sendSeedLog(`Save images...`, 3);
+        const cloudinaryRes = await Promise.all(
+          imageRepository.map(image =>
+            this.cloudinaryService.uploadImageFromUrl(
+              image.url,
+              image.displayName || commerce.slug,
+              CloudinaryPresets.COMMERCE_IMAGE,
+              `${CLOUDINARY_FOLDERS.COMMERCE_GALLERY}/${commerce.slug}`,
+            ),
+          ),
+        );
+
+        this.seedsWS.sendSeedLog(`Save ${cloudinaryRes.length} images in cloudinary!`, 3);
+
+        const imageResources = cloudinaryRes
+          .filter(res => typeof res !== 'undefined')
+          .map(res => {
+            addTempImage(res.publicId);
+            return queryRunner.manager.create(ImageResource, {
+              publicId: res.publicId,
+              url: res.url,
+              fileName: commerce.name,
+              width: res.width,
+              height: res.height,
+              format: res.format,
+              resourceType: res.type,
+              provider: ResourceProvider.Cloudinary,
+            });
+          });
+
+        this.seedsWS.sendSeedLog(`Save ${imageResources.length} images resource in the database...`, 3);
+        await queryRunner.manager.save(ImageResource, imageResources);
+
+        // * Save the images in the database and add ID to global array
+        this.seedsWS.sendSeedLog(`Add image to lodging and updating...`, 3);
+        const commerceImages = imageResources.map((image, index) => {
+          return queryRunner.manager.create(CommerceImage, {
+            imageResource: image,
+            order: index + 1,
+            commerce: { id: commerce.id },
+          });
+        });
+
+        await queryRunner.manager.save(CommerceImage, commerceImages);
+      }
+    }
+
+    this.seedsWS.sendSeedLog('Commerce saved successfully in the database', 2);
   }
 }

@@ -21,6 +21,7 @@ import {
   createReviewPreset,
 } from './presets';
 import { createCloudinaryImageAdapter } from './adapters';
+import { createCommercePreset } from './presets/create-commerce.preset';
 
 interface UploadImageProps {
   file: Express.Multer.File;
@@ -83,6 +84,7 @@ export class CloudinaryService {
       createExperiencePreset(),
       createRestaurantPreset(),
       createReviewPreset(),
+      createCommercePreset(),
     ]);
     return promises;
   }
