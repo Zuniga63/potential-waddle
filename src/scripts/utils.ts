@@ -1,5 +1,7 @@
 import { execSync } from 'child_process';
 
+export const MIGRATION_RESOURCE_PATH = './src/config/connection-source.ts';
+
 // Función para extraer el valor de un argumento con un prefijo dado, con un valor por defecto.
 export function getArgumentValue(args, prefix, defaultValue) {
   for (const arg of args) {

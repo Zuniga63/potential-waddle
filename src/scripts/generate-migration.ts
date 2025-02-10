@@ -1,4 +1,4 @@
-import { getArgumentValue, runCommand } from './utils';
+import { MIGRATION_RESOURCE_PATH, getArgumentValue, runCommand } from './utils';
 
 // Obtención de argumentos de la línea de comando (excluyendo los primeros dos).
 const args = process.argv.slice(2);
@@ -7,16 +7,10 @@ const args = process.argv.slice(2);
 const migrationName = getArgumentValue(args, '--name=', 'default_migration_name');
 
 // Proceso de construcción y ejecución de migraciones.
-console.log('Compilando el proyecto...');
+console.log('Compiling project...');
 runCommand('pnpm build');
 
-console.log(`Ejecutando migraciones con nombre: ${migrationName}`);
-// runCommand(`npm run migration:generate --name=${migrationName}`);
-runCommand(
-  `npm run typeorm -- -d ./src/config/connection-source.ts migration:generate ./src/migrations/${migrationName}`,
-);
+console.log(`Generating migrations with name: ${migrationName}`);
+runCommand(`npm run typeorm -- -d ${MIGRATION_RESOURCE_PATH} migration:generate ./src/migrations/${migrationName}`);
 
-console.log('Compilando el proyecto nuevamente...');
-runCommand('pnpm build');
-
-console.log('Proceso completado con éxito.');
+console.log('Process completed successfully.');
