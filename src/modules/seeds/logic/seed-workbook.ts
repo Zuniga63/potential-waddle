@@ -26,6 +26,8 @@ import type {
   SheetTownData,
   SheetCommerce,
   SheetCommerceData,
+  SheetGuideData,
+  SheetGuide,
 } from '../interfaces';
 import {
   SHEET_CATEGORY_HEADERS,
@@ -41,6 +43,7 @@ import {
   SHEET_TOWN_HEADERS,
   SHEET_COMMERCE_HEADERS,
 } from '../constants';
+import { SHEET_GUIDE_HEADERS } from '../constants/sheet-guide-headers';
 import { FileSheetsEnum } from '../enums';
 
 export class SeedWorkbook {
@@ -286,5 +289,26 @@ export class SeedWorkbook {
       .filter(row => row !== null);
 
     return sheetCommerce;
+  }
+
+  public getGuides(): SheetGuide[] {
+    const sheet = this.workbook.Sheets[FileSheetsEnum.guides];
+    const json = utils.sheet_to_json<SheetGuideData>(sheet, { header: SHEET_GUIDE_HEADERS, range: 1 });
+
+    const sheetGuides = json
+      .map(({ checked, ...data }) => {
+        if (!checked) return null;
+        if (!data.firstName || !data.lastName) return null;
+        if (!data.documentType || !data.document) return null;
+        if (!data.town) return null;
+        if (!data.categories) return null;
+
+        const id = uuidv4();
+        const guide: SheetGuide = { id, ...data };
+        return guide;
+      })
+      .filter(row => row !== null);
+
+    return sheetGuides;
   }
 }

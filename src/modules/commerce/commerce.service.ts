@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { FindOptionsRelations, Repository } from 'typeorm';
 
@@ -8,6 +8,7 @@ import { UpdateCommerceDto } from './dto/update-commerce.dto';
 import { generateCommerceQueryFilters } from './utils';
 import { CommerceFindAllParams } from './interfaces';
 import { CommerceIndexDto } from './dto';
+import { CommerceFullDto } from './dto/commerce-full.dto';
 
 @Injectable()
 export class CommerceService {
@@ -35,8 +36,24 @@ export class CommerceService {
     return commerces.map(commerces => new CommerceIndexDto(commerces));
   }
 
-  findOne({ identifier }: { identifier: string }) {
-    return this.commerceRepository.findOne({ where: { slug: identifier } });
+  async findOne({ identifier }: { identifier: string }) {
+    const relations: FindOptionsRelations<Commerce> = {
+      categories: { icon: true },
+      facilities: { icon: true },
+      town: { department: true },
+      images: { imageResource: true },
+    };
+
+    let place = await this.commerceRepository.findOne({
+      where: { slug: identifier },
+      relations,
+      order: { images: { order: 'ASC' } },
+    });
+
+    if (!place) place = await this.commerceRepository.findOne({ where: { id: identifier }, relations });
+    if (!place) throw new NotFoundException('Commerce not found');
+
+    return new CommerceFullDto(place);
   }
 
   update({ identifier }: { identifier: string }, updateCommerceDto: UpdateCommerceDto) {

@@ -21,6 +21,7 @@ import { RestaurantsModule } from './modules/restaurants/restaurants.module';
 import { TinifyModule } from './modules/tinify/tinify.module';
 import { TransportModule } from './modules/transport/transport.module';
 import { CommerceModule } from './modules/commerce/commerce.module';
+import { GuidesModule } from './modules/guides/guides.module';
 
 @Module({
   imports: [
@@ -66,6 +67,8 @@ import { CommerceModule } from './modules/commerce/commerce.module';
     TransportModule,
 
     CommerceModule,
+
+    GuidesModule,
   ],
   controllers: [],
   providers: [],

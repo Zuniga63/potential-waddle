@@ -20,6 +20,7 @@ import { Session } from 'src/modules/auth/entities';
 import { Review } from 'src/modules/reviews/entities';
 import { UserPoint } from './user-point.entity';
 import { Transport } from 'src/modules/transport/entities/transport.entity';
+import { Guide } from 'src/modules/guides/entities/guide.entity';
 
 @Entity({ name: 'users' })
 export class User {
@@ -44,6 +45,9 @@ export class User {
 
   @OneToOne(() => Transport, transport => transport.user)
   transport?: Transport;
+
+  @OneToOne(() => Guide, guide => guide.user)
+  guide?: Guide;
 
   // * ----------------------------------------------------------------------------------------------------------------
   // * MAIN FIELDS

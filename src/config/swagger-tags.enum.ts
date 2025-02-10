@@ -20,4 +20,5 @@ export enum SwaggerTags {
   Transport = 'Transport',
   ImageResources = 'Image Resources',
   Commerce = 'Commerce',
+  Guides = 'Guides',
 }

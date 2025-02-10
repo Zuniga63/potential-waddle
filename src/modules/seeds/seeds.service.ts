@@ -22,6 +22,8 @@ import { CLOUDINARY_FOLDERS } from 'src/config/cloudinary-folders';
 import { CloudinaryImage } from '../cloudinary/interfaces';
 import { createCloudinaryImageFromResourceApiResponse } from '../cloudinary/adapters';
 import { Commerce, CommerceImage } from '../commerce/entities';
+import { Guide } from '../guides/entities/guide.entity';
+import { GuideImage } from '../guides/entities/guide-image.entity';
 
 interface SeedMainEntityProps {
   workbook: SeedWorkbook;
@@ -242,6 +244,17 @@ export class SeedsService {
       // * SEED COMMERCE
       if (!collection || collection === FileSheetsEnum.commerce) {
         await this.seedCommerceFromWorkbook({
+          workbook,
+          queryRunner,
+          createOrRecreateImages,
+          addTempImage,
+          addImageToDelete,
+        });
+      }
+
+      // * SEED GUIDES
+      if (!collection || collection === FileSheetsEnum.guides) {
+        await this.seedGuidesFromWorkbook({
           workbook,
           queryRunner,
           createOrRecreateImages,
@@ -1193,7 +1206,7 @@ export class SeedsService {
     this.seedsWS.sendSeedLog('Creating commerce: this seed require categories, facilities and town', 1);
     const commercesData = workbook.getCommerce();
     this.seedsWS.sendSeedLog(`Records of file: ${commercesData.length}`, 2);
-
+    console.log('commercesData', 'commercesData', commercesData);
     this.seedsWS.sendSeedLog('Get all commerce from database', 2);
     const dbCommerce = await queryRunner.manager.find(Commerce, {
       relations: { categories: true, facilities: true, images: { imageResource: true } },
@@ -1214,7 +1227,6 @@ export class SeedsService {
       const repositoryFolder = `${CLOUDINARY_FOLDERS.COMMERCE_IMAGE_REPOSITORY}/${commerceData.slug}`;
       const imageRepository = await this.getImagesFromFolder(repositoryFolder);
       this.seedsWS.sendSeedLog(`Images found: ${imageRepository.length}`, 4);
-      console.log('commercesData', 'commercesData', commercesData);
       if (imageRepository.length === 0 && (!existingCommerce || createOrRecreateImages)) {
         this.seedsWS.sendSeedLog('No images found, continue with the next commerce', 4);
         continue;
@@ -1222,6 +1234,7 @@ export class SeedsService {
 
       // * Get the category ids using the category names
       const commerceCategories = matchCategoriesByValue({ value: commerceData.categories, categories: dbCategories });
+      console.log('commerceCategories', commerceCategories);
       if (commerceCategories.length === 0) this.seedsWS.sendSeedLog('No category found', 3);
       else this.seedsWS.sendSeedLog(`Commerce categories: ${commerceCategories.map(c => c.name).join(', ')}`, 3);
 
@@ -1234,7 +1247,6 @@ export class SeedsService {
       const town = dbTowns.find(t => t.name.toLocaleLowerCase() === commerceData.town.toLocaleLowerCase());
       if (!town) this.seedsWS.sendSeedLog('No town found', 3);
       else this.seedsWS.sendSeedLog(`Commerce town: ${town.name}`, 3);
-
       const newCommerce = queryRunner.manager.create(Commerce, {
         name: commerceData.name,
         slug: commerceData.slug,
@@ -1245,6 +1257,7 @@ export class SeedsService {
         website: commerceData.website,
         facebook: commerceData.facebook,
         instagram: commerceData.instagram,
+        phoneNumbers: commerceData.phonesNumbers?.split(',').map(p => p.trim()),
         whatsappNumbers: commerceData.whatsapps?.split(',').map(w => w.trim()),
         openingHours: commerceData.openingHours?.split(',').map(o => o.trim()),
         spokenLangueges: commerceData.languages?.split(',').map(l => l.trim()),
@@ -1331,5 +1344,152 @@ export class SeedsService {
     }
 
     this.seedsWS.sendSeedLog('Commerce saved successfully in the database', 2);
+  }
+
+  // * ----------------------------------------------------------------------------------------------------------------
+  // * SEED GUIDES
+  // * ----------------------------------------------------------------------------------------------------------------
+  private async seedGuidesFromWorkbook({
+    workbook,
+    queryRunner,
+    addImageToDelete,
+    addTempImage,
+    createOrRecreateImages,
+  }: SeedMainEntityProps) {
+    this.seedsWS.sendSeedLog('Creating guide: this seed require categories, facilities and town', 1);
+    const guidesData = workbook.getGuides();
+    this.seedsWS.sendSeedLog(`Records of file: ${guidesData.length}`, 2);
+    console.log('guidesData', 'guidesData', guidesData);
+    this.seedsWS.sendSeedLog('Get all guide from database', 2);
+    const dbGuide = await queryRunner.manager.find(Guide, {
+      relations: { categories: true, images: { imageResource: true } },
+    });
+    const dbCategories = await queryRunner.manager.find(Category, {});
+    const dbTowns = await queryRunner.manager.find(Town, {});
+
+    this.seedsWS.sendSeedLog(`DB guide found: ${dbGuide.length}`, 3);
+    this.seedsWS.sendSeedLog(`File guide: ${guidesData.length}`, 3);
+
+    for (const guideData of guidesData) {
+      this.seedsWS.sendSeedLog(`Processing guide ${guideData.firstName} ${guideData.lastName}`, 2);
+      const existingGuide = dbGuide.find(g => g.document === guideData.document.toString());
+      console.log('existingGuide fadssadfdsa', dbGuide);
+      console.log('guideData', guideData);
+
+      if (existingGuide) this.seedsWS.sendSeedLog('The guide already exists', 3);
+
+      this.seedsWS.sendSeedLog(`Recover images from cloudinary`, 3);
+      const repositoryFolder = `${CLOUDINARY_FOLDERS.GUIDE_IMAGE_REPOSITORY}/${guideData.document}`;
+      const imageRepository = await this.getImagesFromFolder(repositoryFolder);
+      this.seedsWS.sendSeedLog(`Images found: ${imageRepository.length}`, 4);
+      if (imageRepository.length === 0 && (!existingGuide || createOrRecreateImages)) {
+        this.seedsWS.sendSeedLog('No images found, continue with the next guide', 4);
+        continue;
+      }
+
+      // * Get the category ids using the category names
+      const guideCategories = matchCategoriesByValue({ value: guideData.categories, categories: dbCategories });
+      console.log('guideCategories', guideCategories);
+      if (guideCategories.length === 0) this.seedsWS.sendSeedLog('No category found', 3);
+      else this.seedsWS.sendSeedLog(`Guide categories: ${guideCategories.map(c => c.name).join(', ')}`, 3);
+
+      // * Get the town id using the town name
+      const town = dbTowns.find(t => t.name.toLocaleLowerCase() === guideData.town.toLocaleLowerCase());
+      if (!town) this.seedsWS.sendSeedLog('No town found', 3);
+      else this.seedsWS.sendSeedLog(`Guide town: ${town.name}`, 3);
+      const newGuide = queryRunner.manager.create(Guide, {
+        firstName: guideData.firstName,
+        lastName: guideData.lastName,
+        documentType: guideData.documentType,
+        document: guideData.document,
+        biography: guideData.biography,
+        // ------------------------------------------------
+        address: guideData.address,
+        email: guideData.email,
+        phone: guideData.phone,
+        whatsapp: guideData.whatsapp,
+        facebook: guideData.facebook,
+        instagram: guideData.instagram,
+        youtube: guideData.youtube,
+        tiktok: guideData.tiktok,
+        // ------------------------------------------------
+        languages: guideData.languages
+          ?.split(',')
+          .map(l => l.trim())
+          .join(','),
+        isAvailable: Boolean(guideData.isAvailable),
+        // ------------------------------------------------
+        town: town ? { id: town.id } : undefined,
+        categories: guideCategories.map(c => ({ id: c.id })),
+      });
+
+      // * Save the lodging in the database with only the data from the sheet without images
+      this.seedsWS.sendSeedLog('Save lodging in the database with sheet data', 3);
+      const guide = existingGuide ? queryRunner.manager.merge(Guide, existingGuide, newGuide) : newGuide;
+      await queryRunner.manager.save(Guide, guide);
+
+      // * Create the lodging object with the data from the sheet
+
+      if (createOrRecreateImages || !existingGuide) {
+        // * Remove old images and save the new ones
+        this.seedsWS.sendSeedLog(`Remove old images...`, 3);
+        if (guide.images) {
+          const promises: Promise<any>[] = [];
+          guide.images.forEach(image => {
+            const { imageResource } = image;
+            if (imageResource && imageResource.publicId) addImageToDelete(imageResource.publicId);
+            promises.push(queryRunner.manager.remove(image));
+          });
+          await Promise.all(promises);
+        }
+
+        this.seedsWS.sendSeedLog(`Save images...`, 3);
+        const cloudinaryRes = await Promise.all(
+          imageRepository.map(image =>
+            this.cloudinaryService.uploadImageFromUrl(
+              image.url,
+              image.displayName || guide.document,
+              CloudinaryPresets.GUIDE_IMAGE,
+              `${CLOUDINARY_FOLDERS.GUIDE_GALLERY}/${guide.document}`,
+            ),
+          ),
+        );
+
+        this.seedsWS.sendSeedLog(`Save ${cloudinaryRes.length} images in cloudinary!`, 3);
+
+        const imageResources = cloudinaryRes
+          .filter(res => typeof res !== 'undefined')
+          .map(res => {
+            addTempImage(res.publicId);
+            return queryRunner.manager.create(ImageResource, {
+              publicId: res.publicId,
+              url: res.url,
+              fileName: guide.document,
+              width: res.width,
+              height: res.height,
+              format: res.format,
+              resourceType: res.type,
+              provider: ResourceProvider.Cloudinary,
+            });
+          });
+
+        this.seedsWS.sendSeedLog(`Save ${imageResources.length} images resource in the database...`, 3);
+        await queryRunner.manager.save(ImageResource, imageResources);
+
+        // * Save the images in the database and add ID to global array
+        this.seedsWS.sendSeedLog(`Add image to lodging and updating...`, 3);
+        const guideImages = imageResources.map((image, index) => {
+          return queryRunner.manager.create(GuideImage, {
+            imageResource: image,
+            order: index + 1,
+            guide: { id: guide.id },
+          });
+        });
+
+        await queryRunner.manager.save(GuideImage, guideImages);
+      }
+    }
+
+    this.seedsWS.sendSeedLog('Guide saved successfully in the database', 2);
   }
 }

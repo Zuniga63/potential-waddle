@@ -7,4 +7,5 @@ export enum CloudinaryPresets {
   EXPERIENCE_IMAGE = 'experience_image',
   RESTAURANT_IMAGE = 'restaurant_image',
   REVIEW_IMAGE = 'review_image',
+  GUIDE_IMAGE = 'guide_image',
 }

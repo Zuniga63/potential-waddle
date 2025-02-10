@@ -11,4 +11,5 @@ export enum FileSheetsEnum {
   experiences = 'Experiencias',
   restaurants = 'Restaurantes',
   commerce = 'Comercios',
+  guides = 'Guias',
 }

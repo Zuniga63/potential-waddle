@@ -10,3 +10,4 @@ export type { SheetLodging, SheetLodgingData } from './sheet-lodging.interface';
 export type { SheetExperience, SheetExperienceData } from './sheet-experience.interface';
 export type { SheetRestaurant, SheetRestaurantData } from './sheet-restaurant.interface';
 export type { SheetCommerce, SheetCommerceData } from './sheet-commerce.interface';
+export type { SheetGuide, SheetGuideData } from './sheet-guide.interface';

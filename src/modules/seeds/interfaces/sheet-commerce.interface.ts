@@ -8,7 +8,7 @@ interface SheetCommerceBase {
   points: number;
   languages: string;
   address: string;
-  phones: string;
+  phonesNumbers: string;
   whatsapps: string;
   openingHours: string;
   email: string;
