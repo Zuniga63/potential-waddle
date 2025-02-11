@@ -24,6 +24,7 @@ import { LoginUserDto } from './dto/login-user.dto';
 import { GetUser } from '../common/decorators/get-user.decorator';
 import { User } from '../users/entities/user.entity';
 import { GoogleOauthGuard } from './guards';
+import { Auth } from './decorators';
 
 @Controller('auth')
 @ApiExtraModels(UserDto)
@@ -115,5 +116,23 @@ export class AuthController {
     if (user) return this.authService.signIn({ user, ip, userAgent });
     if (id_token) return this.authService.signInFromGoogleTokenId({ idToken: id_token, ip, userAgent });
     throw new UnauthorizedException('Invalid Google ID Token');
+  }
+
+  // * ----------------------------------------------------------------------------------------------------------------
+  // * VERIFY TOKEN
+  // * ----------------------------------------------------------------------------------------------------------------
+  @Get('verify-token')
+  @Auth()
+  @ApiOperation({
+    summary: 'Verify Token',
+    description: 'Public end point for verify the token',
+  })
+  @ApiOkResponse({
+    description: 'The token has been successfully verified.',
+    schema: { type: 'object', properties: { ok: { type: 'boolean' } } },
+  })
+  @ApiBadRequestResponse({ description: 'Invalid token.' })
+  async verifyToken() {
+    return { ok: true };
   }
 }
