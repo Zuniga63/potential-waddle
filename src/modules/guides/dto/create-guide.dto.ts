@@ -8,6 +8,14 @@ export class CreateGuideDto {
   // * -------------------------------------- PERSONAL INFO -----------------------------------------------------------
   // * ----------------------------------------------------------------------------------------------------------------
   @ApiProperty({
+    example: 'john-doe',
+    description: 'Slug of the guide',
+  })
+  @IsString()
+  @IsNotEmpty()
+  slug: string;
+
+  @ApiProperty({
     example: 'john.doe@example.com',
     description: 'Email address of the guide',
   })

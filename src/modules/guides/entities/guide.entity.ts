@@ -47,6 +47,9 @@ export class Guide {
   // * MAIN FIELDS
   // * ----------------------------------------------------------------------------------------------------------------
 
+  @Column('text', { unique: true })
+  slug: string;
+
   @Column('text', { name: 'email', nullable: false })
   email: string;
 

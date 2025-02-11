@@ -68,7 +68,7 @@ export class GuidesService {
     return new GuidesListDto({ currentPage: page, pages: Math.ceil(count / limit), count }, guides);
   }
 
-  async findOne(id: string) {
+  async findOne({ identifier }: { identifier: string }) {
     const relations: FindOptionsRelations<Guide> = {
       categories: { icon: true },
       town: { department: true },
@@ -76,7 +76,7 @@ export class GuidesService {
       images: { imageResource: true },
     };
 
-    const guide = await this.guideRepository.findOne({ where: { id }, relations });
+    const guide = await this.guideRepository.findOne({ where: { slug: identifier }, relations });
     if (!guide) throw new NotFoundException('Guide not found');
     return new GuideDto({ data: guide });
   }

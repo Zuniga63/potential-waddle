@@ -1,4 +1,5 @@
 export interface SheetGuideBase {
+  slug: string;
   firstName: string;
   lastName: string;
   town: string;

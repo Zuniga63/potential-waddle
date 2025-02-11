@@ -1,14 +1,14 @@
 import { MigrationInterface, QueryRunner } from 'typeorm';
 
-export class AddGuideTable1739150441214 implements MigrationInterface {
-  name = 'AddGuideTable1739150441214';
+export class AddGuideTable1739234287256 implements MigrationInterface {
+  name = 'AddGuideTable1739234287256';
 
   public async up(queryRunner: QueryRunner): Promise<void> {
     await queryRunner.query(
       `CREATE TABLE "guide_image" ("id" uuid NOT NULL DEFAULT uuid_generate_v4(), "order" smallint NOT NULL, "is_public" boolean NOT NULL DEFAULT true, "created_at" TIMESTAMP NOT NULL DEFAULT now(), "updated_at" TIMESTAMP NOT NULL DEFAULT now(), "guide_id" uuid, "image_resource_id" uuid, CONSTRAINT "PK_74f651a798b8425272b67f3d654" PRIMARY KEY ("id"))`,
     );
     await queryRunner.query(
-      `CREATE TABLE "guide" ("id" uuid NOT NULL DEFAULT uuid_generate_v4(), "email" text NOT NULL, "first_name" text NOT NULL, "last_name" text NOT NULL, "document_type" text NOT NULL, "document" text NOT NULL, "phone" text NOT NULL, "whatsapp" text NOT NULL, "address" text NOT NULL, "biography" text, "languages" text, "facebook" text, "instagram" text, "youtube" text, "tiktok" text, "is_available" boolean NOT NULL DEFAULT true, "created_at" TIMESTAMP NOT NULL DEFAULT now(), "updated_at" TIMESTAMP NOT NULL DEFAULT now(), "town_id" uuid NOT NULL, "user_id" uuid, CONSTRAINT "REL_b47be5f3ef73194972be4a1167" UNIQUE ("user_id"), CONSTRAINT "PK_fe92b4af32150e0580d37eacaef" PRIMARY KEY ("id"))`,
+      `CREATE TABLE "guide" ("id" uuid NOT NULL DEFAULT uuid_generate_v4(), "slug" text NOT NULL, "email" text NOT NULL, "first_name" text NOT NULL, "last_name" text NOT NULL, "document_type" text NOT NULL, "document" text NOT NULL, "phone" text NOT NULL, "whatsapp" text NOT NULL, "address" text NOT NULL, "biography" text, "languages" text, "facebook" text, "instagram" text, "youtube" text, "tiktok" text, "is_available" boolean NOT NULL DEFAULT true, "created_at" TIMESTAMP NOT NULL DEFAULT now(), "updated_at" TIMESTAMP NOT NULL DEFAULT now(), "town_id" uuid NOT NULL, "user_id" uuid, CONSTRAINT "UQ_792ebb71d04878eb8972424facf" UNIQUE ("slug"), CONSTRAINT "REL_b47be5f3ef73194972be4a1167" UNIQUE ("user_id"), CONSTRAINT "PK_fe92b4af32150e0580d37eacaef" PRIMARY KEY ("id"))`,
     );
     await queryRunner.query(
       `CREATE TABLE "guide_category" ("guide_id" uuid NOT NULL, "category_id" uuid NOT NULL, CONSTRAINT "PK_c55d51089cca87c7ab64d9a2d49" PRIMARY KEY ("guide_id", "category_id"))`,

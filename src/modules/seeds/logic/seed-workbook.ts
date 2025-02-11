@@ -298,13 +298,13 @@ export class SeedWorkbook {
     const sheetGuides = json
       .map(({ checked, ...data }) => {
         if (!checked) return null;
-        if (!data.firstName || !data.lastName) return null;
+        if (!data.firstName || !data.lastName || !data.slug) return null;
         if (!data.documentType || !data.document) return null;
         if (!data.town) return null;
         if (!data.categories) return null;
-
+        console.log(data);
         const id = uuidv4();
-        const guide: SheetGuide = { id, ...data };
+        const guide: SheetGuide = { id, ...data, slug: data.slug.trim() };
         return guide;
       })
       .filter(row => row !== null);

@@ -1372,14 +1372,14 @@ export class SeedsService {
 
     for (const guideData of guidesData) {
       this.seedsWS.sendSeedLog(`Processing guide ${guideData.firstName} ${guideData.lastName}`, 2);
-      const existingGuide = dbGuide.find(g => g.document === guideData.document.toString());
+      const existingGuide = dbGuide.find(g => g.slug === guideData.slug);
       console.log('existingGuide fadssadfdsa', dbGuide);
       console.log('guideData', guideData);
 
       if (existingGuide) this.seedsWS.sendSeedLog('The guide already exists', 3);
 
       this.seedsWS.sendSeedLog(`Recover images from cloudinary`, 3);
-      const repositoryFolder = `${CLOUDINARY_FOLDERS.GUIDE_IMAGE_REPOSITORY}/${guideData.document}`;
+      const repositoryFolder = `${CLOUDINARY_FOLDERS.GUIDE_IMAGE_REPOSITORY}/${guideData.slug}`;
       const imageRepository = await this.getImagesFromFolder(repositoryFolder);
       this.seedsWS.sendSeedLog(`Images found: ${imageRepository.length}`, 4);
       if (imageRepository.length === 0 && (!existingGuide || createOrRecreateImages)) {
@@ -1398,6 +1398,7 @@ export class SeedsService {
       if (!town) this.seedsWS.sendSeedLog('No town found', 3);
       else this.seedsWS.sendSeedLog(`Guide town: ${town.name}`, 3);
       const newGuide = queryRunner.manager.create(Guide, {
+        slug: guideData.slug,
         firstName: guideData.firstName,
         lastName: guideData.lastName,
         documentType: guideData.documentType,
@@ -1448,9 +1449,9 @@ export class SeedsService {
           imageRepository.map(image =>
             this.cloudinaryService.uploadImageFromUrl(
               image.url,
-              image.displayName || guide.document,
+              image.displayName || guide.slug,
               CloudinaryPresets.GUIDE_IMAGE,
-              `${CLOUDINARY_FOLDERS.GUIDE_GALLERY}/${guide.document}`,
+              `${CLOUDINARY_FOLDERS.GUIDE_GALLERY}/${guide.slug}`,
             ),
           ),
         );

@@ -8,6 +8,7 @@ import { GuideDto } from './dto/guide.dto';
 import { GuidesFilters } from './decorators/guides-filters.decorator';
 import { GuidesFiltersDto } from './dto/guides-filters.dto';
 import { GuideListQueryDocsGroup } from './decorators/guides-list-query-docs-group.decorator';
+import { OptionalAuth } from '../auth/decorators';
 
 @Controller('guides')
 @ApiTags(SwaggerTags.Guides)
@@ -25,7 +26,7 @@ export class GuidesController {
   }
 
   // * ----------------------------------------------------------------------------------------------------------------
-  // * GET ALL TRANSPORTS
+  // * GET ALL GUIDES
   // * ----------------------------------------------------------------------------------------------------------------
   @Get()
   @GuideListQueryDocsGroup()
@@ -34,13 +35,13 @@ export class GuidesController {
   }
 
   // * ----------------------------------------------------------------------------------------------------------------
-  // * GET TRANSPORT BY ID
+  // * GET GUIDE BY IDENTIFIER
   // * ----------------------------------------------------------------------------------------------------------------
-  @Get(':id')
-  @ApiParam({ name: 'id', type: 'string', description: 'The UUID of the guide' })
-  @ApiOkResponse({ description: 'The guide has been successfully retrieved.', type: GuideDto })
-  findOne(@Param('id') id: string) {
-    return this.guidesService.findOne(id);
+  @Get(':identifier')
+  @OptionalAuth()
+  @ApiOkResponse({ description: 'Guide Detail', type: GuideDto })
+  findOne(@Param('identifier') identifier: string) {
+    return this.guidesService.findOne({ identifier });
   }
 
   // * ----------------------------------------------------------------------------------------------------------------

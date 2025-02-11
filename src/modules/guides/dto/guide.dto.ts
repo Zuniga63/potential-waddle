@@ -12,6 +12,12 @@ export class GuideDto {
   id: string;
 
   @ApiProperty({
+    example: 'john-doe',
+    description: 'Slug of the guide',
+  })
+  slug: string;
+
+  @ApiProperty({
     example: 'john.doe@example.com',
     description: 'Email address of the guide',
   })
@@ -137,6 +143,7 @@ export class GuideDto {
     if (!data) return;
 
     this.id = data.id;
+    this.slug = data.slug;
     this.email = data.email;
     this.firstName = data.firstName;
     this.lastName = data.lastName;
