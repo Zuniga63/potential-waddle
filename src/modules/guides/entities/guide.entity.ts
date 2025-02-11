@@ -14,6 +14,7 @@ import {
   PrimaryGeneratedColumn,
 } from 'typeorm';
 import { GuideImage } from './guide-image.entity';
+import { Experience } from 'src/modules/experiences/entities/experience.entity';
 
 @Entity({ name: 'guide' })
 export class Guide {
@@ -42,6 +43,9 @@ export class Guide {
 
   @OneToMany(() => GuideImage, image => image.guide)
   images?: GuideImage[];
+
+  @OneToMany(() => Experience, experience => experience.guide)
+  experiences?: Experience[];
 
   // * ----------------------------------------------------------------------------------------------------------------
   // * MAIN FIELDS

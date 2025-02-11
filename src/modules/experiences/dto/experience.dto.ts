@@ -2,6 +2,7 @@ import { AppIconDto, CategoryDto, FacilityDto } from 'src/modules/core/dto';
 import { Experience } from '../entities';
 import { TownDto } from 'src/modules/towns/dto';
 import { ExperienceGuide } from '../interfaces';
+import { GuideDto } from 'src/modules/guides/dto/guide.dto';
 
 export class ExperienceDto {
   id: string;
@@ -64,6 +65,8 @@ export class ExperienceDto {
 
   guides: ExperienceGuide[];
 
+  guide?: GuideDto;
+
   constructor({ data }: { data: Experience }) {
     if (!data) return;
 
@@ -83,7 +86,7 @@ export class ExperienceDto {
       longitude: data.arrivalLocation.coordinates[0],
       latitude: data.arrivalLocation.coordinates[1],
     };
-
+    this.guide = data.guide ? new GuideDto({ data: data.guide }) : undefined;
     this.travelTime = data.travelTime || 0;
     this.totalDistance = data.totalDistance || 0;
     this.rating = data.rating;

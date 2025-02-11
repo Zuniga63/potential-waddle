@@ -16,6 +16,7 @@ import {
 import { ExperienceImage } from './experience-image.entity';
 import { Review } from 'src/modules/reviews/entities';
 import { ExperienceGuide } from '../interfaces';
+import { Guide } from 'src/modules/guides/entities/guide.entity';
 
 @Entity({ name: 'experience' })
 export class Experience {
@@ -28,6 +29,10 @@ export class Experience {
   @ManyToOne(() => Town, town => town.experiences, { nullable: true, onDelete: 'SET NULL' })
   @JoinColumn({ name: 'town_id' })
   town: Town;
+
+  @ManyToOne(() => Guide, guide => guide.experiences, { nullable: true, onDelete: 'SET NULL' })
+  @JoinColumn({ name: 'guide_id' })
+  guide: Guide;
 
   @ManyToMany(() => Facility, facility => facility.experiences)
   @JoinTable({

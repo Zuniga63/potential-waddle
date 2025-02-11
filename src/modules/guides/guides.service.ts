@@ -74,6 +74,9 @@ export class GuidesService {
       town: { department: true },
       user: true,
       images: { imageResource: true },
+      experiences: {
+        images: { imageResource: true },
+      },
     };
 
     const guide = await this.guideRepository.findOne({ where: { slug: identifier }, relations });

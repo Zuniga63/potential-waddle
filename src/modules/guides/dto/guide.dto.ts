@@ -3,6 +3,7 @@ import { TownDto } from 'src/modules/towns/dto';
 import { Guide } from '../entities/guide.entity';
 import { UserDto } from 'src/modules/users/dto/user.dto';
 import { ApiProperty } from '@nestjs/swagger';
+import { GuideExperienceDto } from './guide-experience.dto';
 
 export class GuideDto {
   @ApiProperty({
@@ -138,6 +139,7 @@ export class GuideDto {
   town?: TownDto;
   user?: UserDto;
   categories?: CategoryDto[];
+  experiences?: GuideExperienceDto[];
 
   constructor({ data }: { data: Guide }) {
     if (!data) return;
@@ -166,5 +168,6 @@ export class GuideDto {
     this.town = data.town ? new TownDto(data.town) : undefined;
     this.user = data.user ? new UserDto(data.user) : undefined;
     this.categories = data.categories?.map(category => new CategoryDto(category));
+    this.experiences = data.experiences?.map(experience => new GuideExperienceDto({ data: experience })) || [];
   }
 }
