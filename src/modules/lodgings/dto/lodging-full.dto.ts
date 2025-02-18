@@ -45,7 +45,7 @@ export class LodgingFullDto extends LodgingIndexDto {
     description: 'List of phones of the lodging',
     required: false,
   })
-  phones?: string[];
+  phoneNumbers?: string[];
 
   @ApiProperty({
     example: 'example@example.com',
@@ -134,13 +134,13 @@ export class LodgingFullDto extends LodgingIndexDto {
     this.amenities = lodging.amenities || [];
     this.roomTypes = lodging.roomTypes || [];
     this.address = lodging.address || undefined;
-    this.phones = lodging.phoneNumbers || [];
+    this.phoneNumbers = lodging.phoneNumbers || [];
     this.email = lodging.email || undefined;
     this.website = lodging.website || undefined;
     this.facebook = lodging.facebook || undefined;
     this.instagram = lodging.instagram || undefined;
     this.whatsappNumbers = lodging.whatsappNumbers;
-    this.languages = lodging.spokenLangueges;
+    this.languages = lodging.spokenLanguages;
     this.longitude = lodging.location?.coordinates[0] || 0;
     this.latitude = lodging.location?.coordinates[1] || 0;
     this.googleMapsUrl = lodging.googleMapsUrl || undefined;

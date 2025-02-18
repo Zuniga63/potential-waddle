@@ -69,16 +69,35 @@ export class CategoriesService {
 
     relations.models = false;
 
-    const modelWhere: FindOptionsWhere<Category> = { ...where };
+    const modelWhere: FindOptionsWhere<Category> = { ...where, models: { slug: model } };
     const withoutModelWhere: FindOptionsWhere<Category> = { ...where, models: { id: IsNull() } };
+    if (onlyAsigned) {
+      modelWhere.models = {};
+      if (model === ModelsEnum.Places) {
+        modelWhere.places = { id: Not(IsNull()) };
+      }
+      if (model === ModelsEnum.Restaurants) {
+        modelWhere.restaurants = { id: Not(IsNull()) };
+      }
+      if (model === ModelsEnum.Lodgings) {
+        modelWhere.lodgings = { id: Not(IsNull()) };
+      }
+      if (model === ModelsEnum.Experiences) {
+        modelWhere.experiences = { id: Not(IsNull()) };
+      }
+      if (model === ModelsEnum.Transports) {
+        modelWhere.transports = { id: Not(IsNull()) };
+      }
+      if (model === ModelsEnum.Commerce) {
+        modelWhere.commerces = { id: Not(IsNull()) };
+      }
+      if (model === ModelsEnum.Guides) {
+        modelWhere.guides = { id: Not(IsNull()) };
+      }
+    }
 
-    if (model === ModelsEnum.Places) modelWhere.places = { id: Not(IsNull()) };
-    if (model === ModelsEnum.Restaurants) modelWhere.restaurants = { id: Not(IsNull()) };
-    if (model === ModelsEnum.Lodgings) modelWhere.lodgings = { id: Not(IsNull()) };
-    if (model === ModelsEnum.Experiences) modelWhere.experiences = { id: Not(IsNull()) };
-    if (model === ModelsEnum.Transports) modelWhere.transports = { id: Not(IsNull()) };
-    if (model === ModelsEnum.Commerce) modelWhere.commerces = { id: Not(IsNull()) };
-    if (model === ModelsEnum.Guides) modelWhere.guides = { id: Not(IsNull()) };
+    console.log('model', model);
+
     const [modelCategories, categoriesWithoutModel] = await Promise.all([
       this.categoriesRepository.find({ where: modelWhere, order, relations, select }),
       this.categoriesRepository.find({ where: withoutModelWhere, order, relations, select }),

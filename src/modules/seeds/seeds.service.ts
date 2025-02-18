@@ -768,7 +768,7 @@ export class SeedsService {
         instagram: lodgingData.instagram,
         whatsappNumbers: lodgingData.whatsapps?.split(',').map(w => w.trim()),
         openingHours: lodgingData.openingHours?.split(',').map(o => o.trim()),
-        spokenLangueges: lodgingData.languages?.split(',').map(l => l.trim()),
+        spokenLanguages: lodgingData.languages?.split(',').map(l => l.trim()),
         // ------------------------------------------------
         location: { type: 'Point', coordinates: [+lodgingData.longitude, +lodgingData.latitude] },
         googleMapsUrl: lodgingData.googleMaps,

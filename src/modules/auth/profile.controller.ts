@@ -11,6 +11,7 @@ import {
   Param,
   ParseUUIDPipe,
   Patch,
+  NotFoundException,
 } from '@nestjs/common';
 import {
   ApiBadRequestResponse,
@@ -34,6 +35,8 @@ import { User } from '../users/entities/user.entity';
 import { ChangePasswordDto } from './dto/change-password.dto';
 import { SessionService } from './services';
 import { ContentTypes } from '../common/constants';
+import { FullUserDto } from '../users/dto/full-user.dto';
+import { UsersService } from '../users/services/users.service';
 
 @Controller('auth/profile')
 @Auth()
@@ -43,6 +46,7 @@ export class ProfileController {
   constructor(
     private readonly authService: AuthService,
     private readonly sessionService: SessionService,
+    private readonly usersService: UsersService,
   ) {}
 
   // * ----------------------------------------------------------------------------------------------------------------
@@ -56,8 +60,10 @@ export class ProfileController {
   @ApiOkResponse({
     description: 'User Info',
   })
-  getProfile(@GetUser() user: User) {
-    return new UserDto(user);
+  async getProfile(@GetUser() user: User) {
+    const fullUser = await this.usersService.getFullUserWithRelations(user.id);
+    if (!fullUser) throw new NotFoundException('User not found');
+    return new FullUserDto(fullUser);
   }
 
   // * ----------------------------------------------------------------------------------------------------------------

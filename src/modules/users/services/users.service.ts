@@ -1,7 +1,7 @@
 import { BadRequestException, Injectable, Logger, NotFoundException, UnauthorizedException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 
-import { Repository } from 'typeorm';
+import { FindOptionsRelations, Repository } from 'typeorm';
 
 import { User } from '../entities/user.entity';
 import { CreateUserDto } from '../dto/create-user.dto';
@@ -180,5 +180,30 @@ export class UsersService {
   async getUserTransport(id: string) {
     const user = await this.usersRepository.findOne({ where: { id }, relations: ['transport'] });
     return user?.transport;
+  }
+
+  async getFullUserWithRelations(id: string) {
+    const relations: FindOptionsRelations<User> = {
+      lodgings: {
+        town: { department: true },
+        images: { imageResource: true },
+        categories: { icon: true },
+      },
+      restaurants: {
+        town: { department: true },
+        images: { imageResource: true },
+        categories: { icon: true },
+      },
+      commerces: {
+        town: { department: true },
+        categories: { icon: true },
+        images: { imageResource: true },
+      },
+    };
+    const user = await this.usersRepository.findOne({
+      where: { id },
+      relations,
+    });
+    return user;
   }
 }

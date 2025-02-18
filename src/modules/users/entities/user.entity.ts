@@ -21,6 +21,9 @@ import { Review } from 'src/modules/reviews/entities';
 import { UserPoint } from './user-point.entity';
 import { Transport } from 'src/modules/transport/entities/transport.entity';
 import { Guide } from 'src/modules/guides/entities/guide.entity';
+import { Commerce } from 'src/modules/commerce/entities/commerce.entity';
+import { Restaurant } from 'src/modules/restaurants/entities/restaurant.entity';
+import { Lodging } from 'src/modules/lodgings/entities/lodging.entity';
 
 @Entity({ name: 'users' })
 export class User {
@@ -48,6 +51,15 @@ export class User {
 
   @OneToOne(() => Guide, guide => guide.user)
   guide?: Guide;
+
+  @OneToMany(() => Commerce, commerce => commerce.user)
+  commerces?: Commerce[];
+
+  @OneToMany(() => Restaurant, restaurant => restaurant.user)
+  restaurants?: Restaurant[];
+
+  @OneToMany(() => Lodging, lodging => lodging.user)
+  lodgings?: Lodging[];
 
   // * ----------------------------------------------------------------------------------------------------------------
   // * MAIN FIELDS

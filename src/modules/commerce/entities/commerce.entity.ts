@@ -16,7 +16,7 @@ import { Town } from 'src/modules/towns/entities';
 import { Category, Facility } from 'src/modules/core/entities';
 import { CommerceImage } from './commerce-image.entity';
 import { Review } from 'src/modules/reviews/entities';
-
+import { User } from 'src/modules/users/entities';
 @Entity({ name: 'commerce' })
 export class Commerce {
   @PrimaryGeneratedColumn('uuid')
@@ -50,6 +50,10 @@ export class Commerce {
 
   @OneToMany(() => Review, review => review.commerce)
   reviews: Review[];
+
+  @ManyToOne(() => User, user => user.commerces, { nullable: true, onDelete: 'SET NULL' })
+  @JoinColumn({ name: 'user_id' })
+  user?: User;
 
   // * ----------------------------------------------------------------------------------------------------------------
   // * MAIN FIELDS

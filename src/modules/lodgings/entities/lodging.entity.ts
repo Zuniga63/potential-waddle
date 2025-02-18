@@ -16,6 +16,7 @@ import { Town } from 'src/modules/towns/entities';
 import { Category, Facility } from 'src/modules/core/entities';
 import { LodgingImage } from './lodging-image.entity';
 import { Review } from 'src/modules/reviews/entities';
+import { User } from 'src/modules/users/entities';
 
 @Entity({ name: 'lodging' })
 export class Lodging {
@@ -47,6 +48,10 @@ export class Lodging {
     inverseJoinColumn: { name: 'facility_id' },
   })
   facilities: Facility[];
+
+  @ManyToOne(() => User, user => user.lodgings, { nullable: true, onDelete: 'SET NULL' })
+  @JoinColumn({ name: 'user_id' })
+  user: User;
 
   @OneToMany(() => Review, review => review.lodging)
   reviews: Review[];
@@ -113,7 +118,7 @@ export class Lodging {
   openingHours: string[] | null;
 
   @Column('text', { name: 'spoken_languages', nullable: true, array: true, default: [] })
-  spokenLangueges: string[];
+  spokenLanguages: string[];
 
   // * ----------------------------------------------------------------------------------------------------------------
   @Column('geometry', { spatialFeatureType: 'Point', srid: 4326 })
