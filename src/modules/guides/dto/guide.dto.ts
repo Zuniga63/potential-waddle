@@ -165,7 +165,6 @@ export class GuideDto {
     this.updatedAt = data.updatedAt;
     this.images = data.images?.map(image => image.imageResource?.url);
     // Map relationships
-    this.town = data.town ? new TownDto(data.town) : undefined;
     this.user = data.user ? new UserDto(data.user) : undefined;
     this.categories = data.categories?.map(category => new CategoryDto(category));
     this.experiences = data.experiences?.map(experience => new GuideExperienceDto({ data: experience })) || [];
