@@ -1,34 +1,38 @@
-import { IsArray, IsEmail, IsNotEmpty, IsOptional, IsString, IsUrl, IsUUID } from 'class-validator';
-import { MinLength } from 'class-validator';
+import { IsArray, IsEmail, IsNotEmpty, IsOptional, IsString, IsUUID, MinLength, ValidateIf } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 import { parseArrayValue } from 'src/utils';
 import { Transform } from 'class-transformer';
 
 export class CreateLodgingDto {
-  @ApiProperty({ description: 'Name of the place', example: '' })
-  @MinLength(3)
-  @IsString()
-  @IsNotEmpty()
-  name: string;
-
   @ApiProperty({ description: 'Slug of the place', example: '' })
   @MinLength(3)
   @IsString()
   @IsNotEmpty()
   slug: string;
 
+  @ApiProperty({ description: 'Name of the place', example: '' })
+  @MinLength(3)
+  @IsString()
+  @IsNotEmpty()
+  name: string;
+
+  @ApiProperty({ description: 'User ID of the place', example: '123e4567-e89b-12d3-a456-426614174000' })
+  @IsOptional()
+  @IsUUID('4')
+  user?: string;
+
   @ApiProperty({
     description: 'Town ID of the place',
     example: '123e4567-e89b-12d3-a456-426614174000',
   })
   @IsUUID('4')
-  @IsNotEmpty()
-  townId: string;
+  @IsOptional()
+  townId?: string;
 
   @ApiProperty({ description: 'Address of the place', example: '' })
   @IsString()
-  @IsNotEmpty()
-  address: string;
+  @IsOptional()
+  address?: string;
 
   @ApiProperty({
     description: 'Categories IDs of the place',
@@ -54,22 +58,24 @@ export class CreateLodgingDto {
     type: 'string',
     isArray: true,
   })
-  phoneNumbers: string[];
+  @IsOptional()
+  phoneNumbers?: string[];
 
   @ApiProperty({ description: 'Email of the place', example: '' })
-  @IsEmail()
-  @IsNotEmpty()
-  email: string;
+  @ValidateIf(o => o.email !== null && o.email !== '')
+  @IsEmail(undefined, { message: 'Invalid email format' })
+  @IsOptional()
+  email?: string | null;
 
   @ApiProperty({ description: 'Website of the place', example: '' })
-  @IsUrl()
-  @IsNotEmpty()
-  website: string;
+  @ValidateIf(o => o.website !== null && o.website !== '')
+  @IsOptional()
+  website?: string;
 
   @ApiProperty({ description: 'Description of the place', example: '' })
   @IsString()
-  @IsNotEmpty()
-  description: string;
+  @IsOptional()
+  description?: string;
 
   @ApiProperty({
     example: ['Viernes: 10:00-18:00', 'Sábado: 10:00-18:00', 'Domingo: 10:00-18:00'],
@@ -79,13 +85,15 @@ export class CreateLodgingDto {
     type: 'string',
     isArray: true,
   })
-  openingHours: string[];
+  @IsOptional()
+  openingHours?: string[];
 
   @ApiProperty({
     example: 'How to get there',
     description: 'The way to get to the place',
     required: false,
   })
+  @IsOptional()
   howToGetThere?: string;
 
   @ApiProperty({
@@ -93,6 +101,7 @@ export class CreateLodgingDto {
     description: 'The arrival reference of the place',
     required: false,
   })
+  @IsOptional()
   arrivalReference?: string;
 
   @ApiProperty({
@@ -100,8 +109,11 @@ export class CreateLodgingDto {
     description: 'Urban center distance of the place in meters [m]',
     required: false,
   })
+  @IsOptional()
+  @Transform(({ value }) => (value === '' ? null : Number(value)))
   urbanCenterDistance?: number;
 
+  @IsOptional()
   @ApiProperty({
     example: ['Single', 'Double', 'Triple'],
     description: 'List of room types of the lodging',
@@ -120,13 +132,16 @@ export class CreateLodgingDto {
     type: 'string',
     isArray: true,
   })
-  amenities: string[];
+  @IsOptional()
+  amenities?: string[];
 
   @ApiProperty({
     example: 100,
     description: 'Lowest price of the lodging',
     required: false,
   })
+  @IsOptional()
+  @Transform(({ value }) => (value === '' ? null : Number(value)))
   lowestPrice?: number;
 
   @ApiProperty({
@@ -134,6 +149,8 @@ export class CreateLodgingDto {
     description: 'Highest price of the lodging',
     required: false,
   })
+  @IsOptional()
+  @Transform(({ value }) => (value === '' ? null : Number(value)))
   highestPrice?: number;
 
   @ApiProperty({
@@ -141,27 +158,33 @@ export class CreateLodgingDto {
     description: 'List of languages spoken in the lodging',
     required: false,
   })
+  @IsOptional()
   spokenLanguages?: string[];
 
   @ApiProperty({
     example: 100,
     description: 'Longitude of the place',
-    required: false,
+    required: true,
   })
-  longitude?: number;
+  @IsOptional()
+  @Transform(({ value }) => (value === '' ? null : Number(value)))
+  longitude: number;
 
   @ApiProperty({
     example: 100,
     description: 'Latitude of the place',
-    required: false,
+    required: true,
   })
-  latitude?: number;
+  @IsOptional()
+  @Transform(({ value }) => (value === '' ? null : Number(value)))
+  latitude: number;
 
   @ApiProperty({
     example: 'https://maps.google.com',
     description: 'Google maps URL of the place',
     required: false,
   })
+  @IsOptional()
   googleMapsUrl?: string;
 
   @ApiProperty({
@@ -169,6 +192,7 @@ export class CreateLodgingDto {
     description: 'List of WhatsApps of the lodging',
     required: false,
   })
+  @IsOptional()
   whatsappNumbers?: string[];
 
   @ApiProperty({
@@ -176,6 +200,8 @@ export class CreateLodgingDto {
     description: 'Facebook URL of the lodging',
     required: false,
   })
+  @ValidateIf(o => o.facebook !== null && o.facebook !== '')
+  @IsOptional()
   facebook?: string;
 
   @ApiProperty({
@@ -183,6 +209,8 @@ export class CreateLodgingDto {
     description: 'Instagram URL of the lodging',
     required: false,
   })
+  @ValidateIf(o => o.instagram !== null && o.instagram !== '')
+  @IsOptional()
   instagram?: string;
 
   @ApiProperty({
@@ -191,5 +219,24 @@ export class CreateLodgingDto {
     format: 'binary',
     example: 'image.jpg',
   })
-  imageFile: Express.Multer.File;
+  @IsOptional()
+  imageFile?: Express.Multer.File;
+
+  @ApiProperty({
+    example: 100,
+    description: 'Capacity of the lodging',
+    required: false,
+  })
+  @IsOptional()
+  @Transform(({ value }) => (value === '' ? null : Number(value)))
+  capacity?: number;
+
+  @ApiProperty({
+    example: 100,
+    description: 'Room count of the lodging',
+    required: false,
+  })
+  @IsOptional()
+  @Transform(({ value }) => (value === '' ? null : Number(value)))
+  roomCount?: number;
 }

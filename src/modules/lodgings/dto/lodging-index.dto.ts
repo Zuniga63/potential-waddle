@@ -3,6 +3,7 @@ import { ApiProperty } from '@nestjs/swagger';
 import { Lodging } from '../entities';
 import { CategoryDto } from 'src/modules/core/dto';
 import { TownDto } from 'src/modules/towns/dto';
+import { UserDto } from 'src/modules/users/dto/user.dto';
 
 export class LodgingIndexDto {
   @ApiProperty({
@@ -128,6 +129,22 @@ export class LodgingIndexDto {
   })
   urbanCenterDistance: number;
 
+  @ApiProperty({
+    example: 'uuid of the user',
+    description: 'The UUID of the user',
+    readOnly: true,
+    required: false,
+  })
+  user?: UserDto;
+
+  @ApiProperty({
+    example: true,
+    description: 'Indicates if the lodging is public',
+    readOnly: true,
+    required: false,
+  })
+  isPublic: boolean;
+
   constructor(lodging?: Lodging, userReview?: string) {
     if (!lodging) return;
     this.id = lodging.id;
@@ -139,12 +156,18 @@ export class LodgingIndexDto {
     this.reviewsCount = 0;
     this.points = lodging.points;
     this.rooms = lodging.roomCount;
-    this.images = lodging.images.map(image => image.imageResource.url);
+    this.images = lodging.images
+      .sort((a, b) => a.order - b.order)
+      .map(image => image.imageResource.url)
+      .slice(0, 4);
+
     this.rating = lodging.rating;
+    this.user = new UserDto(lodging.user);
     this.lowestPrice = lodging.lowestPrice || undefined;
     this.highestPrice = lodging.highestPrice || undefined;
     this.userReview = userReview;
     this.openingHours = lodging.openingHours || undefined;
     this.urbanCenterDistance = lodging.urbanCenterDistance || 0;
+    this.isPublic = lodging.isPublic;
   }
 }
