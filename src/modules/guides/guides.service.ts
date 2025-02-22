@@ -5,7 +5,6 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { FindOptionsRelations, In, Repository } from 'typeorm';
 import { Guide } from './entities/guide.entity';
 import { Category } from '../core/entities';
-import { Town } from '../towns/entities';
 import { User } from '../users/entities';
 import { GuideFindAllParams } from './interfaces/guide-find-all-params.interface';
 import { GuidesListDto } from './dto/guides-list.dto';
@@ -21,18 +20,13 @@ export class GuidesService {
     @InjectRepository(Category)
     private readonly categoryRepo: Repository<Category>,
 
-    @InjectRepository(Town)
-    private readonly townRepo: Repository<Town>,
-
     @InjectRepository(User)
     private readonly userRepo: Repository<User>,
   ) {}
 
   async create(createGuideDto: CreateGuideDto) {
-    const { categoryIds, townId, ...restDto } = createGuideDto;
+    const { categoryIds, ...restDto } = createGuideDto;
     const categories = categoryIds ? await this.categoryRepo.findBy({ id: In(categoryIds) }) : [];
-    const town = townId ? await this.townRepo.findOneBy({ id: townId }) : undefined;
-    if (!town) throw new NotFoundException('Town not found');
     const user = restDto.userId ? await this.userRepo.findOneBy({ id: restDto.userId }) : undefined;
 
     const guide = this.guideRepository.create({
@@ -82,9 +76,8 @@ export class GuidesService {
   }
 
   async update(id: string, updateGuideDto: UpdateGuideDto) {
-    const { categoryIds, townId, userId, ...restDto } = updateGuideDto;
+    const { categoryIds, userId, ...restDto } = updateGuideDto;
     const categories = categoryIds ? await this.categoryRepo.findBy({ id: In(categoryIds) }) : [];
-    const town = townId ? await this.townRepo.findOneBy({ id: townId }) : undefined;
     const user = userId ? await this.userRepo.findOneBy({ id: userId }) : undefined;
     const guide = await this.guideRepository.findOne({ where: { id } });
     if (!guide) throw new NotFoundException('Guide not found');
@@ -93,7 +86,6 @@ export class GuidesService {
       ...guide,
       ...restDto,
       categories: categories || [],
-      town: town || undefined,
       user: user || undefined,
     });
 

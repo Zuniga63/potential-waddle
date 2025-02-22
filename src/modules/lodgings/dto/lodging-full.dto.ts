@@ -1,13 +1,9 @@
-import { ApiProperty, OmitType } from '@nestjs/swagger';
+import { ApiProperty } from '@nestjs/swagger';
 import { LodgingIndexDto } from './lodging-index.dto';
 import { FacilityDto } from 'src/modules/core/dto';
 import { Lodging } from '../entities';
 
-// Create an intermediate class that omits 'images' from LodgingIndexDto
-class LodgingBaseDto extends OmitType(LodgingIndexDto, ['images'] as const) {}
-
-// Make LodgingFullDto extend from the new base class
-export class LodgingFullDto extends LodgingBaseDto {
+export class LodgingFullDto extends LodgingIndexDto {
   @ApiProperty({
     description: 'List of facilities of the lodging',
     readOnly: true,
@@ -129,16 +125,6 @@ export class LodgingFullDto extends LodgingBaseDto {
     required: false,
   })
   arrivalReference?: string;
-
-  @ApiProperty({
-    example: ['https://image.jpg'],
-    isArray: true,
-    description: 'The image of the lodging',
-    readOnly: true,
-    required: false,
-    type: String,
-  })
-  images: string[];
 
   constructor(lodging?: Lodging, userReview?: string) {
     super(lodging, userReview);
