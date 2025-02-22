@@ -1,9 +1,13 @@
-import { ApiProperty } from '@nestjs/swagger';
+import { ApiProperty, OmitType } from '@nestjs/swagger';
 import { LodgingIndexDto } from './lodging-index.dto';
 import { FacilityDto } from 'src/modules/core/dto';
 import { Lodging } from '../entities';
 
-export class LodgingFullDto extends LodgingIndexDto {
+// Create an intermediate class that omits 'images' from LodgingIndexDto
+class LodgingBaseDto extends OmitType(LodgingIndexDto, ['images'] as const) {}
+
+// Make LodgingFullDto extend from the new base class
+export class LodgingFullDto extends LodgingBaseDto {
   @ApiProperty({
     description: 'List of facilities of the lodging',
     readOnly: true,
@@ -126,6 +130,16 @@ export class LodgingFullDto extends LodgingIndexDto {
   })
   arrivalReference?: string;
 
+  @ApiProperty({
+    example: ['https://image.jpg'],
+    isArray: true,
+    description: 'The image of the lodging',
+    readOnly: true,
+    required: false,
+    type: String,
+  })
+  images: string[];
+
   constructor(lodging?: Lodging, userReview?: string) {
     super(lodging, userReview);
 
@@ -146,5 +160,9 @@ export class LodgingFullDto extends LodgingIndexDto {
     this.googleMapsUrl = lodging.googleMapsUrl || undefined;
     this.howToGetThere = lodging.howToGetThere || undefined;
     this.arrivalReference = lodging.arrivalReference || undefined;
+    this.images = lodging.images
+      .sort((a, b) => a.order - b.order)
+      .map(image => image.imageResource.url)
+      .slice(0, 5);
   }
 }

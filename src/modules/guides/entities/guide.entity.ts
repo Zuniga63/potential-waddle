@@ -1,5 +1,4 @@
 import { Category } from 'src/modules/core/entities';
-import { Town } from 'src/modules/towns/entities/town.entity';
 import { User } from 'src/modules/users/entities/user.entity';
 import {
   Column,
@@ -8,7 +7,6 @@ import {
   JoinColumn,
   JoinTable,
   ManyToMany,
-  ManyToOne,
   OneToMany,
   OneToOne,
   PrimaryGeneratedColumn,
@@ -24,10 +22,6 @@ export class Guide {
   // * ----------------------------------------------------------------------------------------------------------------
   // * RELATIONSHIPS
   // * ----------------------------------------------------------------------------------------------------------------
-
-  @ManyToOne(() => Town, town => town.guides, { nullable: false })
-  @JoinColumn({ name: 'town_id' })
-  town: Town;
 
   @OneToOne(() => User, user => user.guide, { nullable: true })
   @JoinColumn({ name: 'user_id' })

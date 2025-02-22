@@ -112,7 +112,9 @@ export class LodgingsService {
     const categories = createLodgingDto.categoryIds
       ? await this.categoryRepo.findBy({ id: In(createLodgingDto.categoryIds) })
       : [];
-
+    const facilities = createLodgingDto.facilityIds
+      ? await this.facilityRepository.findBy({ id: In(createLodgingDto.facilityIds) })
+      : [];
     const town = await this.townRepository.findOne({ where: { id: createLodgingDto.townId } });
     const user = await this.userRepository.findOne({ where: { id: createLodgingDto.user } });
 
@@ -125,6 +127,7 @@ export class LodgingsService {
         ...restCreateDto,
         location: location as any,
         categories,
+        facilities,
         town,
         user: user ?? undefined,
       });

@@ -38,7 +38,6 @@ export class GuidesService {
     const guide = this.guideRepository.create({
       ...restDto,
       categories,
-      town,
       user: user ?? undefined,
     });
 
@@ -51,7 +50,6 @@ export class GuidesService {
     const { where, order } = generateGuideQueryFilters(filters);
 
     const relations: FindOptionsRelations<Guide> = {
-      town: { department: true },
       categories: { icon: true },
       images: { imageResource: true },
       user: true,
@@ -71,7 +69,6 @@ export class GuidesService {
   async findOne({ identifier }: { identifier: string }) {
     const relations: FindOptionsRelations<Guide> = {
       categories: { icon: true },
-      town: { department: true },
       user: true,
       images: { imageResource: true },
       experiences: {

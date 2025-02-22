@@ -10,7 +10,7 @@ export function generateGuideQueryFilters(filters?: GuidesFiltersDto) {
 
   if (!filters) return { where, order };
 
-  const { search, sortBy, townId, categories } = filters;
+  const { search, sortBy, categories } = filters;
   if (search) where.firstName = ILike(`%${search}%`);
 
   if (sortBy) {
@@ -20,8 +20,6 @@ export function generateGuideQueryFilters(filters?: GuidesFiltersDto) {
 
     if (field === GuideSortByEnum.NAME) order.firstName = sortOrder;
   }
-
-  if (townId) where.town = { id: townId };
 
   if (categories) where.categories = { id: In(categories) };
   return { where, order };
