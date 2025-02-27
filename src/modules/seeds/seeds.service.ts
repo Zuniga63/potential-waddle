@@ -1414,10 +1414,7 @@ export class SeedsService {
         youtube: guideData.youtube,
         tiktok: guideData.tiktok,
         // ------------------------------------------------
-        languages: guideData.languages
-          ?.split(',')
-          .map(l => l.trim())
-          .join(','),
+        languages: guideData.languages?.split(',').map(l => l.trim()),
         isAvailable: Boolean(guideData.isAvailable),
         // ------------------------------------------------
         town: town ? { id: town.id } : undefined,

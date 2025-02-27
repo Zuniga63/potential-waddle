@@ -124,6 +124,9 @@ export class Experience {
   @Column('text', { nullable: true })
   restrictions: string | null;
 
+  @Column('boolean', { default: true, name: 'is_public' })
+  isPublic: boolean;
+
   @Column('jsonb', { nullable: true, default: [] })
   guides: ExperienceGuide[];
 

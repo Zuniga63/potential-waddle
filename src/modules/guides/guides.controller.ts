@@ -1,6 +1,25 @@
-import { Controller, Get, Post, Patch, Param, Delete, Body, ParseUUIDPipe } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Patch,
+  Param,
+  Delete,
+  Body,
+  ParseUUIDPipe,
+  UseInterceptors,
+  UploadedFiles,
+} from '@nestjs/common';
 import { SwaggerTags } from 'src/config';
-import { ApiOkResponse, ApiOperation, ApiParam, ApiTags, ApiBody } from '@nestjs/swagger';
+import {
+  ApiOkResponse,
+  ApiOperation,
+  ApiParam,
+  ApiTags,
+  ApiBody,
+  ApiBadRequestResponse,
+  ApiConsumes,
+} from '@nestjs/swagger';
 import { CreateGuideDto } from './dto/create-guide.dto';
 import { UpdateGuideDto } from './dto/update-guide.dto';
 import { GuidesService } from './guides.service';
@@ -9,6 +28,9 @@ import { GuidesFilters } from './decorators/guides-filters.decorator';
 import { GuidesFiltersDto } from './dto/guides-filters.dto';
 import { GuideListQueryDocsGroup } from './decorators/guides-list-query-docs-group.decorator';
 import { OptionalAuth } from '../auth/decorators';
+import { ContentTypes } from '../common/constants/content-types';
+import { ReorderImagesDto } from '../common/dto/reoder-images.dto';
+import { FilesInterceptor } from '@nestjs/platform-express';
 
 @Controller('guides')
 @ApiTags(SwaggerTags.Guides)
@@ -16,7 +38,7 @@ export class GuidesController {
   constructor(private readonly guidesService: GuidesService) {}
 
   // * ----------------------------------------------------------------------------------------------------------------
-  // * CREATE TRANSPORT
+  // * CREATE GUIDE
   // * ----------------------------------------------------------------------------------------------------------------
   @Post()
   @ApiOperation({ summary: 'Create a new guide' })
@@ -47,11 +69,11 @@ export class GuidesController {
   // * ----------------------------------------------------------------------------------------------------------------
   // * UPDATE GUIDE
   // * ----------------------------------------------------------------------------------------------------------------
-  @Patch(':id')
-  @ApiParam({ name: 'id', type: 'string', description: 'The UUID of the guide' })
+  @Patch(':slug')
+  @ApiParam({ name: 'slug', type: 'string', description: 'The slug of the guide' })
   @ApiOkResponse({ description: 'The guide has been successfully updated.', type: GuideDto })
-  update(@Param('id', ParseUUIDPipe) id: string, @Body() updateGuideDto: UpdateGuideDto) {
-    return this.guidesService.update(id, updateGuideDto);
+  update(@Param('slug') slug: string, @Body() updateGuideDto: UpdateGuideDto) {
+    return this.guidesService.update(slug, updateGuideDto);
   }
 
   // * ----------------------------------------------------------------------------------------------------------------
@@ -80,5 +102,66 @@ export class GuidesController {
   @ApiOkResponse({ description: 'The guide availability has been successfully updated.', type: GuideDto })
   updateAvailability(@Param('id', ParseUUIDPipe) id: string, @Body('isAvailable') isAvailable: boolean) {
     return this.guidesService.updateAvailability(id, isAvailable);
+  }
+
+  // * ----------------------------------------------------------------------------------------------------------------
+  // * UPLOAD LODGING IMAGE
+  // * ----------------------------------------------------------------------------------------------------------------
+  @Post(':identifier/upload-images')
+  @UseInterceptors(FilesInterceptor('files', 10))
+  @ApiConsumes(ContentTypes.MULTIPART_FORM_DATA)
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        files: {
+          type: 'array',
+          items: {
+            type: 'string',
+            format: 'binary',
+          },
+        },
+      },
+    },
+  })
+  @ApiOkResponse({
+    description: 'Images uploaded successfully',
+    type: GuideDto,
+  })
+  @ApiBadRequestResponse({ description: 'The images cannot be uploaded' })
+  uploadImages(@UploadedFiles() files: Express.Multer.File[], @Param('identifier') identifier: string) {
+    return this.guidesService.uploadImages(identifier, files);
+  }
+
+  // * ----------------------------------------------------------------------------------------------------------------
+  // * GET LODGING IMAGES
+  // * ----------------------------------------------------------------------------------------------------------------
+  @Get(':identifier/images')
+  @OptionalAuth()
+  @ApiOkResponse({ description: 'Lodging Images List' })
+  getImages(@Param('identifier') identifier: string) {
+    return this.guidesService.getImages(identifier);
+  }
+
+  // * ----------------------------------------------------------------------------------------------------------------
+  // * DELETE LODGING IMAGE
+  // * ----------------------------------------------------------------------------------------------------------------
+  @Delete(':identifier/images/:imageId')
+  @OptionalAuth()
+  @ApiOkResponse({ description: 'Image Deleted' })
+  @ApiBadRequestResponse({ description: 'The image cannot be deleted' })
+  deleteImage(@Param('identifier') identifier: string, @Param('imageId', ParseUUIDPipe) imageId: string) {
+    return this.guidesService.deleteImage(identifier, imageId);
+  }
+
+  // * ----------------------------------------------------------------------------------------------------------------
+  // * REORDER GUIDE IMAGES
+  // * ----------------------------------------------------------------------------------------------------------------
+  @Patch(':identifier/images/reorder')
+  @OptionalAuth()
+  @ApiOkResponse({ description: 'Images Reordered' })
+  @ApiBadRequestResponse({ description: 'The images cannot be reordered' })
+  reorderImages(@Param('identifier') identifier: string, @Body() reorderImagesDto: ReorderImagesDto) {
+    return this.guidesService.reorderImages(identifier, reorderImagesDto);
   }
 }

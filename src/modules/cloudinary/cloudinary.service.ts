@@ -104,6 +104,10 @@ export class CloudinaryService {
     }
   }
 
+  async destroyFolder(folder: string) {
+    return cloudinary.api.delete_folder(folder);
+  }
+
   async getResourceFromFolder(
     folder: string,
     options: AdminAndResourceOptions = {},

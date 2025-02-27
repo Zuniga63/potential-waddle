@@ -160,7 +160,7 @@ export class GuideDto {
     this.youtube = data.youtube;
     this.tiktok = data.tiktok;
     this.isAvailable = data.isAvailable;
-    this.languages = data.languages?.split(',') || [];
+    this.languages = data.languages;
     this.createdAt = data.createdAt;
     this.updatedAt = data.updatedAt;
     this.images = data.images?.map(image => image.imageResource?.url);

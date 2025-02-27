@@ -27,8 +27,7 @@
     "migration:run": "ts-node ./src/scripts/migration-run.ts",
     "migration:generate": "ts-node ./src/scripts/generate-migration.ts",
     "migration:create": "ts-node ./src/scripts/create-migration.ts",
-    "migration:revert": "npm run typeorm -- -d ./src/config/connection-source.ts migration:revert",
-    "migration:drop": "npm run typeorm -- -d ./src/config/connection-source.ts schema:drop"
+    "migration:revert": "npm run typeorm -- -d ./src/config/connection-source.ts migration:revert"
   },
   "dependencies": {
     "@nestjs/axios": "3.0.3",

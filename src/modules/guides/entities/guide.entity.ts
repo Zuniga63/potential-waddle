@@ -63,20 +63,20 @@ export class Guide {
   @Column('text', { name: 'document', nullable: false })
   document: string;
 
-  @Column('text', { name: 'phone', nullable: false })
+  @Column('text', { name: 'phone', nullable: true })
   phone: string;
 
-  @Column('text', { name: 'whatsapp', nullable: false })
+  @Column('text', { name: 'whatsapp', nullable: true })
   whatsapp?: string;
 
-  @Column('text', { name: 'address', nullable: false })
+  @Column('text', { name: 'address', nullable: true })
   address: string;
 
   @Column('text', { name: 'biography', nullable: true })
   biography?: string;
 
-  @Column('text', { name: 'languages', nullable: true })
-  languages?: string;
+  @Column('text', { name: 'languages', nullable: true, array: true, default: [] })
+  languages: string[];
 
   @Column('text', { name: 'facebook', nullable: true })
   facebook?: string;
@@ -92,6 +92,9 @@ export class Guide {
 
   @Column('boolean', { name: 'is_available', nullable: false, default: true })
   isAvailable: boolean;
+
+  @Column('boolean', { name: 'is_public', nullable: false, default: false })
+  isPublic: boolean;
 
   @CreateDateColumn({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP', name: 'created_at' })
   createdAt: Date;

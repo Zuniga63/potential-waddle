@@ -62,7 +62,7 @@ export class LodgingsService {
     };
 
     let lodging = await this.lodgingRespository.findOne({
-      where: { slug: identifier },
+      where: { id: identifier },
       relations,
       order: { images: { order: 'ASC' } },
     });
@@ -205,46 +205,53 @@ export class LodgingsService {
     if (!lodging) throw new NotFoundException('Lodging not found');
 
     try {
-      // Eliminar todo en una única transacción
+      // Delete everything in a single transaction
       await this.lodgingRespository.manager.transaction(async manager => {
         if (lodging.images && lodging.images.length > 0) {
-          // 1. Eliminar imágenes de Cloudinary y el folder
-          await Promise.all([
-            ...lodging.images.map(image =>
+          // 1. Delete images from Cloudinary
+          await Promise.all(
+            lodging.images.map(image =>
               image.imageResource.publicId
                 ? this.cloudinaryService.destroyFile(image.imageResource.publicId)
                 : Promise.resolve(),
             ),
-            this.cloudinaryService.destroyFile(`${CLOUDINARY_FOLDERS.LODGING_GALLERY}/${lodging.slug}`),
-          ]);
+          );
 
-          // 2. Eliminar las LodgingImage primero
+          // 2. Delete LodgingImage entries first
           await manager.delete(
             LodgingImage,
             lodging.images.map(image => image.id),
           );
 
-          // 3. Eliminar los ImageResource
+          // 3. Delete ImageResource entries
           await manager.delete(
             ImageResource,
             lodging.images.map(image => image.imageResource.id),
           );
         }
 
-        // 4. Finalmente eliminar el lodging
+        // 4. Finally delete the lodging
         await manager.delete(Lodging, { id: lodging.id });
       });
 
+      // After all database operations are complete, delete the folder
+      try {
+        await this.cloudinaryService.destroyFolder(`${CLOUDINARY_FOLDERS.LODGING_GALLERY}/${lodging.slug}`);
+      } catch (folderError) {
+        console.warn(`Could not delete Cloudinary folder for lodging ${lodging.slug}:`, folderError);
+        // Continue with the process, as the main deletion was successful
+      }
+
       return { message: 'Lodging deleted successfully' };
     } catch (error) {
-      throw new BadRequestException(`Error deleting lodging: ${error.message}`);
+      throw new BadRequestException(`Error deleting lodging: ${JSON.stringify(error)}`);
     }
   }
 
   // ------------------------------------------------------------------------------------------------
   // Upload image
   // ------------------------------------------------------------------------------------------------
-  async uploadImage(id: string, file: Express.Multer.File) {
+  async uploadImages(id: string, files: Express.Multer.File[]) {
     const lodging = await this.lodgingRespository.findOne({
       where: { id },
       relations: { images: { imageResource: true } },
@@ -253,38 +260,44 @@ export class LodgingsService {
     if (!lodging) throw new NotFoundException('Lodging not found');
 
     try {
-      // Upload the image to Cloudinary
-      const cloudinaryRes = await this.cloudinaryService.uploadImage({
-        file,
-        fileName: lodging.name,
-        preset: CloudinaryPresets.LODGING_IMAGE,
-        folder: `${CLOUDINARY_FOLDERS.LODGING_GALLERY}/${lodging.slug}`,
+      // Process each file in the array
+      const uploadPromises = files.map(async (file, index) => {
+        // Upload the image to Cloudinary
+        const cloudinaryRes = await this.cloudinaryService.uploadImage({
+          file,
+          fileName: lodging.name,
+          preset: CloudinaryPresets.LODGING_IMAGE,
+          folder: `${CLOUDINARY_FOLDERS.LODGING_GALLERY}/${lodging.slug}`,
+        });
+
+        if (!cloudinaryRes) throw new BadRequestException('Error uploading image');
+
+        // Create and save the image resource
+        const imageResource = await this.lodgingRespository.manager.create(ImageResource, {
+          publicId: cloudinaryRes.publicId,
+          url: cloudinaryRes.url,
+          fileName: lodging.name,
+          width: cloudinaryRes.width,
+          height: cloudinaryRes.height,
+          format: cloudinaryRes.format,
+          resourceType: cloudinaryRes.type,
+          provider: ResourceProvider.Cloudinary,
+        });
+
+        await this.lodgingRespository.manager.save(ImageResource, imageResource);
+
+        // Create and save the lodging image association
+        const lodgingImage = await this.lodgingRespository.manager.create(LodgingImage, {
+          imageResource,
+          order: lodging.images.length + index + 1,
+          lodging: { id: lodging.id },
+        });
+
+        await this.lodgingRespository.manager.save(LodgingImage, lodgingImage);
       });
 
-      if (!cloudinaryRes) throw new BadRequestException('Error uploading image');
-
-      // Create and save the image resource
-      const imageResource = await this.lodgingRespository.manager.create(ImageResource, {
-        publicId: cloudinaryRes.publicId,
-        url: cloudinaryRes.url,
-        fileName: lodging.name,
-        width: cloudinaryRes.width,
-        height: cloudinaryRes.height,
-        format: cloudinaryRes.format,
-        resourceType: cloudinaryRes.type,
-        provider: ResourceProvider.Cloudinary,
-      });
-
-      await this.lodgingRespository.manager.save(ImageResource, imageResource);
-
-      // Create and save the lodging image association
-      const lodgingImage = await this.lodgingRespository.manager.create(LodgingImage, {
-        imageResource,
-        order: lodging.images.length + 1,
-        lodging: { id: lodging.id },
-      });
-
-      await this.lodgingRespository.manager.save(LodgingImage, lodgingImage);
+      // Wait for all uploads to complete
+      await Promise.all(uploadPromises);
 
       return this.findOne({ identifier: lodging.id });
     } catch (error) {

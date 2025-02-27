@@ -130,6 +130,9 @@ export class Restaurant {
   @CreateDateColumn({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP', name: 'created_at' })
   createdAt: Date;
 
+  @Column('boolean', { default: true, name: 'is_public' })
+  isPublic: boolean;
+
   @CreateDateColumn({ name: 'updated_at', default: () => 'CURRENT_TIMESTAMP', onUpdate: 'CURRENT_TIMESTAMP' })
   updatedAt: Date;
 }

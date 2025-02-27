@@ -72,6 +72,9 @@ export class Transport {
   @Column('boolean', { name: 'is_available', nullable: false, default: true })
   isAvailable: boolean;
 
+  @Column('boolean', { name: 'is_public', nullable: true, default: true })
+  isPublic: boolean;
+
   @Column('text', { name: 'license_plate', nullable: false })
   licensePlate: string;
 

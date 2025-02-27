@@ -103,9 +103,8 @@ export class CreateGuideDto {
     description: 'Languages spoken by the guide',
     required: false,
   })
-  @IsString()
   @IsOptional()
-  languages?: string;
+  languages?: string[];
 
   // * ----------------------------------------------------------------------------------------------------------------
   // * -------------------------------------- SOCIAL MEDIA -----------------------------------------------------------
@@ -162,14 +161,6 @@ export class CreateGuideDto {
   // * -------------------------------------- RELATIONSHIPS ----------------------------------------------------------
   // * ----------------------------------------------------------------------------------------------------------------
   @ApiProperty({
-    description: 'Town ID where the guide operates',
-    example: '123e4567-e89b-12d3-a456-426614174000',
-  })
-  @IsUUID()
-  @IsNotEmpty()
-  townId: string;
-
-  @ApiProperty({
     description: 'User ID associated with this transport provider',
     example: '123e4567-e89b-12d3-a456-426614174000',
   })
@@ -187,5 +178,5 @@ export class CreateGuideDto {
   @IsArray()
   @IsOptional()
   @Transform(({ value }) => parseArrayValue(value))
-  categoryIds?: string[];
+  categories?: string[];
 }

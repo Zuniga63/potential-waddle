@@ -199,6 +199,14 @@ export class UsersService {
         categories: { icon: true },
         images: { imageResource: true },
       },
+      guide: {
+        categories: { icon: true },
+        experiences: {
+          categories: { icon: true },
+          images: { imageResource: true },
+          town: { department: true },
+        },
+      },
     };
     const user = await this.usersRepository.findOne({
       where: { id },
