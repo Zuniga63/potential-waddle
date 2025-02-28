@@ -47,7 +47,7 @@ export class RestaurantsController {
     return this.restaurantsService.findOne(identifier);
   }
 
-  /* // * ----------------------------------------------------------------------------------------------------------------
+  // * ----------------------------------------------------------------------------------------------------------------
   // * GET RESTAURANT BY SLUG
   // * ----------------------------------------------------------------------------------------------------------------
   @Get('slug/:slug')
@@ -169,5 +169,5 @@ export class RestaurantsController {
   @ApiBadRequestResponse({ description: 'The images cannot be reordered' })
   reorderImages(@Param('identifier') identifier: string, @Body() reorderImagesDto: ReorderImagesDto) {
     return this.restaurantsService.reorderImages(identifier, reorderImagesDto);
-  } */
+  }
 }
