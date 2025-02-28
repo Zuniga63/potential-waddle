@@ -62,6 +62,10 @@ export class RestaurantDto {
 
   facilities?: FacilityDto[];
 
+  isPublic: boolean;
+
+  userId?: string;
+
   constructor({ data }: { data?: Restaurant | null }) {
     if (!data) return;
 
@@ -94,5 +98,7 @@ export class RestaurantDto {
     this.place = data.place ? new PlaceDto(data.place) : undefined;
     this.categories = data.categories ? data.categories.map(c => new CategoryDto(c)) : [];
     this.facilities = data.facilities ? data.facilities.map(f => new FacilityDto(f)) : [];
+    this.isPublic = data.isPublic;
+    this.userId = data.user?.id ?? undefined;
   }
 }

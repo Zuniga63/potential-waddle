@@ -78,12 +78,12 @@ export class ExperiencesController {
   }
 
   // * ----------------------------------------------------------------------------------------------------------------
-  // * UPDATE USER IN EXPERIENCE
+  // * UPDATE GUIDE IN EXPERIENCE
   // * ----------------------------------------------------------------------------------------------------------------
-  @Patch(':identifier/users/:guideId')
+  @Patch(':identifier/guides/:guideId')
   @OptionalAuth()
-  @ApiOkResponse({ description: 'User Updated in Experience', type: ExperienceDto })
-  @ApiBadRequestResponse({ description: 'The user cannot be updated in the experience' })
+  @ApiOkResponse({ description: 'Guide Updated in Experience', type: ExperienceDto })
+  @ApiBadRequestResponse({ description: 'The guide cannot be updated in the experience' })
   updateGuide(@Param('identifier') identifier: string, @Param('guideId', ParseUUIDPipe) guideId: string) {
     return this.experiencesService.updateGuide(identifier, guideId);
   }
