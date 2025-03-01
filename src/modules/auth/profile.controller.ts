@@ -61,9 +61,9 @@ export class ProfileController {
     description: 'User Info',
   })
   async getProfile(@GetUser() user: User) {
-    const fullUser = await this.usersService.getFullUserWithRelations(user.id);
+    const fullUser = await this.usersService.getFullUser(user.email);
     if (!fullUser) throw new NotFoundException('User not found');
-    return new FullUserDto(fullUser);
+    return new UserDto(fullUser);
   }
 
   // * ----------------------------------------------------------------------------------------------------------------
