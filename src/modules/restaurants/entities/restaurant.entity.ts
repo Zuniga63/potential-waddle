@@ -127,6 +127,9 @@ export class Restaurant {
   @Column('text', { name: 'town_zone', nullable: true })
   townZone: string | null;
 
+  @Column('text', { name: 'payment_methods', array: true, nullable: true })
+  paymentMethods: string[] | null;
+
   @CreateDateColumn({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP', name: 'created_at' })
   createdAt: Date;
 

@@ -1,10 +1,10 @@
 import { ApiProperty } from '@nestjs/swagger';
 
-import { Commerce } from '../entities';
+import { Commerce } from 'src/modules/commerce/entities';
 import { CategoryDto } from 'src/modules/core/dto';
 import { TownDto } from 'src/modules/towns/dto';
 
-export class CommerceIndexDto {
+export class UserCommerceDto {
   @ApiProperty({
     example: '624013aa-9555-4a69-bf08-30cf990c56dd',
     description: 'The UUID of the commerce',
@@ -164,22 +164,6 @@ export class CommerceIndexDto {
   })
   googleMapsUrl: string | null;
 
-  @ApiProperty({
-    example: '624013aa-9555-4a69-bf08-30cf990c56dd',
-    description: 'The UUID of the user',
-    readOnly: true,
-    required: false,
-  })
-  userId: string;
-
-  @ApiProperty({
-    example: true,
-    description: 'Indicates if the commerce is public',
-    readOnly: true,
-    required: false,
-  })
-  isPublic: boolean;
-
   constructor(commerce?: Commerce, userReview?: string) {
     if (!commerce) return;
     this.id = commerce.id;
@@ -190,7 +174,10 @@ export class CommerceIndexDto {
     this.description = commerce.description || '';
     this.reviewsCount = 0;
     this.points = commerce.points;
-    this.images = commerce.images.map(image => image.imageResource.url);
+    this.images = commerce.images
+      .sort((a, b) => a.order - b.order)
+      .map(image => image.imageResource.url)
+      .slice(0, 4);
     this.rating = commerce.rating;
     this.userReview = userReview;
     this.openingHours = commerce.openingHours || undefined;
@@ -203,7 +190,5 @@ export class CommerceIndexDto {
     this.whatsappNumbers = commerce.whatsappNumbers || [];
     this.address = commerce.address;
     this.googleMapsUrl = commerce.googleMapsUrl;
-    this.userId = commerce.user?.id || '';
-    this.isPublic = commerce.isPublic;
   }
 }

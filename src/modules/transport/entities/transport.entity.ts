@@ -78,6 +78,9 @@ export class Transport {
   @Column('text', { name: 'license_plate', nullable: false })
   licensePlate: string;
 
+  @Column('text', { name: 'payment_methods', array: true, nullable: true })
+  paymentMethods: string[] | null;
+
   @CreateDateColumn({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP', name: 'created_at' })
   createdAt: Date;
 

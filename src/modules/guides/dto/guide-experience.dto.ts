@@ -1,6 +1,8 @@
+import { CategoryDto } from 'src/modules/core/dto';
 import { Experience } from 'src/modules/experiences/entities';
 
 export class GuideExperienceDto {
+  id: string;
   title: string;
 
   slug: string;
@@ -11,16 +13,21 @@ export class GuideExperienceDto {
 
   price: number;
 
-  image?: string;
+  images?: string[];
+  categories?: CategoryDto[];
+
+  paymentMethods?: string[];
 
   constructor({ data }: { data: Experience }) {
     if (!data) return;
-
+    this.id = data.id;
     this.title = data.title;
     this.slug = data.slug;
     this.description = data.description;
     this.difficultyLevel = data.difficultyLevel;
     this.price = data.price;
-    this.image = data.images[0]?.imageResource?.url;
+    this.images = data.images.map(image => image.imageResource?.url).slice(0, 4);
+    this.categories = data.categories.map(category => new CategoryDto(category));
+    this.paymentMethods = data.paymentMethods || [];
   }
 }

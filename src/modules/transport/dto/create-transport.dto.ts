@@ -107,6 +107,15 @@ export class CreateTransportDto {
   @IsOptional()
   licensePlate?: string;
 
+  @ApiProperty({
+    example: ['cash', 'card'],
+    description: 'Payment method',
+    required: false,
+  })
+  @IsArray()
+  @IsString({ each: true })
+  @IsOptional()
+  paymentMethods?: string[];
   // * ----------------------------------------------------------------------------------------------------------------
   // * -------------------------------------- RELATIONSHIPS ----------------------------------------------------------
   // * ----------------------------------------------------------------------------------------------------------------
@@ -136,4 +145,14 @@ export class CreateTransportDto {
   @IsArray()
   @Transform(({ value }) => parseArrayValue(value))
   categoryIds?: string[];
+
+  @ApiProperty({
+    example: true,
+    description: 'Whether the transport provider is currently available',
+    default: true,
+  })
+  @IsBoolean()
+  @Type(() => Boolean)
+  @IsOptional()
+  isPublic?: boolean;
 }

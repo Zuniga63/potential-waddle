@@ -54,7 +54,7 @@ export class RestaurantsController {
   @OptionalAuth()
   @ApiOkResponse({ description: 'Restaurant Detail', type: RestaurantDto })
   findOneBySlug(@Param('slug') slug: string) {
-    return this.restaurantsService.findOne(slug);
+    return this.restaurantsService.findOneBySlug({ slug });
   }
 
   // * ----------------------------------------------------------------------------------------------------------------

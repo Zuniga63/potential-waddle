@@ -34,7 +34,8 @@ export class TransportDto {
   town?: TownDto;
   user?: UserDto;
   categories?: CategoryDto[];
-
+  paymentMethods?: string[];
+  isPublic?: boolean;
   constructor({ data }: { data: Transport }) {
     if (!data) return;
 
@@ -57,5 +58,7 @@ export class TransportDto {
     this.town = data.town ? new TownDto(data.town) : undefined;
     this.user = data.user ? new UserDto(data.user) : undefined;
     this.categories = data.categories?.map(category => new CategoryDto(category));
+    this.paymentMethods = data.paymentMethods || [];
+    this.isPublic = data.isPublic;
   }
 }

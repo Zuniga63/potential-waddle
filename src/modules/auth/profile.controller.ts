@@ -35,7 +35,6 @@ import { User } from '../users/entities/user.entity';
 import { ChangePasswordDto } from './dto/change-password.dto';
 import { SessionService } from './services';
 import { ContentTypes } from '../common/constants';
-import { FullUserDto } from '../users/dto/full-user.dto';
 import { UsersService } from '../users/services/users.service';
 
 @Controller('auth/profile')

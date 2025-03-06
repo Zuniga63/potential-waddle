@@ -239,4 +239,12 @@ export class CreateLodgingDto {
   @IsOptional()
   @Transform(({ value }) => (value === '' ? null : Number(value)))
   roomCount?: number;
+
+  @ApiProperty({
+    example: ['cash', 'card'],
+    description: 'Payment methods',
+    required: false,
+  })
+  @IsOptional()
+  paymentMethods?: string[];
 }

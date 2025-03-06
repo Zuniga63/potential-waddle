@@ -234,7 +234,7 @@ export class CreateRestaurantDto {
     type: 'string',
     required: false,
   })
-  @IsUUID()
+  @IsUUID('4')
   @IsOptional()
   townId?: string;
 
@@ -243,7 +243,7 @@ export class CreateRestaurantDto {
     type: 'string',
     required: false,
   })
-  @IsUUID()
+  @IsUUID('4')
   @IsOptional()
   placeId?: string;
 
@@ -252,9 +252,19 @@ export class CreateRestaurantDto {
     type: 'string',
     required: false,
   })
-  @IsUUID()
+  @IsUUID('4')
   @IsOptional()
   userId?: string;
+
+  @ApiProperty({
+    description: 'Payment methods',
+    example: ['cash', 'card'],
+    required: false,
+    type: [String],
+  })
+  @IsArray()
+  @IsOptional()
+  paymentMethods?: string[];
 
   @ApiProperty({
     description: 'Whether the restaurant is publicly visible',

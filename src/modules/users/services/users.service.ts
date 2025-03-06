@@ -1,7 +1,7 @@
 import { BadRequestException, Injectable, Logger, NotFoundException, UnauthorizedException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 
-import { FindOptionsRelations, Repository } from 'typeorm';
+import { Repository } from 'typeorm';
 
 import { User } from '../entities/user.entity';
 import { CreateUserDto } from '../dto/create-user.dto';
@@ -14,6 +14,10 @@ import { ChangePasswordDto } from '../../auth/dto/change-password.dto';
 import { compareSync } from 'bcrypt';
 import { GoogleUserDto } from '../../auth/dto/google-user.dto';
 import { UpdateProfileDto } from 'src/modules/auth/dto';
+import { UserGuideDto } from '../dto/user-guide.dto';
+import { UserLodgingDto } from '../dto/user-lodgings.dto';
+import { UserRestaurantDto } from '../dto/user-restaurant.dto';
+import { UserCommerceDto } from '../dto/user-commerce.dto';
 
 @Injectable()
 export class UsersService {
@@ -182,7 +186,7 @@ export class UsersService {
     return user?.transport;
   }
 
-  async getFullUserWithRelations(id: string) {
+  /*   async getFullUserWithRelations(id: string) {
     const relations: FindOptionsRelations<User> = {
       lodgings: {
         town: { department: true },
@@ -213,5 +217,49 @@ export class UsersService {
       relations,
     });
     return user;
+  } */
+
+  async getUserGuide(id: string) {
+    const user = await this.usersRepository.findOne({
+      where: { id },
+      relations: [
+        'guide',
+        'guide.categories',
+        'guide.experiences',
+        'guide.experiences.categories',
+        'guide.experiences.images',
+        'guide.experiences.images.imageResource',
+        'guide.experiences.town',
+      ],
+    });
+
+    const userGuide = user?.guide ? new UserGuideDto({ data: user?.guide }) : null;
+    return userGuide;
+  }
+
+  async getUserLodgings(id: string) {
+    const user = await this.usersRepository.findOne({
+      where: { id },
+      relations: ['lodgings', 'lodgings.categories', 'lodgings.images', 'lodgings.images.imageResource'],
+    });
+    const lodgings = user?.lodgings ? user?.lodgings.map(lodging => new UserLodgingDto(lodging)) : [];
+    return lodgings;
+  }
+
+  async getUserCommerce(id: string) {
+    const user = await this.usersRepository.findOne({
+      where: { id },
+      relations: ['commerces', 'commerces.images', 'commerces.images.imageResource', 'commerces.categories'],
+    });
+    return user?.commerces ? user?.commerces.map(commerce => new UserCommerceDto(commerce)) : [];
+  }
+
+  async getUserRestaurants(id: string) {
+    const user = await this.usersRepository.findOne({
+      where: { id },
+      relations: ['restaurants', 'restaurants.images', 'restaurants.images.imageResource', 'restaurants.categories'],
+    });
+
+    return user?.restaurants ? user?.restaurants.map(restaurant => new UserRestaurantDto(restaurant)) : [];
   }
 }

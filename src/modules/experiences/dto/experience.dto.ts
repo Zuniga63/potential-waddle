@@ -67,6 +67,8 @@ export class ExperienceDto {
 
   guide?: GuideDto;
 
+  paymentMethods?: string[];
+
   isPublic: boolean;
   constructor({ data }: { data: Experience }) {
     if (!data) return;
@@ -110,5 +112,6 @@ export class ExperienceDto {
 
     this.town = new TownDto(data.town);
     this.isPublic = data.isPublic;
+    this.paymentMethods = data.paymentMethods || [];
   }
 }

@@ -126,6 +126,13 @@ export class LodgingFullDto extends LodgingIndexDto {
   })
   arrivalReference?: string;
 
+  @ApiProperty({
+    example: ['cash', 'card'],
+    description: 'Payment methods',
+    required: false,
+  })
+  paymentMethods?: string[];
+
   constructor(lodging?: Lodging, userReview?: string) {
     super(lodging, userReview);
 
@@ -146,6 +153,7 @@ export class LodgingFullDto extends LodgingIndexDto {
     this.googleMapsUrl = lodging.googleMapsUrl || undefined;
     this.howToGetThere = lodging.howToGetThere || undefined;
     this.arrivalReference = lodging.arrivalReference || undefined;
+    this.paymentMethods = lodging.paymentMethods || [];
     this.images = lodging.images
       .sort((a, b) => a.order - b.order)
       .map(image => image.imageResource.url)

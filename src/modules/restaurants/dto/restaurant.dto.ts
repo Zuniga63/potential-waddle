@@ -66,6 +66,8 @@ export class RestaurantDto {
 
   userId?: string;
 
+  paymentMethods?: string[];
+
   constructor({ data }: { data?: Restaurant | null }) {
     if (!data) return;
 
@@ -100,5 +102,6 @@ export class RestaurantDto {
     this.facilities = data.facilities ? data.facilities.map(f => new FacilityDto(f)) : [];
     this.isPublic = data.isPublic;
     this.userId = data.user?.id ?? undefined;
+    this.paymentMethods = data.paymentMethods ?? [];
   }
 }

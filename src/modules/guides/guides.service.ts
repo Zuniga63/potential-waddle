@@ -82,6 +82,7 @@ export class GuidesService {
       images: { imageResource: true },
       experiences: {
         images: { imageResource: true },
+        categories: { icon: true },
       },
     };
 

@@ -1,14 +1,15 @@
 import { CategoryDto } from 'src/modules/core/dto';
 import { TownDto } from 'src/modules/towns/dto';
-import { Guide } from '../entities/guide.entity';
 import { UserDto } from 'src/modules/users/dto/user.dto';
 import { ApiProperty } from '@nestjs/swagger';
-import { GuideExperienceDto } from './guide-experience.dto';
+import { GuideExperienceDto } from 'src/modules/guides/dto/guide-experience.dto';
+import { Guide } from 'src/modules/guides/entities/guide.entity';
 
-export class GuideDto {
+export class UserGuideDto {
   @ApiProperty({
-    example: '123e4567-e89b-12d3-a456-426614174000',
-    description: 'Unique identifier of the guide',
+    example: 'uuid of the guide',
+    description: 'The UUID of the guide',
+    readOnly: true,
   })
   id: string;
 
@@ -36,7 +37,7 @@ export class GuideDto {
   })
   lastName: string;
 
-  @ApiProperty({
+  /*   @ApiProperty({
     example: 'DNI',
     description: 'Type of identification document',
   })
@@ -46,7 +47,7 @@ export class GuideDto {
     example: '12345678',
     description: 'Identification document number',
   })
-  document: string;
+  document: string; */
 
   @ApiProperty({
     example: '+51987654321',
@@ -61,18 +62,18 @@ export class GuideDto {
   })
   whatsapp?: string;
 
-  @ApiProperty({
+  /*   @ApiProperty({
     example: 'Av. Example 123',
     description: 'Physical address of the guide',
   })
-  address: string;
+  address: string; */
 
-  @ApiProperty({
+  /*   @ApiProperty({
     example: 'Experienced tour guide with 5 years of experience...',
     description: 'Professional biography of the guide',
     required: false,
   })
-  biography?: string;
+  biography?: string; */
 
   @ApiProperty({
     example: ['English', 'Spanish'],
@@ -118,14 +119,14 @@ export class GuideDto {
   })
   images?: string[];
 
-  @ApiProperty({
+  /*   @ApiProperty({
     example: true,
     description: 'Whether the guide is currently available',
     default: true,
   })
-  isAvailable?: boolean;
+  isAvailable?: boolean; */
 
-  @ApiProperty({
+  /* @ApiProperty({
     description: 'Creation timestamp',
   })
   createdAt?: Date;
@@ -133,7 +134,7 @@ export class GuideDto {
   @ApiProperty({
     description: 'Last update timestamp',
   })
-  updatedAt?: Date;
+  updatedAt?: Date; */
 
   // Relationships
   town?: TownDto;
@@ -142,29 +143,24 @@ export class GuideDto {
   experiences?: GuideExperienceDto[];
 
   constructor({ data }: { data: Guide }) {
-    console.log(data.experiences);
     if (!data) return;
-
     this.id = data.id;
     this.slug = data.slug;
     this.email = data.email;
     this.firstName = data.firstName;
     this.lastName = data.lastName;
-    this.documentType = data.documentType;
-    this.document = data.document;
+    /*     this.documentType = data.documentType;
+    this.document = data.document; */
     this.phone = data.phone;
     this.whatsapp = data.whatsapp;
-    this.address = data.address;
-    this.biography = data.biography;
+    /*     this.address = data.address;
+    this.biography = data.biography; */
     this.facebook = data.facebook;
     this.instagram = data.instagram;
     this.youtube = data.youtube;
     this.tiktok = data.tiktok;
-    this.isAvailable = data.isAvailable;
     this.languages = data.languages;
-    this.createdAt = data.createdAt;
-    this.updatedAt = data.updatedAt;
-    this.images = data.images?.map(image => image.imageResource?.url);
+    this.images = data.images?.map(image => image.imageResource?.url).slice(0, 4);
     // Map relationships
     this.user = data.user ? new UserDto(data.user) : undefined;
     this.categories = data.categories?.map(category => new CategoryDto(category));

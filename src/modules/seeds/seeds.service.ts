@@ -1260,7 +1260,7 @@ export class SeedsService {
         phoneNumbers: commerceData.phonesNumbers?.split(',').map(p => p.trim()),
         whatsappNumbers: commerceData.whatsapps?.split(',').map(w => w.trim()),
         openingHours: commerceData.openingHours?.split(',').map(o => o.trim()),
-        spokenLangueges: commerceData.languages?.split(',').map(l => l.trim()),
+        spokenLanguages: commerceData.languages?.split(',').map(l => l.trim()),
         // ------------------------------------------------
         location: { type: 'Point', coordinates: [+commerceData.longitude, +commerceData.latitude] },
         googleMapsUrl: commerceData.googleMaps,

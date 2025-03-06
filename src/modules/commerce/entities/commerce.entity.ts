@@ -102,7 +102,7 @@ export class Commerce {
   openingHours: string[] | null;
 
   @Column('text', { name: 'spoken_languages', nullable: true, array: true, default: [] })
-  spokenLangueges: string[];
+  spokenLanguages: string[];
 
   @Column('text', { name: 'payment_methods', nullable: true, array: true, default: [] })
   paymentMethods: string[];

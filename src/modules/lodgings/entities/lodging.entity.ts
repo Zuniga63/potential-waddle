@@ -140,6 +140,9 @@ export class Lodging {
   @Column('text', { name: 'arrival_reference', nullable: true })
   arrivalReference: string | null;
 
+  @Column('text', { name: 'payment_methods', array: true, nullable: true })
+  paymentMethods: string[] | null;
+
   // * ----------------------------------------------------------------------------------------------------------------
   @Column('boolean', { default: true, name: 'is_public' })
   isPublic: boolean;

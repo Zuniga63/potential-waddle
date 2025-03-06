@@ -49,9 +49,9 @@ export class RestaurantsService {
     return restaurants.map(restaurant => new RestaurantDto({ data: restaurant }));
   }
 
-  async findOne(slug: string) {
+  async findOne(id: string) {
     const restaurant = await this.restaurantRepository.findOne({
-      where: { slug },
+      where: { id },
       relations: {
         town: { department: true },
         categories: { icon: true },
@@ -60,7 +60,7 @@ export class RestaurantsService {
       },
     });
 
-    if (!restaurant) throw new NotFoundException(`Restaurant with slug ${slug} not found`);
+    if (!restaurant) throw new NotFoundException(`Restaurant with id ${id} not found`);
     return new RestaurantDto({ data: restaurant });
   }
 
@@ -138,6 +138,7 @@ export class RestaurantsService {
       ? await this.facilityRepository.findBy({ id: In(updateRestaurantDto.facilityIds) })
       : [];
     if (!restaurant) throw new NotFoundException('Restaurant not found');
+    const town = await this.townRepository.findOne({ where: { id: updateRestaurantDto.townId } });
 
     // Extract lat and lng from DTO and create Point
     const { latitude, longitude, ...restUpdateDto } = updateRestaurantDto;
@@ -155,6 +156,7 @@ export class RestaurantsService {
       location: restaurantLocation ?? undefined,
       categories,
       facilities,
+      town: town ?? undefined,
     });
 
     const relations: FindOptionsRelations<Restaurant> = {
@@ -284,7 +286,7 @@ export class RestaurantsService {
       // Wait for all uploads to complete
       await Promise.all(uploadPromises);
 
-      return this.findOne(restaurant.slug);
+      return this.findOne(restaurant.id);
     } catch (error) {
       throw error;
     }

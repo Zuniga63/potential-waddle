@@ -1,11 +1,9 @@
 import { ApiProperty } from '@nestjs/swagger';
-
-import { Lodging } from '../entities';
 import { CategoryDto } from 'src/modules/core/dto';
+import { Lodging } from 'src/modules/lodgings/entities';
 import { TownDto } from 'src/modules/towns/dto';
-import { UserDto } from 'src/modules/users/dto/user.dto';
 
-export class LodgingIndexDto {
+export class UserLodgingDto {
   @ApiProperty({
     example: '624013aa-9555-4a69-bf08-30cf990c56dd',
     description: 'The UUID of the place',
@@ -33,15 +31,6 @@ export class LodgingIndexDto {
   slug: string;
 
   @ApiProperty({
-    description: 'List of categories of the lodging',
-    readOnly: true,
-    required: false,
-    type: CategoryDto,
-    isArray: true,
-  })
-  categories: CategoryDto[];
-
-  @ApiProperty({
     example: ['https://image.jpg'],
     isArray: true,
     description: 'The image of the lodging',
@@ -50,12 +39,6 @@ export class LodgingIndexDto {
     type: String,
   })
   images: string[];
-
-  @ApiProperty({
-    example: 'This ',
-    description: 'The description of the lodging',
-  })
-  description: string;
 
   @ApiProperty({
     example: 13,
@@ -82,14 +65,6 @@ export class LodgingIndexDto {
   rating: number;
 
   @ApiProperty({
-    example: 4,
-    description: 'The number of rooms of the lodging',
-    readOnly: true,
-    required: false,
-  })
-  rooms: number;
-
-  @ApiProperty({
     description: 'Minimum price of the lodging',
     readOnly: true,
     required: false,
@@ -104,14 +79,6 @@ export class LodgingIndexDto {
     example: 100_000,
   })
   highestPrice?: number;
-
-  @ApiProperty({
-    description: 'Indicates if the current user has review',
-    example: 'uuid of the review',
-    readOnly: true,
-    required: false,
-  })
-  userReview?: string;
 
   @ApiProperty({
     example: '08:00-18:00',
@@ -130,14 +97,6 @@ export class LodgingIndexDto {
   urbanCenterDistance: number;
 
   @ApiProperty({
-    example: 'uuid of the user',
-    description: 'The UUID of the user',
-    readOnly: true,
-    required: false,
-  })
-  user?: UserDto;
-
-  @ApiProperty({
     example: true,
     description: 'Indicates if the lodging is public',
     readOnly: true,
@@ -145,28 +104,30 @@ export class LodgingIndexDto {
   })
   isPublic: boolean;
 
-  constructor(lodging?: Lodging, userReview?: string) {
-    console.log(lodging, 'afadsfadfdafadsfdfasfdsfadfad');
+  @ApiProperty({
+    type: CategoryDto,
+    isArray: true,
+    description: 'The categories of the lodging',
+    readOnly: true,
+  })
+  categories: CategoryDto[];
+
+  constructor(lodging?: Lodging) {
     if (!lodging) return;
     this.id = lodging.id;
     this.town = new TownDto(lodging.town);
     this.name = lodging.name;
     this.slug = lodging.slug;
-    this.categories = lodging.categories.map(category => new CategoryDto(category));
-    this.description = lodging.description || '';
     this.reviewsCount = 0;
     this.points = lodging.points;
-    this.rooms = lodging.roomCount;
     this.images = lodging.images
       .sort((a, b) => a.order - b.order)
       .map(image => image.imageResource.url)
       .slice(0, 4);
-
+    this.categories = lodging.categories.map(category => new CategoryDto(category));
     this.rating = lodging.rating;
-    this.user = new UserDto(lodging.user);
     this.lowestPrice = lodging.lowestPrice || undefined;
     this.highestPrice = lodging.highestPrice || undefined;
-    this.userReview = userReview;
     this.openingHours = lodging.openingHours || undefined;
     this.urbanCenterDistance = lodging.urbanCenterDistance || 0;
     this.isPublic = lodging.isPublic;

@@ -8,9 +8,7 @@ import {
   IsPositive,
   IsString,
   IsUUID,
-  Max,
   MaxLength,
-  Min,
   ValidateNested,
 } from 'class-validator';
 import { Type } from 'class-transformer';
@@ -141,7 +139,6 @@ export class CreateExperienceDto {
   })
   @IsNumber()
   @IsOptional()
-  @Min(0)
   @Transform(({ value }) => (value === '' ? null : Number(value)))
   travelTime: number;
 
@@ -152,7 +149,6 @@ export class CreateExperienceDto {
   })
   @IsNumber()
   @IsOptional()
-  @Min(0)
   @Transform(({ value }) => (value === '' ? null : Number(value)))
   totalDistance: number;
 
@@ -163,8 +159,6 @@ export class CreateExperienceDto {
   })
   @IsNumber()
   @IsOptional()
-  @Min(0)
-  @Max(120)
   @Transform(({ value }) => (value === '' ? null : Number(value)))
   minAge?: number;
 
@@ -175,8 +169,6 @@ export class CreateExperienceDto {
   })
   @IsNumber()
   @IsOptional()
-  @Min(0)
-  @Max(120)
   @Transform(({ value }) => (value === '' ? null : Number(value)))
   maxAge?: number;
 
@@ -187,7 +179,6 @@ export class CreateExperienceDto {
   })
   @IsNumber()
   @IsOptional()
-  @Min(1)
   @Transform(({ value }) => (value === '' ? null : Number(value)))
   minParticipants?: number;
 
@@ -198,7 +189,6 @@ export class CreateExperienceDto {
   })
   @IsNumber()
   @IsOptional()
-  @Min(1)
   @Transform(({ value }) => (value === '' ? null : Number(value)))
   maxParticipants?: number;
 
@@ -277,6 +267,15 @@ export class CreateExperienceDto {
   @IsUUID()
   @IsNotEmpty()
   guideId: string;
+
+  @ApiProperty({
+    description: 'Payment methods',
+    example: ['cash', 'card'],
+    required: false,
+  })
+  @IsArray()
+  @IsOptional()
+  paymentMethods?: string[];
 
   @ApiProperty({
     description: 'Whether the experience is publicly visible',
