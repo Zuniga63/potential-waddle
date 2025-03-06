@@ -182,7 +182,10 @@ export class UsersService {
   }
 
   async getUserTransport(id: string) {
-    const user = await this.usersRepository.findOne({ where: { id }, relations: ['transport'] });
+    const user = await this.usersRepository.findOne({
+      where: { id },
+      relations: ['transport', 'transport.categories'],
+    });
     return user?.transport;
   }
 
