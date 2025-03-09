@@ -38,6 +38,12 @@ export class LodgingsController {
     return this.lodgingsService.findAll({ filters });
   }
 
+  @Get('public')
+  @ApiOkResponse({ description: 'Lodging List', type: [LodgingIndexDto] })
+  findPublicLodgings(@LodgingFilters() filters: LodgingFiltersDto) {
+    return this.lodgingsService.findPublicLodgings({ filters });
+  }
+
   // * ----------------------------------------------------------------------------------------------------------------
   // * GET LODGING BY IDENTIFIER
   // * ----------------------------------------------------------------------------------------------------------------

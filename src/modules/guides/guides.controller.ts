@@ -56,6 +56,12 @@ export class GuidesController {
     return this.guidesService.findAll({ filters });
   }
 
+  @Get('public')
+  @GuideListQueryDocsGroup()
+  findPublicGuides(@GuidesFilters() filters: GuidesFiltersDto) {
+    return this.guidesService.findPublicGuides({ filters });
+  }
+
   // * ----------------------------------------------------------------------------------------------------------------
   // * GET GUIDE BY IDENTIFIER
   // * ----------------------------------------------------------------------------------------------------------------

@@ -38,6 +38,16 @@ export class CommerceController {
     return this.commerceService.findAll({ filters });
   }
 
+  // ------------------------------------------------------------------------------------------------
+  // Find all public commerce
+  // ------------------------------------------------------------------------------------------------
+  @Get('public')
+  @OptionalAuth()
+  @ApiOkResponse({ description: 'Commerce List', type: [CommerceIndexDto] })
+  findPublicCommerce(@CommerceFilters() filters: CommerceFiltersDto) {
+    return this.commerceService.findPublicCommerce({ filters });
+  }
+
   // * ----------------------------------------------------------------------------------------------------------------
   // * GET COMMERCE BY IDENTIFIER
   // * ----------------------------------------------------------------------------------------------------------------

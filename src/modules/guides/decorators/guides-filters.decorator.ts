@@ -8,6 +8,7 @@ import { GuidesFiltersDto } from '../dto/guides-filters.dto';
 
 export const GuidesFilters = createParamDecorator((data: unknown, ctx: ExecutionContext) => {
   const request = ctx.switchToHttp().getRequest();
+  console.log(request.query, 'request.query');
   const filters = plainToInstance(GuidesFiltersDto, request.query);
   const errors = validateSync(filters, validationPipeConfig);
   errors?.forEach(error => {

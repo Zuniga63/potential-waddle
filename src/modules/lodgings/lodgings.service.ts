@@ -51,6 +51,31 @@ export class LodgingsService {
   }
 
   // ------------------------------------------------------------------------------------------------
+  // Find all public lodgings
+  // ------------------------------------------------------------------------------------------------
+  async findPublicLodgings({ filters }: LodgingFindAllParams = {}) {
+    const shouldRandomize = filters?.sortBy === 'random';
+    const { where, order } = generateLodgingQueryFilters(filters);
+    let lodgings = await this.lodgingRespository.find({
+      relations: {
+        town: { department: true },
+        categories: { icon: true },
+        images: { imageResource: true },
+      },
+      order,
+      where: {
+        ...where,
+        isPublic: true,
+      },
+    });
+
+    // Only randomize if no specific order was requested
+    if (shouldRandomize) {
+      lodgings = lodgings.sort(() => Math.random() - 0.5);
+    }
+    return lodgings.map(lodging => new LodgingIndexDto(lodging));
+  }
+  // ------------------------------------------------------------------------------------------------
   // Find one lodging
   // ------------------------------------------------------------------------------------------------
   async findOne({ identifier }: { identifier: string }) {

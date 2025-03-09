@@ -38,6 +38,15 @@ export class ExperiencesController {
     return this.experiencesService.findAll({ filters });
   }
 
+  // ------------------------------------------------------------------------------------------------
+  // GET ALL PUBLIC EXPERIENCES
+  // ------------------------------------------------------------------------------------------------
+  @Get('public')
+  @OptionalAuth()
+  @ApiOkResponse({ description: 'Experience List', type: [CreateExperienceDto] })
+  findPublicExperiences(@ExperienceFilters() filters: ExperienceFiltersDto) {
+    return this.experiencesService.findPublicExperiences({ filters });
+  }
   // * ----------------------------------------------------------------------------------------------------------------
   // * GET EXPERIENCE BY IDENTIFIER
   // * ----------------------------------------------------------------------------------------------------------------
@@ -63,7 +72,6 @@ export class ExperiencesController {
   @OptionalAuth()
   @ApiOkResponse({ description: 'Experience Created', type: CreateExperienceDto })
   create(@Body() createExperienceDto: CreateExperienceDto) {
-    console.log('createExperienceDto', createExperienceDto);
     return this.experiencesService.create(createExperienceDto);
   }
 

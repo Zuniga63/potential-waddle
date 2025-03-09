@@ -60,6 +60,37 @@ export class TransportService {
     return new TransportListDto({ currentPage: page, pages: Math.ceil(count / limit), count }, transports);
   }
 
+  async findPublicTransports({ filters }: TransportFindAllParams = {}): Promise<TransportListDto> {
+    const shouldRandomize = filters?.sortBy === 'random';
+    const { page = 1, limit = 25 } = filters ?? {};
+    const skip = (page - 1) * limit;
+    const { where, order } = generateTransportQueryFiltersAndSort(filters);
+
+    let transports;
+    const [_transports, count] = await this.transportRepository.findAndCount({
+      skip,
+      take: limit,
+      relations: { categories: { icon: true }, town: { department: true }, user: true },
+      order,
+      where: {
+        ...where,
+        isPublic: true,
+      },
+    });
+
+    transports = _transports;
+    if (shouldRandomize) {
+      console.log('randomize');
+      transports = transports.sort(() => Math.random() - 0.5);
+    }
+    console.log(
+      transports.map(t => t.id),
+      'transports',
+    );
+
+    return new TransportListDto({ currentPage: page, pages: Math.ceil(count / limit), count }, transports);
+  }
+
   async findOne(identifier: string) {
     const relations: FindOptionsRelations<Transport> = {
       categories: { icon: true },

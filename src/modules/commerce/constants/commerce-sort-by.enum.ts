@@ -3,4 +3,5 @@ export enum CommerceSortByEnum {
   RATING = 'rating',
   DISTANCE = 'distance',
   PRICE = 'price',
+  RANDOM = 'random',
 }

@@ -72,6 +72,39 @@ export class GuidesService {
     return new GuidesListDto({ currentPage: page, pages: Math.ceil(count / limit), count }, guides);
   }
 
+  async findPublicGuides({ filters }: GuideFindAllParams = {}): Promise<GuidesListDto> {
+    console.log(filters, 'filters');
+    const shouldRandomize = filters?.sortBy === 'random';
+    const { page = 1, limit = 25 } = filters ?? {};
+    const skip = (page - 1) * limit;
+    const { where, order } = generateGuideQueryFilters(filters);
+
+    const relations: FindOptionsRelations<Guide> = {
+      categories: { icon: true },
+      images: { imageResource: true },
+      user: true,
+    };
+
+    let guides;
+    const [_guides, count] = await this.guideRepository.findAndCount({
+      skip,
+      take: limit,
+      relations,
+      order,
+      where: {
+        ...where,
+        isPublic: true,
+      },
+    });
+    guides = _guides;
+
+    if (shouldRandomize) {
+      guides = guides.sort(() => Math.random() - 0.5);
+    }
+
+    return new GuidesListDto({ currentPage: page, pages: Math.ceil(count / limit), count }, guides);
+  }
+
   // ------------------------------------------------------------------------------------------------
   // Find one guide
   // ------------------------------------------------------------------------------------------------
@@ -315,5 +348,29 @@ export class GuidesService {
     await Promise.all(newOrder.map(({ id, order }) => this.guideRepository.manager.update(GuideImage, id, { order })));
 
     return { message: 'Images reordered successfully' };
+  }
+
+  async findOrderedGuides({ filters }: GuideFindAllParams = {}): Promise<Guide[]> {
+    const { order } = generateGuideQueryFilters(filters);
+
+    const relations: FindOptionsRelations<Guide> = {
+      categories: { icon: true },
+      images: { imageResource: true },
+      user: true,
+    };
+
+    const guides = await this.guideRepository.find({
+      relations,
+      order: Object.keys(order || {}).length > 0 ? order : { id: 'DESC' },
+      where: {
+        isPublic: true,
+      },
+    });
+
+    if (Object.keys(order || {}).length === 0) {
+      guides.sort(() => Math.random() - 0.5);
+    }
+
+    return guides;
   }
 }

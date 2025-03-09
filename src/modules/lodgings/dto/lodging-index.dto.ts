@@ -146,7 +146,6 @@ export class LodgingIndexDto {
   isPublic: boolean;
 
   constructor(lodging?: Lodging, userReview?: string) {
-    console.log(lodging, 'afadsfadfdafadsfdfasfdsfadfad');
     if (!lodging) return;
     this.id = lodging.id;
     this.town = new TownDto(lodging.town);

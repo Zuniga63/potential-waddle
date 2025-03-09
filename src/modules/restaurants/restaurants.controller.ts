@@ -38,6 +38,13 @@ export class RestaurantsController {
     return this.restaurantsService.findAll({ filters });
   }
 
+  @Get('public')
+  @OptionalAuth()
+  @ApiOkResponse({ description: 'Restaurant List', type: [RestaurantDto] })
+  findPublicRestaurants(@RestaurantFilters() filters: RestaurantFiltersDto) {
+    return this.restaurantsService.findPublicRestaurants({ filters });
+  }
+
   // * ----------------------------------------------------------------------------------------------------------------
   // * GET RESTAURANT BY IDENTIFIER
   // * ----------------------------------------------------------------------------------------------------------------

@@ -33,6 +33,12 @@ export class TransportController {
     return this.transportService.findAll({ filters });
   }
 
+  @Get('public')
+  @TransportListQueryDocsGroup()
+  findPublicTransports(@TransportFilters() filters: TransportFiltersDto) {
+    return this.transportService.findPublicTransports({ filters });
+  }
+
   // * ----------------------------------------------------------------------------------------------------------------
   // * GET TRANSPORT BY ID
   // * ----------------------------------------------------------------------------------------------------------------

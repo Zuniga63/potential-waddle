@@ -96,8 +96,6 @@ export class CategoriesService {
       }
     }
 
-    console.log('model', model);
-
     const [modelCategories, categoriesWithoutModel] = await Promise.all([
       this.categoriesRepository.find({ where: modelWhere, order, relations, select }),
       this.categoriesRepository.find({ where: withoutModelWhere, order, relations, select }),

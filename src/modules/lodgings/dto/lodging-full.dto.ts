@@ -133,6 +133,13 @@ export class LodgingFullDto extends LodgingIndexDto {
   })
   paymentMethods?: string[];
 
+  @ApiProperty({
+    example: 10,
+    description: 'Capacity of the lodging',
+    required: false,
+  })
+  capacity?: number;
+
   constructor(lodging?: Lodging, userReview?: string) {
     super(lodging, userReview);
 
@@ -154,6 +161,7 @@ export class LodgingFullDto extends LodgingIndexDto {
     this.howToGetThere = lodging.howToGetThere || undefined;
     this.arrivalReference = lodging.arrivalReference || undefined;
     this.paymentMethods = lodging.paymentMethods || [];
+    this.capacity = lodging.capacity || undefined;
     this.images = lodging.images
       .sort((a, b) => a.order - b.order)
       .map(image => image.imageResource.url)

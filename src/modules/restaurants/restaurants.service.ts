@@ -49,6 +49,30 @@ export class RestaurantsService {
     return restaurants.map(restaurant => new RestaurantDto({ data: restaurant }));
   }
 
+  // ------------------------------------------------------------------------------------------------
+  // Find all public restaurants
+  // ------------------------------------------------------------------------------------------------
+  async findPublicRestaurants({ filters }: RestaurantFindAllParams = {}) {
+    const shouldRandomize = filters?.sortBy === 'random';
+    const { where, order } = generateRestaurantQueryFiltersAndSort(filters);
+    let restaurants = await this.restaurantRepository.find({
+      relations: { town: { department: true }, categories: { icon: true }, images: { imageResource: true } },
+      order,
+      where: {
+        ...where,
+        isPublic: true,
+      },
+    });
+
+    if (shouldRandomize) {
+      restaurants = restaurants.sort(() => Math.random() - 0.5);
+    }
+    return restaurants.map(restaurant => new RestaurantDto({ data: restaurant }));
+  }
+
+  // ------------------------------------------------------------------------------------------------
+  // Find one restaurant
+  // ------------------------------------------------------------------------------------------------
   async findOne(id: string) {
     const restaurant = await this.restaurantRepository.findOne({
       where: { id },

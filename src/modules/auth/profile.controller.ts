@@ -115,7 +115,6 @@ export class ProfileController {
   @ApiNoContentResponse({ description: 'Password has been changed' })
   @ApiConsumes(ContentTypes.FORM_URLENCODED, ContentTypes.JSON)
   changePassword(@Body() changePasswordDto: ChangePasswordDto, @GetUser() user: User) {
-    console.log('changePasswordDto', changePasswordDto);
     return this.authService.changePassword(user, changePasswordDto);
   }
 

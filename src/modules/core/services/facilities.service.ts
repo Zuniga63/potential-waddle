@@ -41,6 +41,7 @@ export class FacilitiesService {
       if (innerJoin === ModelsEnum.Restaurants) where.restaurants = { id: Not(IsNull()) };
       if (innerJoin === ModelsEnum.Lodgings) where.lodgings = { id: Not(IsNull()) };
       if (innerJoin === ModelsEnum.Experiences) where.experiences = { id: Not(IsNull()) };
+      if (innerJoin === ModelsEnum.Commerce) where.commerces = { id: Not(IsNull()) };
 
       return this.facilitiesRepository.find({ where, order, relations });
     }

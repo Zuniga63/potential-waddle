@@ -3,4 +3,5 @@ export enum LodgingSortByEnum {
   RATING = 'rating',
   DISTANCE = 'distance',
   PRICE = 'price',
+  RANDOM = 'random',
 }

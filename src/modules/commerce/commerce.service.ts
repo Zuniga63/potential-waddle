@@ -53,6 +53,28 @@ export class CommerceService {
     return commerces.map(commerce => new CommerceIndexDto(commerce));
   }
 
+  async findPublicCommerce({ filters }: CommerceFindAllParams = {}) {
+    const shouldRandomize = filters?.sortBy === 'random';
+    const { where, order } = generateCommerceQueryFiltersAndSort(filters);
+    let commerces = await this.commerceRepository.find({
+      relations: {
+        town: { department: true },
+        categories: { icon: true },
+        images: { imageResource: true },
+        user: true,
+      },
+      where: {
+        ...where,
+        isPublic: true,
+      },
+      order,
+    });
+    if (shouldRandomize) {
+      commerces = commerces.sort(() => Math.random() - 0.5);
+    }
+    return commerces.map(commerce => new CommerceIndexDto(commerce));
+  }
+
   async findOne(id: string) {
     const commerce = await this.commerceRepository.findOne({
       where: { id },

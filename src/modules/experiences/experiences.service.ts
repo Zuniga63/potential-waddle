@@ -57,6 +57,33 @@ export class ExperiencesService {
   }
 
   // ------------------------------------------------------------------------------------------------
+  // Find public experiences
+  // ------------------------------------------------------------------------------------------------
+  async findPublicExperiences({ filters }: ExperienceFindAllParams = {}): Promise<ExperienceDto[]> {
+    const shouldRandomize = filters?.sortBy === 'random';
+    const { where, order } = generateExperienceQueryFiltersAndSort(filters);
+    let experiences = await this.experienceRepository.find({
+      relations: {
+        categories: { icon: true },
+        images: { imageResource: true },
+        town: { department: true },
+        guide: true,
+      },
+      order,
+      where: {
+        ...where,
+        isPublic: true,
+      },
+    });
+
+    if (shouldRandomize) {
+      experiences = experiences.sort(() => Math.random() - 0.5);
+    }
+    return experiences.map(experience => new ExperienceDto({ data: experience }));
+  }
+
+  // ------------------------------------------------------------------------------------------------
+  // ------------------------------------------------------------------------------------------------
   // Find one experience by identifier
   // ------------------------------------------------------------------------------------------------
   async findOne(identifier: string) {
@@ -85,6 +112,7 @@ export class ExperiencesService {
       facilities: { icon: true },
       town: { department: true },
       images: { imageResource: true },
+      guide: { user: true },
     };
 
     let experience = await this.experienceRepository.findOne({

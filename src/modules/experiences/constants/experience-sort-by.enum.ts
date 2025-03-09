@@ -5,4 +5,5 @@ export enum ExperienceSortByEnum {
   POINTS = 'points',
   DISTANCE = 'distance',
   PRICE = 'price',
+  RANDOM = 'random',
 }
