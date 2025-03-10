@@ -107,7 +107,7 @@ export class ExperienceDto {
     this.images = data.images
       ?.sort((a, b) => a.order - b.order)
       .map(image => image.imageResource.url)
-      .slice(0, 4);
+      .slice(0, 5);
     this.guides = data.guides || [];
 
     this.town = new TownDto(data.town);
