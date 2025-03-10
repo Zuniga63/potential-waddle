@@ -136,4 +136,18 @@ export class TransportService {
       isAvailable,
     });
   }
+
+  // ------------------------------------------------------------------------------------------------
+  // Update visibility
+  // ------------------------------------------------------------------------------------------------
+  async updateVisibility(identifier: string, isPublic: boolean) {
+    const transport = await this.transportRepository.findOne({ where: { id: identifier } });
+
+    if (!transport) {
+      throw new NotFoundException('Transport not found');
+    }
+    transport.isPublic = isPublic;
+    await this.transportRepository.save(transport);
+    return { message: 'Transport visibility updated', data: isPublic };
+  }
 }

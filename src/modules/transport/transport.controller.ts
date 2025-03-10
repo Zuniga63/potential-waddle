@@ -1,13 +1,14 @@
 import { Controller, Get, Post, Patch, Param, Delete, Body, ParseUUIDPipe } from '@nestjs/common';
 import { TransportService } from './transport.service';
 import { SwaggerTags } from 'src/config';
-import { ApiOkResponse, ApiOperation, ApiParam, ApiTags, ApiBody } from '@nestjs/swagger';
+import { ApiOkResponse, ApiOperation, ApiParam, ApiTags, ApiBody, ApiBadRequestResponse } from '@nestjs/swagger';
 import { TransportFiltersDto } from './dto';
 import { TransportFilters } from './decorators';
 import { TransportListQueryDocsGroup } from './decorators/transport-list-query-docs-group.decorator';
 import { TransportDto } from './dto/transport.dto';
 import { CreateTransportDto } from './dto/create-transport.dto';
 import { UpdateTransportDto } from './dto/update-transport.dto';
+import { OptionalAuth } from '../auth/decorators';
 
 @Controller('transport')
 @ApiTags(SwaggerTags.Transport)
@@ -85,5 +86,16 @@ export class TransportController {
   @ApiOkResponse({ description: 'The transport availability has been successfully updated.', type: TransportDto })
   updateAvailability(@Param('id', ParseUUIDPipe) id: string, @Body('isAvailable') isAvailable: boolean) {
     return this.transportService.updateAvailability(id, isAvailable);
+  }
+
+  // * ----------------------------------------------------------------------------------------------------------------
+  // * UPDATE TRANSPORT VISIBILITY
+  // * ----------------------------------------------------------------------------------------------------------------
+  @Patch(':identifier/visibility')
+  @OptionalAuth()
+  @ApiOkResponse({ description: 'Transport Visibility Updated', type: TransportDto })
+  @ApiBadRequestResponse({ description: 'The visibility cannot be updated' })
+  updateVisibility(@Param('identifier') identifier: string, @Body() body: { isPublic: boolean }) {
+    return this.transportService.updateVisibility(identifier, body.isPublic);
   }
 }

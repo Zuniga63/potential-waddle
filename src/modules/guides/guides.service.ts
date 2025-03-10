@@ -373,4 +373,18 @@ export class GuidesService {
 
     return guides;
   }
+
+  // ------------------------------------------------------------------------------------------------
+  // Update visibility
+  // ------------------------------------------------------------------------------------------------
+  async updateVisibility(identifier: string, isPublic: boolean) {
+    const guide = await this.guideRepository.findOne({ where: { id: identifier } });
+
+    if (!guide) {
+      throw new NotFoundException('Guide not found');
+    }
+    guide.isPublic = isPublic;
+    await this.guideRepository.save(guide);
+    return { message: 'Guide visibility updated', data: isPublic };
+  }
 }

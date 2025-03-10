@@ -1,9 +1,9 @@
 import { CategoryDto } from 'src/modules/core/dto';
 import { TownDto } from 'src/modules/towns/dto';
-import { UserDto } from 'src/modules/users/dto/user.dto';
 import { ApiProperty } from '@nestjs/swagger';
 import { GuideExperienceDto } from 'src/modules/guides/dto/guide-experience.dto';
 import { Guide } from 'src/modules/guides/entities/guide.entity';
+import { User } from '../entities/user.entity';
 
 export class UserGuideDto {
   @ApiProperty({
@@ -138,11 +138,11 @@ export class UserGuideDto {
 
   // Relationships
   town?: TownDto;
-  user?: UserDto;
+  userId?: string;
   categories?: CategoryDto[];
   experiences?: GuideExperienceDto[];
 
-  constructor({ data }: { data: Guide }) {
+  constructor({ data, user }: { data: Guide; user?: User }) {
     if (!data) return;
     this.id = data.id;
     this.slug = data.slug;
@@ -162,7 +162,7 @@ export class UserGuideDto {
     this.languages = data.languages;
     this.images = data.images?.map(image => image.imageResource?.url).slice(0, 4);
     // Map relationships
-    this.user = data.user ? new UserDto(data.user) : undefined;
+    this.userId = user?.id;
     this.categories = data.categories?.map(category => new CategoryDto(category));
     this.experiences = data.experiences?.map(experience => new GuideExperienceDto({ data: experience })) || [];
   }

@@ -17,6 +17,7 @@ import { ConfigService } from '@nestjs/config';
 import { EnvironmentVariables } from 'src/config';
 import { UpdateProfileDto } from '../dto';
 import { UserTransportDto } from 'src/modules/users/dto/user-transport.dto';
+import { Transport } from 'src/modules/transport/entities/transport.entity';
 
 @Injectable()
 export class AuthService {
@@ -41,7 +42,7 @@ export class AuthService {
     if (!signInType || signInType !== 'transport') return { user: new UserDto(user), access_token };
     const transport = await this.usersService.getUserTransport(user.id);
     if (!transport) throw new NotFoundException('Transport not found');
-    return { user: new UserTransportDto(user, transport), access_token };
+    return { user: new UserTransportDto(user, transport as Transport), access_token };
   }
 
   async signUp(createUserDto: CreateUserDto) {

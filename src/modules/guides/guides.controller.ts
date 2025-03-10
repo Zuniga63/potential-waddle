@@ -170,4 +170,15 @@ export class GuidesController {
   reorderImages(@Param('identifier') identifier: string, @Body() reorderImagesDto: ReorderImagesDto) {
     return this.guidesService.reorderImages(identifier, reorderImagesDto);
   }
+
+  // * ----------------------------------------------------------------------------------------------------------------
+  // * UPDATE GUIDE VISIBILITY
+  // * ----------------------------------------------------------------------------------------------------------------
+  @Patch(':identifier/visibility')
+  @OptionalAuth()
+  @ApiOkResponse({ description: 'Guide Visibility Updated', type: GuideDto })
+  @ApiBadRequestResponse({ description: 'The visibility cannot be updated' })
+  updateVisibility(@Param('identifier') identifier: string, @Body() body: { isPublic: boolean }) {
+    return this.guidesService.updateVisibility(identifier, body.isPublic);
+  }
 }

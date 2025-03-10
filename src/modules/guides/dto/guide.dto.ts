@@ -140,6 +140,7 @@ export class GuideDto {
   user?: UserDto;
   categories?: CategoryDto[];
   experiences?: GuideExperienceDto[];
+  isPublic?: boolean;
 
   constructor({ data }: { data: Guide }) {
     console.log(data.experiences);
@@ -169,5 +170,6 @@ export class GuideDto {
     this.user = data.user ? new UserDto(data.user) : undefined;
     this.categories = data.categories?.map(category => new CategoryDto(category));
     this.experiences = data.experiences?.map(experience => new GuideExperienceDto({ data: experience })) || [];
+    this.isPublic = data.isPublic;
   }
 }

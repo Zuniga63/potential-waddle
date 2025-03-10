@@ -182,11 +182,9 @@ export class UsersService {
   }
 
   async getUserTransport(id: string) {
-    const user = await this.usersRepository.findOne({
-      where: { id },
-      relations: ['transport', 'transport.categories'],
-    });
-    return user?.transport;
+    const user = await this.usersRepository.findOne({ where: { id }, relations: ['transport', 'transport.user'] });
+
+    return user?.transport ?? {};
   }
 
   /*   async getFullUserWithRelations(id: string) {
@@ -236,8 +234,9 @@ export class UsersService {
       ],
     });
 
-    const userGuide = user?.guide ? new UserGuideDto({ data: user?.guide }) : null;
-    return userGuide;
+    const userGuide = user?.guide ? new UserGuideDto({ data: user?.guide, user }) : null;
+    console.log(userGuide);
+    return userGuide ?? {};
   }
 
   async getUserLodgings(id: string) {
@@ -246,7 +245,7 @@ export class UsersService {
       relations: ['lodgings', 'lodgings.categories', 'lodgings.images', 'lodgings.images.imageResource'],
     });
     const lodgings = user?.lodgings ? user?.lodgings.map(lodging => new UserLodgingDto(lodging)) : [];
-    return lodgings;
+    return lodgings ?? [];
   }
 
   async getUserCommerce(id: string) {
