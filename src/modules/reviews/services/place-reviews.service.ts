@@ -61,7 +61,7 @@ export class PlaceReviewsService {
     review.place = place;
     // ! Presenta deuda tecnica ya que esto no debería ejecutarse aquí,
     // ! sino en un servicio aparte y que pueda manejar errores y en segundo plano
-    this.saveImages({ images, review, place, user });
+    await this.saveImages({ images, review, place, user });
 
     return review;
   }
@@ -155,7 +155,7 @@ export class PlaceReviewsService {
     place.rating = await this.getAverageRating(placeId);
     await this.placeRepository.save(place);
 
-    if (images) this.saveImages({ images, review, place, user });
+    if (images) await this.saveImages({ images, review, place, user });
 
     review.place = place;
     return review;
