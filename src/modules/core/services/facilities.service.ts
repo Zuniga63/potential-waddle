@@ -31,7 +31,7 @@ export class FacilitiesService {
   // * -------------------------------------------------------------------------------------------------------------
   // * GET ALL FACILITY
   // * -------------------------------------------------------------------------------------------------------------
-  async findAll({ modelId, innerJoin }: { modelId?: string; innerJoin?: ModelsEnum } = {}) {
+  async findAll({ slug, innerJoin }: { slug?: string; innerJoin?: ModelsEnum } = {}) {
     const where: FindOptionsWhere<Facility> = { isEnabled: true };
     const order: FindOptionsOrder<Facility> = { name: 'ASC' };
     const relations: FindOptionsRelations<Facility> = { icon: true };
@@ -45,9 +45,9 @@ export class FacilitiesService {
 
       return this.facilitiesRepository.find({ where, order, relations });
     }
-
-    if (modelId) {
-      where.models = { id: modelId };
+    console.log(slug);
+    if (slug) {
+      where.models = { slug };
 
       const [modelFacilities, generalFacilities] = await Promise.all([
         this.facilitiesRepository.find({ where, order, relations }),
@@ -64,6 +64,13 @@ export class FacilitiesService {
 
     relations.models = true;
     return this.facilitiesRepository.find({ where, order, relations });
+  }
+
+  // * -------------------------------------------------------------------------------------------------------------
+  // * GET ALL FACILITY FULL
+  // * -------------------------------------------------------------------------------------------------------------
+  findAllFull() {
+    return this.facilitiesRepository.find({ relations: { models: true } });
   }
   // * -------------------------------------------------------------------------------------------------------------
   // * GET FACILITY BY ID

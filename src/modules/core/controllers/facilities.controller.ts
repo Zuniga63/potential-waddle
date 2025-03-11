@@ -1,15 +1,4 @@
-import {
-  Body,
-  Controller,
-  Delete,
-  Get,
-  HttpStatus,
-  ParseEnumPipe,
-  ParseUUIDPipe,
-  Patch,
-  Post,
-  Query,
-} from '@nestjs/common';
+import { Body, Controller, Delete, Get, HttpStatus, ParseEnumPipe, Patch, Post, Query } from '@nestjs/common';
 import { ApiOperation, ApiQuery, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { SwaggerTags } from 'src/config';
 import { CreateFacilityDto } from '../dto';
@@ -32,9 +21,9 @@ export class FacilitiesController {
   // * -------------------------------------------------------------------------------------------------------------
   @Get()
   @ApiQuery({
-    name: 'model-id',
+    name: 'slug',
     required: false,
-    description: 'UUID model: Retrieves the model categories along with the general categories.',
+    description: 'Slug model: Retrieves the model facilities along with the general facilities.',
     type: String,
   })
   @ApiQuery({
@@ -42,14 +31,20 @@ export class FacilitiesController {
     required: false,
     enum: ModelsEnum,
     description:
-      'Retrieves the categories assigned to the model. This parameter takes precedence over the model-id parameter.',
+      'Retrieves the categories assigned to the model. This parameter takes precedence over the slug parameter.',
   })
   findAll(
-    @Query('model-id', new ParseUUIDPipe({ optional: true })) modelId?: string,
+    @Query('slug') slug?: string,
     @Query('inner-join', new ParseEnumPipe(ModelsEnum, { optional: true })) innerJoin?: ModelsEnum,
   ) {
-    return this.facilitiesService.findAll({ modelId, innerJoin });
+    return this.facilitiesService.findAll({ slug, innerJoin });
   }
+
+  @Get('full')
+  findAllFull() {
+    return this.facilitiesService.findAllFull();
+  }
+
   // * -------------------------------------------------------------------------------------------------------------
   // * GET FACILITY BY ID
   // * -------------------------------------------------------------------------------------------------------------
