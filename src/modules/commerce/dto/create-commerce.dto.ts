@@ -214,7 +214,6 @@ export class CreateCommerceDto {
     type: 'string',
     required: false,
   })
-  @IsUUID('4')
   @IsOptional()
   townId?: string;
 
