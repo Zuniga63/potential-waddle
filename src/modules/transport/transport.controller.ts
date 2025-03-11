@@ -9,6 +9,7 @@ import { TransportDto } from './dto/transport.dto';
 import { CreateTransportDto } from './dto/create-transport.dto';
 import { UpdateTransportDto } from './dto/update-transport.dto';
 import { OptionalAuth } from '../auth/decorators';
+import { RestaurantDto } from '../restaurants/dto/restaurant.dto';
 
 @Controller('transport')
 @ApiTags(SwaggerTags.Transport)
@@ -88,6 +89,18 @@ export class TransportController {
     return this.transportService.updateAvailability(id, isAvailable);
   }
 
+  // * ----------------------------------------------------------------------------------------------------------------
+  // * UPDATE USER IN RESTAURANT
+  // * ----------------------------------------------------------------------------------------------------------------
+  @Patch(':identifier/users/:userId')
+  @OptionalAuth()
+  @ApiOkResponse({ description: 'User Updated in Restaurant', type: RestaurantDto })
+  @ApiBadRequestResponse({ description: 'The user cannot be updated in the restaurant' })
+  updateUser(@Param('identifier') identifier: string, @Param('userId', ParseUUIDPipe) userId: string) {
+    return this.transportService.updateUser(identifier, userId);
+  }
+
+  // * ----------------------------------------------------------------------------------------------------------------
   // * ----------------------------------------------------------------------------------------------------------------
   // * UPDATE TRANSPORT VISIBILITY
   // * ----------------------------------------------------------------------------------------------------------------

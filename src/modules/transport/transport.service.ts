@@ -136,6 +136,20 @@ export class TransportService {
       isAvailable,
     });
   }
+  // ------------------------------------------------------------------------------------------------
+  // Update user in transport
+  // ------------------------------------------------------------------------------------------------
+  async updateUser(identifier: string, userId: string) {
+    const transport = await this.transportRepository.findOne({ where: { id: identifier } });
+    if (!transport) throw new NotFoundException('Transport not found');
+
+    const user = await this.userRepo.findOne({ where: { id: userId } });
+    if (!user) throw new NotFoundException('User not found');
+    transport.user = user;
+    await this.transportRepository.save(transport);
+
+    return user;
+  }
 
   // ------------------------------------------------------------------------------------------------
   // Update visibility

@@ -373,6 +373,20 @@ export class GuidesService {
 
     return guides;
   }
+  // ------------------------------------------------------------------------------------------------
+  // Update user in lodging
+  // ------------------------------------------------------------------------------------------------
+  async updateUser(identifier: string, userId: string) {
+    const guide = await this.guideRepository.findOne({ where: { id: identifier } });
+    if (!guide) throw new NotFoundException('Guide not found');
+
+    const user = await this.userRepo.findOne({ where: { id: userId } });
+    if (!user) throw new NotFoundException('User not found');
+    guide.user = user;
+    await this.guideRepository.save(guide);
+
+    return user;
+  }
 
   // ------------------------------------------------------------------------------------------------
   // Update visibility

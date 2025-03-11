@@ -172,6 +172,18 @@ export class GuidesController {
   }
 
   // * ----------------------------------------------------------------------------------------------------------------
+  // * UPDATE USER IN GUIDE
+  // * ----------------------------------------------------------------------------------------------------------------
+  @Patch(':identifier/users/:userId')
+  @OptionalAuth()
+  @ApiOkResponse({ description: 'User Updated in Guide', type: GuideDto })
+  @ApiBadRequestResponse({ description: 'The user cannot be updated in the guide' })
+  updateUser(@Param('identifier') identifier: string, @Param('userId', ParseUUIDPipe) userId: string) {
+    return this.guidesService.updateUser(identifier, userId);
+  }
+
+  // * ----------------------------------------------------------------------------------------------------------------
+  // * ----------------------------------------------------------------------------------------------------------------
   // * UPDATE GUIDE VISIBILITY
   // * ----------------------------------------------------------------------------------------------------------------
   @Patch(':identifier/visibility')
