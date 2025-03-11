@@ -1,12 +1,14 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { ReviewsFindAllParams } from '../interfaces';
 import { DataSource, FindOptionsWhere, Repository } from 'typeorm';
-import { Review, ReviewStatusHistory } from '../entities';
+import { Review, ReviewStatusHistory, ReviewImage } from '../entities';
 import { InjectRepository } from '@nestjs/typeorm';
 import { AdminReviewsDto, ReviewStatusWasChangeDto, ReviewChangeStatusDto } from '../dto';
 import { ReviewStatusEnum } from '../enums';
 import { User, UserPoint } from 'src/modules/users/entities';
 import { assignPlacePoints, fetchReviewApprovalData, updateReviewStatus } from '../logic/update-review-change';
+import { ImageResource } from 'src/modules/core/entities';
+import { CloudinaryService } from 'src/modules/cloudinary/cloudinary.service';
 
 @Injectable()
 export class ReviewsService {
@@ -15,6 +17,14 @@ export class ReviewsService {
     private readonly reviewsRepository: Repository<Review>,
 
     private readonly dataSource: DataSource,
+
+    @InjectRepository(ReviewImage)
+    private readonly reviewImagesRepository: Repository<ReviewImage>,
+
+    @InjectRepository(ImageResource)
+    private readonly imageResourcesRepository: Repository<ImageResource>,
+
+    private readonly cloudinaryService: CloudinaryService,
   ) {}
 
   // * ----------------------------------------------------------------------------------------------------------------
@@ -101,6 +111,47 @@ export class ReviewsService {
       await queryRunner.commitTransaction();
 
       return { ok: true, reviewId: review.id, status: review.status };
+    } catch (error) {
+      await queryRunner.rollbackTransaction();
+      throw error;
+    } finally {
+      await queryRunner.release();
+    }
+  }
+
+  // * ----------------------------------------------------------------------------------------------------------------
+  // * DELETE REVIEW IMAGE
+  // * ----------------------------------------------------------------------------------------------------------------
+  async deleteImage({ imageId }: { imageId: string }) {
+    const queryRunner = this.dataSource.createQueryRunner();
+
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
+
+    try {
+      const reviewImageRepository = queryRunner.manager.getRepository(ReviewImage);
+      const reviewImage = await reviewImageRepository.findOne({
+        where: { id: imageId },
+        relations: {
+          image: true,
+        },
+      });
+
+      if (!reviewImage) throw new NotFoundException('Review image not found');
+
+      // Delete from Cloudinary if publicId exists
+      if (reviewImage.image?.publicId) {
+        await this.cloudinaryService.destroyFile(reviewImage.image.publicId);
+      }
+
+      // Delete the image resource and review image relation
+      if (reviewImage.image) {
+        await queryRunner.manager.remove(reviewImage.image);
+      }
+      await queryRunner.manager.remove(reviewImage);
+
+      await queryRunner.commitTransaction();
+      return { success: true };
     } catch (error) {
       await queryRunner.rollbackTransaction();
       throw error;

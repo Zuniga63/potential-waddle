@@ -40,7 +40,7 @@ export class PlacesService {
 
   async create(createPlaceDto: CreatePlaceDto) {
     const { imageFile: file, categoryIds, facilityIds, longitude, latitude, ...restDto } = createPlaceDto;
-    console.log(createPlaceDto);
+
     // Se recuperan las instancias de categories y facility
     const categories = categoryIds ? await this.categoryRepo.findBy({ id: In(categoryIds) }) : [];
     const facilities = facilityIds ? await this.facilityRepo.findBy({ id: In(facilityIds) }) : [];

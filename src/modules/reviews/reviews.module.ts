@@ -10,9 +10,9 @@ import { User, UserPoint } from '../users/entities';
 import { TinifyService } from '../tinify/tinify.service';
 import { CloudinaryService } from '../cloudinary/cloudinary.service';
 import { ImageResource } from '../core/entities';
-
+import { PublicReviewsController } from './public-reviews.controller';
 @Module({
-  controllers: [ReviewsController],
+  controllers: [ReviewsController, PublicReviewsController],
   providers: [PlaceReviewsService, ReviewsService, TinifyService, CloudinaryService],
   imports: [
     TypeOrmModule.forFeature([Review, Place, ReviewStatusHistory, User, UserPoint, ImageResource, ReviewImage]),
