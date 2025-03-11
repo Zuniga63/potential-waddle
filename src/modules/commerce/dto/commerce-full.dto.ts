@@ -25,20 +25,6 @@ export class CommerceFullDto extends CommerceIndexDto {
   })
   arrivalReference?: string;
 
-  @ApiProperty({
-    example: '19.432608',
-    description: 'The longitude of the place',
-    required: false,
-  })
-  longitude?: number;
-
-  @ApiProperty({
-    example: '19.432608',
-    description: 'The latitude of the place',
-    required: false,
-  })
-  latitude?: number;
-
   facilities?: Facility[];
 
   paymentMethods?: string[];

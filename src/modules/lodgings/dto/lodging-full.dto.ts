@@ -76,13 +76,6 @@ export class LodgingFullDto extends LodgingIndexDto {
   instagram?: string;
 
   @ApiProperty({
-    example: ['123456789', '987654321'],
-    description: 'List of WhatsApps of the lodging',
-    required: false,
-  })
-  whatsappNumbers?: string[];
-
-  @ApiProperty({
     example: ['English', 'Spanish'],
     description: 'List of languages spoken in the lodging',
     required: false,

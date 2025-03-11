@@ -180,6 +180,20 @@ export class CommerceIndexDto {
   })
   isPublic: boolean;
 
+  @ApiProperty({
+    example: 123.456,
+    description: 'Latitude of the commerce',
+    required: false,
+  })
+  latitude: number;
+
+  @ApiProperty({
+    example: 123.456,
+    description: 'Longitude of the commerce',
+    required: false,
+  })
+  longitude: number;
+
   constructor(commerce?: Commerce, userReview?: string) {
     if (!commerce) return;
     this.id = commerce.id;
@@ -205,5 +219,7 @@ export class CommerceIndexDto {
     this.googleMapsUrl = commerce.googleMapsUrl;
     this.userId = commerce.user?.id || '';
     this.isPublic = commerce.isPublic;
+    this.longitude = commerce.location?.coordinates[0] || 0;
+    this.latitude = commerce.location?.coordinates[1] || 0;
   }
 }

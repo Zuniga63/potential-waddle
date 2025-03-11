@@ -145,6 +145,27 @@ export class LodgingIndexDto {
   })
   isPublic: boolean;
 
+  @ApiProperty({
+    example: 123.456,
+    description: 'Latitude of the lodging',
+    required: false,
+  })
+  latitude: number;
+
+  @ApiProperty({
+    example: 123.456,
+    description: 'Longitude of the lodging',
+    required: false,
+  })
+  longitude: number;
+
+  @ApiProperty({
+    example: '123456789',
+    description: 'Whatsapp number of the lodging',
+    required: false,
+  })
+  whatsappNumbers: string[];
+
   constructor(lodging?: Lodging, userReview?: string) {
     if (!lodging) return;
     this.id = lodging.id;
@@ -169,5 +190,8 @@ export class LodgingIndexDto {
     this.openingHours = lodging.openingHours || undefined;
     this.urbanCenterDistance = lodging.urbanCenterDistance || 0;
     this.isPublic = lodging.isPublic;
+    this.longitude = lodging.location?.coordinates[0] || 0;
+    this.latitude = lodging.location?.coordinates[1] || 0;
+    this.whatsappNumbers = lodging.whatsappNumbers || [];
   }
 }
