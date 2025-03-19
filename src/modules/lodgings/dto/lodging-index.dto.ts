@@ -166,6 +166,8 @@ export class LodgingIndexDto {
   })
   whatsappNumbers: string[];
 
+  googleMapsUrl?: string;
+
   constructor(lodging?: Lodging, userReview?: string) {
     if (!lodging) return;
     this.id = lodging.id;
@@ -183,6 +185,7 @@ export class LodgingIndexDto {
       .slice(0, 4);
 
     this.rating = lodging.rating;
+    this.googleMapsUrl = lodging.googleMapsUrl || undefined;
     this.user = new UserDto(lodging.user);
     this.lowestPrice = lodging.lowestPrice || undefined;
     this.highestPrice = lodging.highestPrice || undefined;
