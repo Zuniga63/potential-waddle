@@ -68,6 +68,12 @@ export class RestaurantDto {
 
   paymentMethods?: string[];
 
+  googleMapsRating?: number;
+
+  googleMapsReviewsCount?: number;
+
+  showGoogleMapsReviews?: boolean;
+
   constructor({ data }: { data?: Restaurant | null }) {
     if (!data) return;
 
@@ -103,5 +109,8 @@ export class RestaurantDto {
     this.isPublic = data.isPublic;
     this.userId = data.user?.id ?? undefined;
     this.paymentMethods = data.paymentMethods ?? [];
+    this.googleMapsRating = data.googleMapsRating ?? undefined;
+    this.googleMapsReviewsCount = data.googleMapsReviewsCount ?? undefined;
+    this.showGoogleMapsReviews = data.showGoogleMapsReviews ?? undefined;
   }
 }

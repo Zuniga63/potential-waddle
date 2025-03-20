@@ -30,6 +30,27 @@ export class CommerceFullDto extends CommerceIndexDto {
   paymentMethods?: string[];
   services?: string[];
 
+  @ApiProperty({
+    example: 4.7,
+    description: 'Google Maps rating of the lodging',
+    required: false,
+  })
+  googleMapsRating?: number;
+
+  @ApiProperty({
+    example: 253,
+    description: 'Number of reviews on Google Maps',
+    required: false,
+  })
+  googleMapsReviewsCount?: number;
+
+  @ApiProperty({
+    example: true,
+    description: 'Whether to show Google Maps reviews',
+    required: false,
+  })
+  showGoogleMapsReviews?: boolean;
+
   constructor(commerce?: Commerce) {
     super(commerce);
 
@@ -42,5 +63,8 @@ export class CommerceFullDto extends CommerceIndexDto {
     this.facilities = commerce.facilities;
     this.paymentMethods = commerce.paymentMethods;
     this.services = commerce.services;
+    this.googleMapsRating = commerce.googleMapsRating || undefined;
+    this.googleMapsReviewsCount = commerce.googleMapsReviewsCount || undefined;
+    this.showGoogleMapsReviews = commerce.showGoogleMapsReviews || undefined;
   }
 }

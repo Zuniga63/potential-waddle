@@ -133,6 +133,26 @@ export class LodgingFullDto extends LodgingIndexDto {
   })
   capacity?: number;
 
+  @ApiProperty({
+    example: 4.7,
+    description: 'Google Maps rating of the lodging',
+    required: false,
+  })
+  googleMapsRating?: number;
+
+  @ApiProperty({
+    example: 253,
+    description: 'Number of reviews on Google Maps',
+    required: false,
+  })
+  googleMapsReviewsCount?: number;
+
+  @ApiProperty({
+    example: true,
+    description: 'Whether to show Google Maps reviews',
+    required: false,
+  })
+  showGoogleMapsReviews?: boolean;
   constructor(lodging?: Lodging, userReview?: string) {
     super(lodging, userReview);
 
@@ -159,5 +179,8 @@ export class LodgingFullDto extends LodgingIndexDto {
       .sort((a, b) => a.order - b.order)
       .map(image => image.imageResource.url)
       .slice(0, 5);
+    this.googleMapsRating = lodging.googleMapsRating || undefined;
+    this.googleMapsReviewsCount = lodging.googleMapsReviewsCount || undefined;
+    this.showGoogleMapsReviews = lodging.showGoogleMapsReviews || undefined;
   }
 }

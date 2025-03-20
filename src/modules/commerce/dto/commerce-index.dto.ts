@@ -194,6 +194,27 @@ export class CommerceIndexDto {
   })
   longitude: number;
 
+  @ApiProperty({
+    example: 4.7,
+    description: 'Google Maps rating of the lodging',
+    required: false,
+  })
+  googleMapsRating?: number;
+
+  @ApiProperty({
+    example: 253,
+    description: 'Number of reviews on Google Maps',
+    required: false,
+  })
+  googleMapsReviewsCount?: number;
+
+  @ApiProperty({
+    example: true,
+    description: 'Whether to show Google Maps reviews',
+    required: false,
+  })
+  showGoogleMapsReviews?: boolean;
+
   constructor(commerce?: Commerce, userReview?: string) {
     if (!commerce) return;
     this.id = commerce.id;
@@ -221,5 +242,8 @@ export class CommerceIndexDto {
     this.isPublic = commerce.isPublic;
     this.longitude = commerce.location?.coordinates[0] || 0;
     this.latitude = commerce.location?.coordinates[1] || 0;
+    this.googleMapsRating = commerce.googleMapsRating || undefined;
+    this.googleMapsReviewsCount = commerce.googleMapsReviewsCount || undefined;
+    this.showGoogleMapsReviews = commerce.showGoogleMapsReviews || undefined;
   }
 }

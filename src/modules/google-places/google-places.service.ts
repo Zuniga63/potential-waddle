@@ -6,6 +6,8 @@ import { Repository } from 'typeorm';
 import { lastValueFrom } from 'rxjs';
 import { Lodging } from 'src/modules/lodgings/entities/lodging.entity';
 import { EnvironmentVariables } from 'src/config/app-config';
+import { Commerce } from '../commerce/entities/commerce.entity';
+import { Restaurant } from '../restaurants/entities/restaurant.entity';
 @Injectable()
 export class GooglePlacesService {
   private readonly logger = new Logger(GooglePlacesService.name);
@@ -17,10 +19,17 @@ export class GooglePlacesService {
     @InjectRepository(Lodging)
     private lodgingRepository: Repository<Lodging>,
     configService: ConfigService<EnvironmentVariables>,
+
+    @InjectRepository(Commerce)
+    private commerceRepository: Repository<Commerce>,
+
+    @InjectRepository(Restaurant)
+    private restaurantRepository: Repository<Restaurant>,
   ) {
     this.apiKey = configService.get<string>('googlePlaces.apiKey', { infer: true });
   }
 
+  // 🔹 Find Place ID by Name
   async findPlaceIdByName(name: string, address?: string): Promise<string | null> {
     try {
       const input = address ? `${name}, San Rafael, Antioquia, Colombia` : name;
@@ -77,7 +86,8 @@ export class GooglePlacesService {
     }
   }
 
-  async updateGooglePlaceId(placeId: string): Promise<void> {
+  // 🔹 Update Google Place ID for Lodging
+  async updateGooglePlaceIdLodging(placeId: string): Promise<void> {
     try {
       const lodging = await this.lodgingRepository.findOne({
         where: { id: placeId },
@@ -99,7 +109,8 @@ export class GooglePlacesService {
     }
   }
 
-  async updatePlaceDetails(placeId: string): Promise<void> {
+  // 🔹 Update Lodging Details
+  async updateLodgingDetails(placeId: string): Promise<void> {
     try {
       const lodging = await this.lodgingRepository.findOne({ where: { id: placeId } });
       if (!lodging || !lodging.googleMapsId) {
@@ -125,6 +136,7 @@ export class GooglePlacesService {
     }
   }
 
+  // 🔹 Update All Lodgings
   async updateAllLodgings(): Promise<void> {
     try {
       const lodgings = await this.lodgingRepository.find();
@@ -132,7 +144,7 @@ export class GooglePlacesService {
       for (const lodging of lodgings) {
         // Si no tiene Google Place ID, intentamos obtenerlo primero
         if (!lodging.googleMapsId) {
-          await this.updateGooglePlaceId(lodging.id);
+          await this.updateGooglePlaceIdLodging(lodging.id);
           // Esperar un poco para no exceder los límites de la API
           await new Promise(resolve => setTimeout(resolve, 200));
         }
@@ -140,7 +152,159 @@ export class GooglePlacesService {
         // Si ya tiene o acabamos de obtener el Google Place ID, actualizamos los detalles
         if (lodging.googleMapsId) {
           console.log(`Actualizando detalles para ${lodging.name}`);
-          await this.updatePlaceDetails(lodging.id);
+          await this.updateLodgingDetails(lodging.id);
+          // Esperar entre solicitudes para no exceder los límites de la API
+          await new Promise(resolve => setTimeout(resolve, 200));
+        }
+      }
+    } catch (error) {
+      this.logger.error(`Error al actualizar todos los lugares: ${error.message}`);
+    }
+  }
+
+  // 🔹 Update Google Place ID for Restaurant
+  async updateGooglePlaceIdRestaurant(placeId: string): Promise<void> {
+    try {
+      const restaurant = await this.restaurantRepository.findOne({
+        where: { id: placeId },
+      });
+      if (!restaurant) {
+        this.logger.warn(`Lugar con ID ${placeId} no encontrado`);
+        return;
+      }
+
+      if (!restaurant.googleMapsId) {
+        const googlePlaceId = await this.findPlaceIdByName(restaurant.name, restaurant.address || undefined);
+        if (googlePlaceId) {
+          restaurant.googleMapsId = googlePlaceId;
+          await this.restaurantRepository.save(restaurant);
+        }
+      }
+    } catch (error) {
+      this.logger.error(`Error al actualizar Google Place ID: ${error.message}`);
+    }
+  }
+
+  // 🔹 Update Restaurant Details
+  async updateRestaurantDetails(placeId: string): Promise<void> {
+    try {
+      const restaurant = await this.restaurantRepository.findOne({ where: { id: placeId } });
+      if (!restaurant || !restaurant.googleMapsId) {
+        this.logger.warn(`Lugar con ID ${placeId} no tiene Google Place ID`);
+        return;
+      }
+
+      const details = await this.getPlaceDetails(restaurant.googleMapsId);
+      if (!details) {
+        this.logger.warn(`No se encontraron detalles para el lugar ID ${placeId}`);
+        return;
+      }
+
+      restaurant.googleMapsRating = details.rating || restaurant.googleMapsRating;
+      restaurant.googleMapsReviewsCount = details.userRatingCount || restaurant.googleMapsReviewsCount;
+      restaurant.googleMapsUrl = details.googleMapsUri || restaurant.googleMapsUrl;
+      restaurant.googleMapsName = details.displayName.text || restaurant.googleMapsName;
+
+      await this.restaurantRepository.save(restaurant);
+      this.logger.log(`Detalles actualizados para ${restaurant.name}`);
+    } catch (error) {
+      this.logger.error(`Error al actualizar detalles: ${error.message}`);
+    }
+  }
+
+  // 🔹 Update All Restaurants
+  async updateAllRestaurants(): Promise<void> {
+    try {
+      const restaurants = await this.restaurantRepository.find();
+
+      for (const restaurant of restaurants) {
+        // Si no tiene Google Place ID, intentamos obtenerlo primero
+        if (!restaurant.googleMapsId) {
+          await this.updateGooglePlaceIdRestaurant(restaurant.id);
+          // Esperar un poco para no exceder los límites de la API
+          await new Promise(resolve => setTimeout(resolve, 200));
+        }
+
+        // Si ya tiene o acabamos de obtener el Google Place ID, actualizamos los detalles
+        if (restaurant.googleMapsId) {
+          console.log(`Actualizando detalles para ${restaurant.name}`);
+          await this.updateRestaurantDetails(restaurant.id);
+          // Esperar entre solicitudes para no exceder los límites de la API
+          await new Promise(resolve => setTimeout(resolve, 200));
+        }
+      }
+    } catch (error) {
+      this.logger.error(`Error al actualizar todos los lugares: ${error.message}`);
+    }
+  }
+
+  // 🔹 Update Google Place ID for Commerce
+  async updateGooglePlaceIdCommerce(placeId: string): Promise<void> {
+    try {
+      const commerce = await this.commerceRepository.findOne({
+        where: { id: placeId },
+      });
+      if (!commerce) {
+        this.logger.warn(`Lugar con ID ${placeId} no encontrado`);
+        return;
+      }
+
+      if (!commerce.googleMapsId) {
+        const googlePlaceId = await this.findPlaceIdByName(commerce.name, commerce.address || undefined);
+        if (googlePlaceId) {
+          commerce.googleMapsId = googlePlaceId;
+          await this.commerceRepository.save(commerce);
+        }
+      }
+    } catch (error) {
+      this.logger.error(`Error al actualizar Google Place ID: ${error.message}`);
+    }
+  }
+
+  // 🔹 Update Commerce Details
+  async updateCommerceDetails(placeId: string): Promise<void> {
+    try {
+      const commerce = await this.commerceRepository.findOne({ where: { id: placeId } });
+      if (!commerce || !commerce.googleMapsId) {
+        this.logger.warn(`Lugar con ID ${placeId} no tiene Google Place ID`);
+        return;
+      }
+
+      const details = await this.getPlaceDetails(commerce.googleMapsId);
+      if (!details) {
+        this.logger.warn(`No se encontraron detalles para el lugar ID ${placeId}`);
+        return;
+      }
+
+      commerce.googleMapsRating = details.rating || commerce.googleMapsRating;
+      commerce.googleMapsReviewsCount = details.userRatingCount || commerce.googleMapsReviewsCount;
+      commerce.googleMapsUrl = details.googleMapsUri || commerce.googleMapsUrl;
+      commerce.googleMapsName = details.displayName.text || commerce.googleMapsName;
+
+      await this.commerceRepository.save(commerce);
+      this.logger.log(`Detalles actualizados para ${commerce.name}`);
+    } catch (error) {
+      this.logger.error(`Error al actualizar detalles: ${error.message}`);
+    }
+  }
+
+  // 🔹 Update All Commerces
+  async updateAllCommerces(): Promise<void> {
+    try {
+      const commerces = await this.commerceRepository.find();
+
+      for (const commerce of commerces) {
+        // Si no tiene Google Place ID, intentamos obtenerlo primero
+        if (!commerce.googleMapsId) {
+          await this.updateGooglePlaceIdCommerce(commerce.id);
+          // Esperar un poco para no exceder los límites de la API
+          await new Promise(resolve => setTimeout(resolve, 200));
+        }
+
+        // Si ya tiene o acabamos de obtener el Google Place ID, actualizamos los detalles
+        if (commerce.googleMapsId) {
+          console.log(`Actualizando detalles para ${commerce.name}`);
+          await this.updateCommerceDetails(commerce.id);
           // Esperar entre solicitudes para no exceder los límites de la API
           await new Promise(resolve => setTimeout(resolve, 200));
         }
