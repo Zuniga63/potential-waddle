@@ -168,6 +168,27 @@ export class LodgingIndexDto {
 
   googleMapsUrl?: string;
 
+  @ApiProperty({
+    example: 4.7,
+    description: 'Google Maps rating of the lodging',
+    required: false,
+  })
+  googleMapsRating?: number;
+
+  @ApiProperty({
+    example: 253,
+    description: 'Number of reviews on Google Maps',
+    required: false,
+  })
+  googleMapsReviewsCount?: number;
+
+  @ApiProperty({
+    example: true,
+    description: 'Whether to show Google Maps reviews',
+    required: false,
+  })
+  showGoogleMapsReviews?: boolean;
+
   constructor(lodging?: Lodging, userReview?: string) {
     if (!lodging) return;
     this.id = lodging.id;
@@ -186,6 +207,9 @@ export class LodgingIndexDto {
 
     this.rating = lodging.rating;
     this.googleMapsUrl = lodging.googleMapsUrl || undefined;
+    this.googleMapsRating = lodging.googleMapsRating || undefined;
+    this.googleMapsReviewsCount = lodging.googleMapsReviewsCount || undefined;
+    this.showGoogleMapsReviews = lodging.showGoogleMapsReviews;
     this.user = new UserDto(lodging.user);
     this.lowestPrice = lodging.lowestPrice || undefined;
     this.highestPrice = lodging.highestPrice || undefined;
