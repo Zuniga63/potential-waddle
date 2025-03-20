@@ -28,5 +28,6 @@ export const swaggerConfig = new DocumentBuilder()
   .addTag(SwaggerTags.Commerce, 'Route for commerce administration')
   .addTag(SwaggerTags.Languages, 'Route for languages administration')
   .addTag(SwaggerTags.Guides, 'Route for guides administration')
+  .addTag(SwaggerTags.GooglePlaces, 'Route for google places administration')
   .addBearerAuth()
   .build();

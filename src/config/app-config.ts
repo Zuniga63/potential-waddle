@@ -28,6 +28,9 @@ export interface EnvironmentVariables {
     clientSecret: string;
     callbackUrl: string;
   };
+  googlePlaces: {
+    apiKey: string;
+  };
   tinify: {
     apiKey: string;
     enabled: boolean;
@@ -66,6 +69,9 @@ export const appConfig = (): EnvironmentVariables => ({
     clientId: process.env.GOOGLE_CLIENT_ID || '',
     clientSecret: process.env.GOOGLE_CLIENT_SECRET || '',
     callbackUrl: process.env.GOOGLE_CALLBACK_URL || '',
+  },
+  googlePlaces: {
+    apiKey: process.env.GOOGLE_PLACES_API_KEY || '',
   },
   tinify: {
     apiKey: process.env.TINYIFY_API_KEY || '',

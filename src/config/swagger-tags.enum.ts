@@ -22,4 +22,5 @@ export enum SwaggerTags {
   ImageResources = 'Image Resources',
   Commerce = 'Commerce',
   Guides = 'Guides',
+  GooglePlaces = 'Google Places',
 }

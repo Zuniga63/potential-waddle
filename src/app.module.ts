@@ -22,6 +22,7 @@ import { TinifyModule } from './modules/tinify/tinify.module';
 import { TransportModule } from './modules/transport/transport.module';
 import { CommerceModule } from './modules/commerce/commerce.module';
 import { GuidesModule } from './modules/guides/guides.module';
+import { GooglePlacesModule } from './modules/google-places/google-places.module';
 
 @Module({
   imports: [
@@ -69,6 +70,8 @@ import { GuidesModule } from './modules/guides/guides.module';
     CommerceModule,
 
     GuidesModule,
+
+    GooglePlacesModule,
   ],
   controllers: [],
   providers: [],

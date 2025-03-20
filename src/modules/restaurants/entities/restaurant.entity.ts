@@ -136,6 +136,21 @@ export class Restaurant {
   @Column('boolean', { default: true, name: 'is_public' })
   isPublic: boolean;
 
+  @Column('float', { name: 'google_maps_rating', nullable: true })
+  googleMapsRating: number | null;
+
+  @Column('text', { name: 'google_maps_id', nullable: true })
+  googleMapsId: string | null;
+
+  @Column('integer', { name: 'google_maps_reviews_count', nullable: true })
+  googleMapsReviewsCount: number | null;
+
+  @Column('boolean', { name: 'show_google_maps_reviews', default: true })
+  showGoogleMapsReviews: boolean;
+
+  @Column('text', { name: 'google_maps_name', nullable: true })
+  googleMapsName: string | null;
+
   @CreateDateColumn({ name: 'updated_at', default: () => 'CURRENT_TIMESTAMP', onUpdate: 'CURRENT_TIMESTAMP' })
   updatedAt: Date;
 }
