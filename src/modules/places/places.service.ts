@@ -144,8 +144,8 @@ export class PlacesService {
   // Find all public places
   // ------------------------------------------------------------------------------------------------
   async findPublicPlaces(filters: PlaceFiltersDto = {}, user: User | null = null) {
-    const shouldRandomize = filters?.sortBy === 'random';
-    const { where, order } = generatePlaceQueryFilters(filters);
+    /*     const shouldRandomize = filters?.sortBy === 'random';
+     */ const { where, order } = generatePlaceQueryFilters(filters);
     const relations: FindOptionsRelations<Place> = {
       town: { department: true },
       reviews: true,
@@ -165,11 +165,11 @@ export class PlacesService {
       user ? this.placeReviewService.getUserReviews({ userId: user.id }) : Promise.resolve<Review[]>([]),
     ]);
 
-    let filteredPlaces = places;
-    if (shouldRandomize) {
+    const filteredPlaces = places;
+    /*  if (shouldRandomize) {
       filteredPlaces = filteredPlaces.sort(() => Math.random() - 0.5);
     }
-
+ */
     return filteredPlaces.map(place => {
       const review = reviews.find(r => r.place.id === place.id);
       return new PlaceDto(place, review?.id);

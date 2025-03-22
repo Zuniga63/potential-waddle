@@ -134,6 +134,7 @@ export class PlaceDetailDto extends PlaceDto {
   urbarCenterDistance: number;
 
   howToDress: string;
+  reviewCount: number;
 
   constructor({ place, reviewId }: Props) {
     super(place, reviewId);
@@ -159,6 +160,7 @@ export class PlaceDetailDto extends PlaceDto {
     this.urbarCenterDistance = place?.urbarCenterDistance ?? 0;
     this.googleMapsUrl = place?.googleMapsUrl ?? '';
     this.howToDress = place?.howToDress ?? '';
+    this.reviewCount = place?.reviewCount ?? 0;
     this.images = place?.images?.map(image => image.imageResource?.url) ?? [];
   }
 }
