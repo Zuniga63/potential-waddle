@@ -4,4 +4,5 @@ export enum PlaceSortByEnum {
   DISTANCE = 'distance',
   DIFFICULTY = 'difficulty',
   POINTS = 'points',
+  RANDOM = 'random',
 }

@@ -114,6 +114,27 @@ export class PlaceDetailDto extends PlaceDto {
   })
   recommendations?: Place['recommendations'];
 
+  @ApiProperty({
+    example: 100,
+    description: 'The base points of the place',
+    required: false,
+  })
+  basePoints?: Place['basePoints'];
+
+  @ApiProperty({
+    example: 100,
+    description: 'The popularity of the place',
+    required: false,
+  })
+  popularity?: Place['popularity'];
+
+  latitude: number;
+  longitude: number;
+
+  urbarCenterDistance: number;
+
+  howToDress: string;
+
   constructor({ place, reviewId }: Props) {
     super(place, reviewId);
     this.googleMapsUrl = place?.googleMapsUrl;
@@ -131,5 +152,12 @@ export class PlaceDetailDto extends PlaceDto {
     this.restrictions = place?.restrictions;
     this.observations = place?.observations;
     this.recommendations = place?.recommendations;
+    this.basePoints = place?.basePoints;
+    this.popularity = place?.popularity;
+    this.latitude = place?.location?.coordinates[1] ?? 0;
+    this.longitude = place?.location?.coordinates[0] ?? 0;
+    this.urbarCenterDistance = place?.urbarCenterDistance ?? 0;
+    this.googleMapsUrl = place?.googleMapsUrl ?? '';
+    this.howToDress = place?.howToDress ?? '';
   }
 }

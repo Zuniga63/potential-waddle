@@ -1,8 +1,7 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { Transform, Type } from 'class-transformer';
+import { Transform } from 'class-transformer';
 import {
   IsArray,
-  IsBoolean,
   IsNotEmpty,
   IsNumber,
   IsOptional,
@@ -47,7 +46,7 @@ export class CreatePlaceDto {
   @Min(1)
   @IsNumber()
   @IsNotEmpty()
-  @Type(() => Number)
+  @Transform(({ value }) => (value === '' ? null : Number(value)))
   difficultyLevel: number;
 
   @ApiProperty({ description: 'This is the score awarded for reaching the site, on a scale from 1 to 100.' })
@@ -55,7 +54,7 @@ export class CreatePlaceDto {
   @Min(1)
   @IsNumber()
   @IsNotEmpty()
-  @Type(() => Number)
+  @Transform(({ value }) => (value === '' ? null : Number(value)))
   points: number;
 
   // * ----------------------------------------------------------------------------------------------------------------
@@ -97,7 +96,7 @@ export class CreatePlaceDto {
   })
   @IsNumber()
   @IsNotEmpty()
-  @Type(() => Number)
+  @Transform(({ value }) => (value === '' ? null : Number(value)))
   longitude: number;
 
   @ApiProperty({
@@ -106,7 +105,7 @@ export class CreatePlaceDto {
   })
   @IsNumber()
   @IsNotEmpty()
-  @Type(() => Number)
+  @Transform(({ value }) => (value === '' ? null : Number(value)))
   latitude: number;
 
   @ApiProperty({
@@ -116,8 +115,9 @@ export class CreatePlaceDto {
   })
   @IsPositive()
   @IsNumber()
-  @Type(() => Number)
-  urbanCenterDistance: number;
+  @Transform(({ value }) => (value === '' ? null : Number(value)))
+  @IsOptional()
+  urbanCenterDistance?: number;
 
   @ApiProperty({
     description: 'Google maps link of the place',
@@ -149,7 +149,7 @@ export class CreatePlaceDto {
   @Max(50)
   @Min(-50)
   @IsNumber()
-  @Type(() => Number)
+  @Transform(({ value }) => (value === '' ? null : Number(value)))
   temperature?: number;
 
   @ApiProperty({
@@ -159,7 +159,7 @@ export class CreatePlaceDto {
   })
   @IsPositive()
   @IsNumber()
-  @Type(() => Number)
+  @Transform(({ value }) => (value === '' ? null : Number(value)))
   @IsOptional()
   maxDepth?: number;
 
@@ -170,7 +170,7 @@ export class CreatePlaceDto {
   })
   @IsPositive()
   @IsNumber()
-  @Type(() => Number)
+  @Transform(({ value }) => (value === '' ? null : Number(value)))
   @IsOptional()
   altitude?: number;
 
@@ -180,7 +180,7 @@ export class CreatePlaceDto {
   })
   @IsPositive()
   @IsNumber()
-  @Type(() => Number)
+  @Transform(({ value }) => (value === '' ? null : Number(value)))
   @IsOptional()
   capacity?: number;
 
@@ -191,7 +191,7 @@ export class CreatePlaceDto {
   })
   @IsNumber()
   @IsPositive()
-  @Type(() => Number)
+  @Transform(({ value }) => (value === '' ? null : Number(value)))
   @IsOptional()
   minAge?: number;
 
@@ -202,7 +202,7 @@ export class CreatePlaceDto {
   })
   @IsPositive()
   @IsNumber()
-  @Type(() => Number)
+  @Transform(({ value }) => (value === '' ? null : Number(value)))
   @IsOptional()
   maxAge?: number;
 
@@ -277,30 +277,23 @@ export class CreatePlaceDto {
   @IsString()
   @IsOptional()
   observations?: string;
-  // * ----------------------------------------------------------------------------------------------------------------
-  // * ------------------------------------- PUBLIC PROPERTY ----------------------------------------------------------
-  // * ----------------------------------------------------------------------------------------------------------------
-  @ApiProperty({
-    description: 'Is the place public',
-    example: true,
-  })
-  @IsBoolean()
-  @Type(() => Boolean)
-  isPublic: boolean;
 
   @ApiProperty({
-    description: 'Is the place featured',
-    example: false,
+    description: 'Base point of the place',
+    example: 100,
+    required: false,
   })
-  @IsBoolean()
-  @Type(() => Boolean)
-  isFeatured: boolean;
+  @IsNumber()
+  @IsOptional()
+  @Transform(({ value }) => (value === '' ? null : Number(value)))
+  basePoints?: number;
 
   @ApiProperty({
-    description: 'Whether the place location is shown',
-    example: false,
+    description: 'Popularity of the place',
+    example: 100,
+    required: false,
   })
-  @IsBoolean()
-  @Type(() => Boolean)
-  showLocation: boolean;
+  @IsNumber()
+  @Transform(({ value }) => (value === '' ? null : Number(value)))
+  popularity?: number;
 }

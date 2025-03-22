@@ -1,9 +1,8 @@
 import { InjectRepository } from '@nestjs/typeorm';
 import { FindOptionsRelations, Geometry, In, Repository } from 'typeorm';
-import { BadGatewayException, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 
 import { PlaceDetailDto, PlaceDto } from './dto';
-import { CloudinaryPresets } from 'src/config';
 import { Place, PlaceImage } from './entities';
 import { generatePlaceQueryFilters } from './utils';
 import { CreatePlaceDto } from './dto/create-place.dto';
@@ -14,6 +13,11 @@ import { CloudinaryService } from '../cloudinary/cloudinary.service';
 import { User } from '../users/entities/user.entity';
 import { Review } from '../reviews/entities';
 import { PlaceReviewsService } from '../reviews/services';
+import { ResourceProvider } from 'src/config';
+import { CLOUDINARY_FOLDERS } from 'src/config/cloudinary-folders';
+import { CloudinaryPresets } from 'src/config';
+import { ReorderImagesDto } from '../common/dto/reoder-images.dto';
+import { Town } from '../towns/entities/town.entity';
 
 @Injectable()
 export class PlacesService {
@@ -39,56 +43,81 @@ export class PlacesService {
   ) {}
 
   async create(createPlaceDto: CreatePlaceDto) {
-    const { imageFile: file, categoryIds, facilityIds, longitude, latitude, ...restDto } = createPlaceDto;
+    const { categoryIds, facilityIds, longitude, latitude, townId, ...restDto } = createPlaceDto;
 
     // Se recuperan las instancias de categories y facility
     const categories = categoryIds ? await this.categoryRepo.findBy({ id: In(categoryIds) }) : [];
     const facilities = facilityIds ? await this.facilityRepo.findBy({ id: In(facilityIds) }) : [];
 
+    const town = await this.placeRepo.manager.findOne(Town, { where: { id: townId } });
+
     // Se crea el objeto de ubicación en formato GeoJSON
     const location: Geometry = { type: 'Point', coordinates: [longitude, latitude] };
 
-    const place = this.placeRepo.create({
-      ...restDto,
-      categories,
-      facilities,
-      location,
-    });
+    try {
+      const place = this.placeRepo.create({
+        ...restDto,
+        categories,
+        facilities,
+        location,
+        town: town ?? undefined,
+      });
 
-    await this.placeRepo.save(place);
+      await this.placeRepo.save(place);
+      console.log('place', place);
+      return { message: place.name };
+    } catch (error) {
+      throw new BadRequestException(`Error creating place: ${error.message}`);
+    }
+  }
 
-    // Se guarda la imagen en Cloudinary
-    const cloudinaryResponse = await this.cloudinaryService.uploadImage({
-      file: file,
-      fileName: place.name,
-      preset: CloudinaryPresets.PLACE_IMAGE,
-    });
+  async update(id: string, updatePlaceDto: UpdatePlaceDto) {
+    const place = await this.placeRepo.findOne({ where: { id } });
+    if (!place) throw new NotFoundException('Place not found');
 
-    if (!cloudinaryResponse) throw new BadGatewayException('Error uploading image');
+    const { categoryIds, facilityIds, longitude, latitude, townId, ...restDto } = updatePlaceDto;
 
-    const image = this.imageResourceRepo.create({
-      publicId: cloudinaryResponse.publicId,
-      url: cloudinaryResponse.url,
-      fileName: restDto.name,
-      width: cloudinaryResponse.width,
-      height: cloudinaryResponse.height,
-      format: cloudinaryResponse.format,
-      resourceType: cloudinaryResponse.type,
-    });
+    // Se recuperan las instancias de categories y facility
+    const categories = categoryIds ? await this.categoryRepo.findBy({ id: In(categoryIds) }) : [];
+    const facilities = facilityIds ? await this.facilityRepo.findBy({ id: In(facilityIds) }) : [];
 
-    await this.imageResourceRepo.save(image);
+    // Get town if townId is provided
+    const town = townId ? await this.placeRepo.manager.findOne(Town, { where: { id: townId } }) : undefined;
 
-    const placeImage = this.placeImageRepo.create({
-      imageResource: image,
-      place,
-      order: 1,
-    });
+    // Se crea el objeto de ubicación en formato GeoJSON si se proporcionaron coordenadas
+    const location: Geometry | undefined =
+      longitude !== undefined && latitude !== undefined
+        ? { type: 'Point', coordinates: [Number(longitude), Number(latitude)] }
+        : undefined;
 
-    await this.placeImageRepo.save(placeImage);
+    try {
+      await this.placeRepo.save({
+        id: place.id,
+        ...restDto,
+        categories,
+        facilities,
+        location,
+        town: town ?? undefined,
+      });
 
-    place.images = [placeImage];
+      const relations: FindOptionsRelations<Place> = {
+        categories: { icon: true },
+        facilities: { icon: true },
+        town: { department: true },
+        images: { imageResource: true },
+      };
 
-    return this.placeRepo.save(place);
+      const updatedPlace = await this.placeRepo.findOne({
+        where: { id },
+        relations,
+        order: { images: { order: 'ASC' } },
+      });
+
+      if (!updatedPlace) throw new NotFoundException('Place not found');
+      return { message: updatedPlace.name };
+    } catch (error) {
+      throw new BadRequestException(`Error updating place: ${error.message}`);
+    }
   }
 
   async findAll(filters: PlaceFiltersDto = {}, user: User | null = null) {
@@ -111,6 +140,34 @@ export class PlacesService {
     });
   }
 
+  // ------------------------------------------------------------------------------------------------
+  // Find all public places
+  // ------------------------------------------------------------------------------------------------
+  async findPublicPlaces(filters: PlaceFiltersDto = {}, user: User | null = null) {
+    const shouldRandomize = filters?.sortBy === 'random';
+    console.log('filters', filters);
+    const { where, order } = generatePlaceQueryFilters(filters);
+    const relations: FindOptionsRelations<Place> = {
+      town: { department: true },
+      reviews: true,
+      categories: { icon: true },
+      images: { imageResource: true },
+    };
+    const [places, reviews] = await Promise.all([
+      this.placeRepo.find({ relations, order, where: { ...where, isPublic: true } }),
+      user ? this.placeReviewService.getUserReviews({ userId: user.id }) : Promise.resolve<Review[]>([]),
+    ]);
+    let placesWithReviews = places.map(place => {
+      const review = reviews.find(r => r.place.id === place.id);
+      return new PlaceDto(place, review?.id);
+    });
+
+    if (shouldRandomize) {
+      placesWithReviews = placesWithReviews.sort(() => Math.random() - 0.5);
+    }
+    return placesWithReviews;
+  }
+
   async findOne(identifier: string, user: User | null = null) {
     const relations: FindOptionsRelations<Place> = {
       categories: { icon: true },
@@ -131,14 +188,209 @@ export class PlacesService {
     return new PlaceDetailDto({ place, reviewId: review?.id });
   }
 
-  async update(id: string, updatePlaceDto: UpdatePlaceDto) {
-    const place = await this.placeRepo.findOne({ where: { id } });
+  // ------------------------------------------------------------------------------------------------
+  // Delete place
+  // ------------------------------------------------------------------------------------------------
+  async delete(id: string) {
+    const place = await this.placeRepo.findOne({
+      where: { id },
+      relations: {
+        images: {
+          imageResource: true,
+        },
+      },
+    });
+
     if (!place) throw new NotFoundException('Place not found');
 
-    return this.placeRepo.save({ id, ...updatePlaceDto });
+    try {
+      // Delete everything in a single transaction
+      await this.placeRepo.manager.transaction(async manager => {
+        if (place.images && place.images.length > 0) {
+          // 1. Delete images from Cloudinary
+          await Promise.all(
+            place.images.map(image =>
+              image.imageResource.publicId
+                ? this.cloudinaryService.destroyFile(image.imageResource.publicId)
+                : Promise.resolve(),
+            ),
+          );
+
+          // 2. Delete RestaurantImage first
+          await manager.delete(
+            PlaceImage,
+            place.images.map(image => image.id),
+          );
+
+          // 3. Delete ImageResource
+          await manager.delete(
+            ImageResource,
+            place.images.map(image => image.imageResource.id),
+          );
+        }
+
+        // 4. Finally delete the restaurant
+        await manager.delete(Place, { id: place.id });
+      });
+
+      // After all database operations complete, delete the folder
+      try {
+        await this.cloudinaryService.destroyFolder(`${CLOUDINARY_FOLDERS.PLACE_GALLERY}/${place.slug}`);
+      } catch (folderError) {
+        console.warn(`Could not delete Cloudinary folder for place ${place.slug}:`, folderError);
+        // Continue with the process, as the main deletion was successful
+      }
+
+      return { message: 'Place deleted successfully' };
+    } catch (error) {
+      throw new BadRequestException(`Error deleting place: ${error.message}`);
+    }
   }
 
-  remove(id: number) {
-    return `This action removes a #${id} place`;
+  // ------------------------------------------------------------------------------------------------
+  // Upload image
+  // ------------------------------------------------------------------------------------------------
+  async uploadImages(id: string, files: Express.Multer.File[]) {
+    const place = await this.placeRepo.findOne({
+      where: { id },
+      relations: { images: { imageResource: true } },
+    });
+
+    if (!place) throw new NotFoundException('Place not found');
+
+    try {
+      // Process each file in the array
+      const uploadPromises = files.map(async (file, index) => {
+        // Upload the image to Cloudinary
+        const cloudinaryRes = await this.cloudinaryService.uploadImage({
+          file,
+          fileName: place.name,
+          preset: CloudinaryPresets.PLACE_IMAGE,
+          folder: `${CLOUDINARY_FOLDERS.PLACE_GALLERY}/${place.slug}`,
+        });
+
+        if (!cloudinaryRes) throw new BadRequestException('Error uploading image');
+
+        // Create and save the image resource
+        const imageResource = await this.placeRepo.manager.create(ImageResource, {
+          publicId: cloudinaryRes.publicId,
+          url: cloudinaryRes.url,
+          fileName: place.name,
+          width: cloudinaryRes.width,
+          height: cloudinaryRes.height,
+          format: cloudinaryRes.format,
+          resourceType: cloudinaryRes.type,
+          provider: ResourceProvider.Cloudinary,
+        });
+
+        await this.placeRepo.manager.save(ImageResource, imageResource);
+
+        // Create and save the lodging image association
+        const placeImage = await this.placeRepo.manager.create(PlaceImage, {
+          imageResource,
+          order: place.images.length + index + 1,
+          place: { id: place.id },
+        });
+
+        await this.placeRepo.manager.save(PlaceImage, placeImage);
+      });
+
+      // Wait for all uploads to complete
+      await Promise.all(uploadPromises);
+
+      return this.findOne(place.id);
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  // ------------------------------------------------------------------------------------------------
+  // Get images
+  // ------------------------------------------------------------------------------------------------
+  async getImages(id: string) {
+    const place = await this.placeRepo.findOne({
+      where: [{ id }],
+      relations: {
+        images: {
+          imageResource: true,
+        },
+      },
+    });
+    console.log('images', place?.images.length);
+
+    if (!place) throw new NotFoundException('Place not found');
+
+    return place.images.sort((a, b) => a.order - b.order);
+  }
+
+  // ------------------------------------------------------------------------------------------------
+  // Delete image
+  // ------------------------------------------------------------------------------------------------
+  async deleteImage(id: string, imageId: string) {
+    const place = await this.placeRepo.findOne({
+      where: [{ id }],
+      relations: {
+        images: {
+          imageResource: true,
+        },
+      },
+    });
+
+    if (!place) throw new NotFoundException('Place not found');
+
+    const image = place.images.find(img => img.id === imageId);
+    if (!image) throw new NotFoundException('Image not found');
+
+    try {
+      // Delete from Cloudinary
+      if (image.imageResource.publicId) {
+        await this.cloudinaryService.destroyFile(image.imageResource.publicId);
+      }
+
+      // Delete from database
+      await this.placeRepo.manager.remove(image);
+
+      // Reorder remaining images
+      const remainingImages = place.images
+        .filter(img => img.id !== imageId && img.id != undefined)
+        .sort((a, b) => a.order - b.order);
+
+      await Promise.all(
+        remainingImages.map((img, index) =>
+          this.placeRepo.manager.update(PlaceImage, img.id, {
+            order: index + 1,
+          }),
+        ),
+      );
+
+      return { message: 'Image deleted successfully' };
+    } catch (error) {
+      throw new BadRequestException('Error deleting image ' + error);
+    }
+  }
+
+  // ------------------------------------------------------------------------------------------------
+  // Reorder images
+  // ------------------------------------------------------------------------------------------------
+  async reorderImages(identifier: string, reorderImagesDto: ReorderImagesDto) {
+    const place = await this.placeRepo.findOne({ where: { id: identifier } });
+    if (!place) throw new NotFoundException('Place not found');
+
+    const { newOrder } = reorderImagesDto;
+    console.log(newOrder);
+    await Promise.all(newOrder.map(({ id, order }) => this.placeRepo.manager.update(PlaceImage, id, { order })));
+
+    return { message: 'Images reordered successfully' };
+  }
+
+  async updateVisibility(identifier: string, isPublic: boolean) {
+    const place = await this.placeRepo.findOne({ where: { id: identifier } });
+
+    if (!place) {
+      throw new NotFoundException('Place not found');
+    }
+    place.isPublic = isPublic;
+    await this.placeRepo.save(place);
+    return { message: 'Place visibility updated', data: isPublic };
   }
 }

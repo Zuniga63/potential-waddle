@@ -155,6 +155,14 @@ export class PlaceDto {
   })
   isFeatured: boolean;
 
+  @ApiProperty({
+    example: true,
+    description: 'Indicates if the place is public',
+    readOnly: true,
+    required: false,
+  })
+  isPublic: boolean;
+
   constructor(place?: Place, userReview?: string) {
     if (!place) return;
 
@@ -178,5 +186,6 @@ export class PlaceDto {
     this.isFeatured = place.isFeatured;
     this.createdAt = place.createdAt;
     this.updatedAt = place.updatedAt;
+    this.isPublic = place.isPublic;
   }
 }
