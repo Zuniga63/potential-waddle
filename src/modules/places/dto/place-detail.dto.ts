@@ -159,5 +159,6 @@ export class PlaceDetailDto extends PlaceDto {
     this.urbarCenterDistance = place?.urbarCenterDistance ?? 0;
     this.googleMapsUrl = place?.googleMapsUrl ?? '';
     this.howToDress = place?.howToDress ?? '';
+    this.images = place?.images?.map(image => image.imageResource?.url) ?? [];
   }
 }
