@@ -114,6 +114,20 @@ export class LodgingsController {
   }
 
   // * ----------------------------------------------------------------------------------------------------------------
+  // * UPDATE LODGING GOOGLE MAPS REVIEWS VISIBILITY
+  // * ----------------------------------------------------------------------------------------------------------------
+  @Patch(':identifier/show-google-maps-reviews')
+  @OptionalAuth()
+  @ApiOkResponse({ description: 'Lodging Google Maps Reviews Visibility Updated', type: LodgingFullDto })
+  @ApiBadRequestResponse({ description: 'The visibility cannot be updated' })
+  updateShowGoogleMapsReviews(
+    @Param('identifier') identifier: string,
+    @Body() body: { showGoogleMapsReviews: boolean },
+  ) {
+    return this.lodgingsService.updateShowGoogleMapsReviews(identifier, body.showGoogleMapsReviews);
+  }
+
+  // * ----------------------------------------------------------------------------------------------------------------
   // * UPLOAD LODGING IMAGES
   // * ----------------------------------------------------------------------------------------------------------------
   @Post(':identifier/upload-images')

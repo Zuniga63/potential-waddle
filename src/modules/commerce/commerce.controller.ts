@@ -120,6 +120,20 @@ export class CommerceController {
   }
 
   // * ----------------------------------------------------------------------------------------------------------------
+  // * UPDATE COMMERCE GOOGLE MAPS REVIEWS VISIBILITY
+  // * ----------------------------------------------------------------------------------------------------------------
+  @Patch(':identifier/show-google-maps-reviews')
+  @OptionalAuth()
+  @ApiOkResponse({ description: 'Commerce Google Maps Reviews Visibility Updated', type: CommerceFullDto })
+  @ApiBadRequestResponse({ description: 'The visibility cannot be updated' })
+  updateShowGoogleMapsReviews(
+    @Param('identifier') identifier: string,
+    @Body() body: { showGoogleMapsReviews: boolean },
+  ) {
+    return this.commerceService.updateShowGoogleMapsReviews(identifier, body.showGoogleMapsReviews);
+  }
+
+  // * ----------------------------------------------------------------------------------------------------------------
   // * UPLOAD COMMERCE IMAGES
   // * ----------------------------------------------------------------------------------------------------------------
   @Post(':identifier/upload-images')

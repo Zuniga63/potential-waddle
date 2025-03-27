@@ -424,4 +424,15 @@ export class CommerceService {
     await this.commerceRepository.save(commerce);
     return { message: 'Commerce visibility updated', data: isPublic };
   }
+
+  // ------------------------------------------------------------------------------------------------
+  // Update show google maps reviews
+  // ------------------------------------------------------------------------------------------------
+  async updateShowGoogleMapsReviews(identifier: string, showGoogleMapsReviews: boolean) {
+    const commerce = await this.commerceRepository.findOne({ where: { id: identifier } });
+    if (!commerce) throw new NotFoundException('Commerce not found');
+    commerce.showGoogleMapsReviews = showGoogleMapsReviews;
+    await this.commerceRepository.save(commerce);
+    return { message: 'Commerce Google Maps Reviews visibility updated', data: showGoogleMapsReviews };
+  }
 }

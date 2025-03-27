@@ -21,6 +21,7 @@ import { RestaurantFiltersDto, CreateRestaurantDto, UpdateRestaurantDto, Restaur
 import { OptionalAuth } from '../auth/decorators';
 import { RestaurantsService } from './restaurants.service';
 import { RestaurantFilters, RestaurantListApiQueries } from './decorators';
+import { LodgingFullDto } from '../lodgings/dto';
 
 @Controller(SwaggerTags.Restaurants)
 @ApiTags(SwaggerTags.Restaurants)
@@ -106,14 +107,17 @@ export class RestaurantsController {
   }
 
   // * ----------------------------------------------------------------------------------------------------------------
-  // * UPDATE RESTAURANT VISIBILITY
+  // * UPDATE RESTAURANT GOOGLE MAPS REVIEWS VISIBILITY
   // * ----------------------------------------------------------------------------------------------------------------
-  @Patch(':identifier/visibility')
+  @Patch(':identifier/show-google-maps-reviews')
   @OptionalAuth()
-  @ApiOkResponse({ description: 'Restaurant Visibility Updated', type: RestaurantDto })
+  @ApiOkResponse({ description: 'Restaurant Google Maps Reviews Visibility Updated', type: RestaurantDto })
   @ApiBadRequestResponse({ description: 'The visibility cannot be updated' })
-  updateVisibility(@Param('identifier') identifier: string, @Body() body: { isPublic: boolean }) {
-    return this.restaurantsService.updateVisibility(identifier, body.isPublic);
+  updateShowGoogleMapsReviews(
+    @Param('identifier') identifier: string,
+    @Body() body: { showGoogleMapsReviews: boolean },
+  ) {
+    return this.restaurantsService.updateShowGoogleMapsReviews(identifier, body.showGoogleMapsReviews);
   }
 
   // * ----------------------------------------------------------------------------------------------------------------

@@ -424,4 +424,15 @@ export class RestaurantsService {
     await this.restaurantRepository.save(restaurant);
     return { message: 'Restaurant visibility updated', data: isPublic };
   }
+
+  // ------------------------------------------------------------------------------------------------
+  // Update show google maps reviews
+  // ------------------------------------------------------------------------------------------------
+  async updateShowGoogleMapsReviews(identifier: string, showGoogleMapsReviews: boolean) {
+    const restaurant = await this.restaurantRepository.findOne({ where: { id: identifier } });
+    if (!restaurant) throw new NotFoundException('Restaurant not found');
+    restaurant.showGoogleMapsReviews = showGoogleMapsReviews;
+    await this.restaurantRepository.save(restaurant);
+    return { message: 'Restaurant Google Maps Reviews visibility updated', data: showGoogleMapsReviews };
+  }
 }

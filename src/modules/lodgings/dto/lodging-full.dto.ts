@@ -175,10 +175,7 @@ export class LodgingFullDto extends LodgingIndexDto {
     this.arrivalReference = lodging.arrivalReference || undefined;
     this.paymentMethods = lodging.paymentMethods || [];
     this.capacity = lodging.capacity || undefined;
-    this.images = lodging.images
-      .sort((a, b) => a.order - b.order)
-      .map(image => image.imageResource.url)
-      .slice(0, 5);
+    this.images = lodging.images.sort((a, b) => a.order - b.order).map(image => image.imageResource.url);
     this.googleMapsRating = lodging.googleMapsRating || undefined;
     this.googleMapsReviewsCount = lodging.googleMapsReviewsCount || undefined;
     this.showGoogleMapsReviews = lodging.showGoogleMapsReviews || undefined;

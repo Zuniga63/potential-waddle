@@ -141,10 +141,14 @@ export class LodgingsService {
       ? await this.facilityRepository.findBy({ id: In(createLodgingDto.facilityIds) })
       : [];
     const town = await this.townRepository.findOne({ where: { id: createLodgingDto.townId } });
-    const user = await this.userRepository.findOne({ where: { id: createLodgingDto.user } });
+    const user = await this.userRepository.findOne({ where: { id: createLodgingDto.userId } });
 
     if (!town) {
       throw new NotFoundException('Town not found');
+    }
+
+    if (!user) {
+      throw new NotFoundException('User not found');
     }
 
     try {
@@ -435,5 +439,13 @@ export class LodgingsService {
     lodging.isPublic = isPublic;
     await this.lodgingRespository.save(lodging);
     return { message: 'Lodging visibility updated', data: isPublic };
+  }
+
+  async updateShowGoogleMapsReviews(identifier: string, showGoogleMapsReviews: boolean) {
+    const lodging = await this.lodgingRespository.findOne({ where: { id: identifier } });
+    if (!lodging) throw new NotFoundException('Lodging not found');
+    lodging.showGoogleMapsReviews = showGoogleMapsReviews;
+    await this.lodgingRespository.save(lodging);
+    return { message: 'Lodging Google Maps Reviews visibility updated', data: showGoogleMapsReviews };
   }
 }
