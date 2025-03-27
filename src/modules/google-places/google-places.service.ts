@@ -313,4 +313,16 @@ export class GooglePlacesService {
       this.logger.error(`Error al actualizar todos los lugares: ${error.message}`);
     }
   }
+  // ------------------------------------------------------------------------------------------------
+  // Remove Google Place ID
+  // ------------------------------------------------------------------------------------------------
+  async removeGooglePlaceId(placeId: string, model: string): Promise<void> {
+    if (model === 'commerce') {
+      await this.commerceRepository.update(placeId, { googleMapsId: null });
+    } else if (model === 'restaurant') {
+      await this.restaurantRepository.update(placeId, { googleMapsId: null });
+    } else if (model === 'lodging') {
+      await this.lodgingRepository.update(placeId, { googleMapsId: null });
+    }
+  }
 }

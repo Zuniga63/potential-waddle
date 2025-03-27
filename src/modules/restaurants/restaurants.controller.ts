@@ -21,7 +21,6 @@ import { RestaurantFiltersDto, CreateRestaurantDto, UpdateRestaurantDto, Restaur
 import { OptionalAuth } from '../auth/decorators';
 import { RestaurantsService } from './restaurants.service';
 import { RestaurantFilters, RestaurantListApiQueries } from './decorators';
-import { LodgingFullDto } from '../lodgings/dto';
 
 @Controller(SwaggerTags.Restaurants)
 @ApiTags(SwaggerTags.Restaurants)

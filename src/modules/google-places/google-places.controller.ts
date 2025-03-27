@@ -1,7 +1,8 @@
-import { Controller, Post } from '@nestjs/common';
+import { Body, Controller, Patch, Post } from '@nestjs/common';
 import { ApiOkResponse, ApiTags } from '@nestjs/swagger';
 import { GooglePlacesService } from './google-places.service';
 import { SwaggerTags } from 'src/config';
+import { RemoveGooglePlaceIdDto } from './dto/remove-google-place-id.dto';
 
 @Controller('google-places')
 @ApiTags(SwaggerTags.GooglePlaces)
@@ -47,5 +48,13 @@ export class GooglePlacesController {
   })
   updateAllRestaurants() {
     return this.googlePlacesService.updateAllRestaurants();
+  }
+
+  @Patch('remove-google-place-id')
+  @ApiOkResponse({
+    description: 'Google Place ID removed correctly',
+  })
+  removeGooglePlaceId(@Body() body: RemoveGooglePlaceIdDto) {
+    return this.googlePlacesService.removeGooglePlaceId(body.placeId, body.model);
   }
 }
