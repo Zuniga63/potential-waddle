@@ -10,6 +10,7 @@ import {
   IsString,
   IsUUID,
   MaxLength,
+  ValidateIf,
 } from 'class-validator';
 
 export class CreateRestaurantDto {
@@ -104,14 +105,11 @@ export class CreateRestaurantDto {
   @IsOptional()
   openingHours?: string[];
 
-  @ApiProperty({
-    description: 'Email address',
-    example: 'contact@seasidegrill.com',
-    required: false,
-  })
-  @IsEmail()
+  @ApiProperty({ description: 'Email of the place', example: '' })
+  @ValidateIf(o => o.email !== null && o.email !== '')
+  @IsEmail(undefined, { message: 'Invalid email format' })
   @IsOptional()
-  email?: string;
+  email?: string | null;
 
   @ApiProperty({
     description: 'Website URL',
