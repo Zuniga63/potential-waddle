@@ -16,6 +16,7 @@ import { CloudinaryService } from '../cloudinary/cloudinary.service';
 import { CloudinaryPresets } from 'src/config/cloudinary-presets.enum';
 import { ResourceProvider } from 'src/config/resource-provider.enum';
 import { User } from '../users/entities';
+import { RestaurantIndexDto } from './dto/restaurant-index.dto';
 
 @Injectable()
 export class RestaurantsService {
@@ -46,7 +47,7 @@ export class RestaurantsService {
       order,
     });
 
-    return restaurants.map(restaurant => new RestaurantDto({ data: restaurant }));
+    return restaurants.map(restaurant => new RestaurantIndexDto({ data: restaurant }));
   }
 
   // ------------------------------------------------------------------------------------------------
@@ -67,7 +68,7 @@ export class RestaurantsService {
     if (shouldRandomize) {
       restaurants = restaurants.sort(() => Math.random() - 0.5);
     }
-    return restaurants.map(restaurant => new RestaurantDto({ data: restaurant }));
+    return restaurants.map(restaurant => new RestaurantIndexDto({ data: restaurant }));
   }
 
   // ------------------------------------------------------------------------------------------------
