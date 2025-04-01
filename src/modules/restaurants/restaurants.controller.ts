@@ -120,6 +120,17 @@ export class RestaurantsController {
   }
 
   // * ----------------------------------------------------------------------------------------------------------------
+  // * UPDATE RESTAURANT VISIBILITY
+  // * ----------------------------------------------------------------------------------------------------------------
+  @Patch(':identifier/visibility')
+  @OptionalAuth()
+  @ApiOkResponse({ description: 'Restaurant Visibility Updated', type: RestaurantDto })
+  @ApiBadRequestResponse({ description: 'The visibility cannot be updated' })
+  updateVisibility(@Param('identifier') identifier: string, @Body() body: { isPublic: boolean }) {
+    return this.restaurantsService.updateVisibility(identifier, body.isPublic);
+  }
+
+  // * ----------------------------------------------------------------------------------------------------------------
   // * UPLOAD RESTAURANT IMAGES
   // * ----------------------------------------------------------------------------------------------------------------
   @Post(':identifier/upload-images')
