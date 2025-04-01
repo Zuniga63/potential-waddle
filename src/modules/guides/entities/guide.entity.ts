@@ -78,6 +78,9 @@ export class Guide {
   @Column('text', { name: 'languages', nullable: true, array: true, default: [] })
   languages: string[];
 
+  @Column('text', { name: 'guide_type', nullable: true, array: true, default: [] })
+  guideType: string[];
+
   @Column('text', { name: 'facebook', nullable: true })
   facebook?: string;
 

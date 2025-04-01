@@ -106,6 +106,14 @@ export class CreateGuideDto {
   @IsOptional()
   languages?: string[];
 
+  @ApiProperty({
+    example: 'Tour Guide, Private Guide, Group Guide',
+    description: 'Types of guide services offered',
+    required: false,
+  })
+  @IsOptional()
+  guideType?: string[];
+
   // * ----------------------------------------------------------------------------------------------------------------
   // * -------------------------------------- SOCIAL MEDIA -----------------------------------------------------------
   // * ----------------------------------------------------------------------------------------------------------------

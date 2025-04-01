@@ -82,6 +82,13 @@ export class GuideDto {
   languages?: string[];
 
   @ApiProperty({
+    example: ['Tour Guide', 'Private Guide', 'Group Guide'],
+    description: 'Types of guide services offered',
+    required: false,
+  })
+  guideType?: string[];
+
+  @ApiProperty({
     example: 'https://facebook.com/profile',
     description: 'Facebook profile URL',
     required: false,
