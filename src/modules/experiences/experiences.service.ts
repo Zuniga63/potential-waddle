@@ -15,6 +15,7 @@ import { ReorderImagesDto } from '../common/dto/reoder-images.dto';
 import { CloudinaryService } from '../cloudinary/cloudinary.service';
 import { CloudinaryPresets } from 'src/config/cloudinary-presets.enum';
 import { ResourceProvider } from 'src/config/resource-provider.enum';
+import { ExperienceIndexDto } from './dto/experience-index.dto';
 
 @Injectable()
 export class ExperiencesService {
@@ -53,7 +54,7 @@ export class ExperiencesService {
       where,
     });
 
-    return experiences.map(experience => new ExperienceDto({ data: experience }));
+    return experiences.map(experience => new ExperienceIndexDto({ data: experience }));
   }
 
   // ------------------------------------------------------------------------------------------------
@@ -79,7 +80,7 @@ export class ExperiencesService {
     if (shouldRandomize) {
       experiences = experiences.sort(() => Math.random() - 0.5);
     }
-    return experiences.map(experience => new ExperienceDto({ data: experience }));
+    return experiences.map(experience => new ExperienceIndexDto({ data: experience }));
   }
 
   // ------------------------------------------------------------------------------------------------

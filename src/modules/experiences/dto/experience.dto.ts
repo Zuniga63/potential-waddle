@@ -104,10 +104,7 @@ export class ExperienceDto {
     this.restrictions = data.restrictions || undefined;
     this.categories = data.categories?.map(category => new CategoryDto(category));
     this.facilities = data.facilities?.map(facility => new FacilityDto(facility));
-    this.images = data.images
-      ?.sort((a, b) => a.order - b.order)
-      .map(image => image.imageResource.url)
-      .slice(0, 5);
+    this.images = data.images?.map(image => image.imageResource.url) || [];
     this.guides = data.guides || [];
 
     this.town = new TownDto(data.town);
