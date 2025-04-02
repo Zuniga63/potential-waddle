@@ -38,10 +38,22 @@ export class LodgingsController {
     return this.lodgingsService.findAll({ filters });
   }
 
+  // * ----------------------------------------------------------------------------------------------------------------
+  // * GET ALL PUBLIC LODGINGS
+  // * ----------------------------------------------------------------------------------------------------------------
   @Get('public')
   @ApiOkResponse({ description: 'Lodging List', type: [LodgingIndexDto] })
   findPublicLodgings(@LodgingFilters() filters: LodgingFiltersDto) {
     return this.lodgingsService.findPublicLodgings({ filters });
+  }
+
+  // * ----------------------------------------------------------------------------------------------------------------
+  // * GET ALL PUBLIC LODGINGS WITH FULL INFO
+  // * ----------------------------------------------------------------------------------------------------------------
+  @Get('public/full-info')
+  @ApiOkResponse({ description: 'Lodging List', type: [LodgingFullDto] })
+  findPublicFullInfoLodgings(@LodgingFilters() filters: LodgingFiltersDto) {
+    return this.lodgingsService.findPublicFullInfoLodgings({ filters });
   }
 
   // * ----------------------------------------------------------------------------------------------------------------

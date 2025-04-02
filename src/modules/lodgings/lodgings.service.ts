@@ -75,6 +75,33 @@ export class LodgingsService {
     }
     return lodgings.map(lodging => new LodgingIndexDto(lodging));
   }
+
+  // ------------------------------------------------------------------------------------------------
+  // Find all public lodgings with full info
+  // ------------------------------------------------------------------------------------------------
+  async findPublicFullInfoLodgings({ filters }: LodgingFindAllParams = {}) {
+    const shouldRandomize = filters?.sortBy === 'random';
+    const { where, order } = generateLodgingQueryFilters(filters);
+    let lodgings = await this.lodgingRespository.find({
+      relations: {
+        town: { department: true },
+        categories: { icon: true },
+        images: { imageResource: true },
+        facilities: { icon: true },
+      },
+      order,
+      where: {
+        ...where,
+        isPublic: true,
+      },
+    });
+
+    // Only randomize if no specific order was requested
+    if (shouldRandomize) {
+      lodgings = lodgings.sort(() => Math.random() - 0.5);
+    }
+    return lodgings.map(lodging => new LodgingFullDto(lodging));
+  }
   // ------------------------------------------------------------------------------------------------
   // Find one lodging
   // ------------------------------------------------------------------------------------------------
