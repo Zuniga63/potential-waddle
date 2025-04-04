@@ -106,7 +106,7 @@ export class GuidesService {
     return new GuidesListDto({ currentPage: page, pages: Math.ceil(count / limit), count }, guides);
   }
 
-  async findPublicGuidesVector({ filters }: GuideFindAllParams = {}): Promise<GuideVectorDto[]> {
+  async findPublicFullInfoGuides({ filters }: GuideFindAllParams = {}): Promise<GuideVectorDto[]> {
     console.log(filters, 'filters');
     const shouldRandomize = filters?.sortBy === 'random';
     const { page = 1, limit = 25 } = filters ?? {};
@@ -117,6 +117,10 @@ export class GuidesService {
       categories: { icon: true },
       images: { imageResource: true },
       user: true,
+      experiences: {
+        images: { imageResource: true },
+        categories: { icon: true },
+      },
     };
 
     let guides;

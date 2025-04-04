@@ -56,10 +56,21 @@ export class GuidesController {
     return this.guidesService.findAll({ filters });
   }
 
+  // * ----------------------------------------------------------------------------------------------------------------
+  // * GET ALL PUBLIC GUIDES
+  // * ----------------------------------------------------------------------------------------------------------------
   @Get('public')
   @GuideListQueryDocsGroup()
   findPublicGuides(@GuidesFilters() filters: GuidesFiltersDto) {
     return this.guidesService.findPublicGuides({ filters });
+  }
+
+  // * ----------------------------------------------------------------------------------------------------------------
+  // * GET ALL PUBLIC GUIDES WITH FULL INFO
+  @Get('public/full-info')
+  @GuideListQueryDocsGroup()
+  findPublicFullInfoGuides(@GuidesFilters() filters: GuidesFiltersDto) {
+    return this.guidesService.findPublicFullInfoGuides({ filters });
   }
 
   // * ----------------------------------------------------------------------------------------------------------------
