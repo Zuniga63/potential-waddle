@@ -150,6 +150,22 @@ export class GuidesService {
     return new GuideDto({ data: guide });
   }
 
+  async findOneById(id: string) {
+    const relations: FindOptionsRelations<Guide> = {
+      categories: { icon: true },
+      user: true,
+      images: { imageResource: true },
+      experiences: {
+        images: { imageResource: true },
+        categories: { icon: true },
+      },
+    };
+
+    const guide = await this.guideRepository.findOne({ where: { id }, relations });
+    if (!guide) throw new NotFoundException('Guide not found');
+    return new GuideDto({ data: guide });
+  }
+
   // ------------------------------------------------------------------------------------------------
   // Update guide
   // ------------------------------------------------------------------------------------------------
