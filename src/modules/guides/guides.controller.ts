@@ -69,8 +69,8 @@ export class GuidesController {
   // * GET ALL PUBLIC GUIDES WITH FULL INFO
   @Get('public/full-info')
   @GuideListQueryDocsGroup()
-  findPublicFullInfoGuides(@GuidesFilters() filters: GuidesFiltersDto) {
-    return this.guidesService.findPublicFullInfoGuides({ filters });
+  findPublicFullInfoGuides() {
+    return this.guidesService.findPublicFullInfoGuides();
   }
 
   // * ----------------------------------------------------------------------------------------------------------------

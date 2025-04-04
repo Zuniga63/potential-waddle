@@ -106,12 +106,8 @@ export class GuidesService {
     return new GuidesListDto({ currentPage: page, pages: Math.ceil(count / limit), count }, guides);
   }
 
-  async findPublicFullInfoGuides({ filters }: GuideFindAllParams = {}): Promise<GuideVectorDto[]> {
-    console.log(filters, 'filters');
-    const shouldRandomize = filters?.sortBy === 'random';
-    const { page = 1, limit = 25 } = filters ?? {};
-    const skip = (page - 1) * limit;
-    const { where, order } = generateGuideQueryFilters(filters);
+  async findPublicFullInfoGuides(): Promise<GuideVectorDto[]> {
+    const { where, order } = generateGuideQueryFilters({});
 
     const relations: FindOptionsRelations<Guide> = {
       categories: { icon: true },
@@ -123,10 +119,7 @@ export class GuidesService {
       },
     };
 
-    let guides;
-    const [_guides] = await this.guideRepository.find({
-      skip,
-      take: limit,
+    const guides = await this.guideRepository.find({
       relations,
       order,
       where: {
@@ -134,11 +127,6 @@ export class GuidesService {
         isPublic: true,
       },
     });
-    guides = _guides;
-
-    if (shouldRandomize) {
-      guides = guides.sort(() => Math.random() - 0.5);
-    }
 
     return guides.map(guide => new GuideVectorDto({ data: guide }));
   }
