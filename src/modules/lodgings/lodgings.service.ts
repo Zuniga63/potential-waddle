@@ -13,6 +13,7 @@ import { ReorderImagesDto } from '../common/dto/reoder-images.dto';
 import { CLOUDINARY_FOLDERS } from 'src/config/cloudinary-folders';
 import { User } from '../users/entities';
 import { Town } from '../towns/entities';
+import { LodgingVectorDto } from './dto/lodging-vector.dto';
 
 @Injectable()
 export class LodgingsService {
@@ -100,7 +101,7 @@ export class LodgingsService {
     if (shouldRandomize) {
       lodgings = lodgings.sort(() => Math.random() - 0.5);
     }
-    return lodgings.map(lodging => new LodgingFullDto(lodging));
+    return lodgings.map(lodging => new LodgingVectorDto(lodging));
   }
   // ------------------------------------------------------------------------------------------------
   // Find one lodging

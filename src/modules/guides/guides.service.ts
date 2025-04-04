@@ -17,6 +17,7 @@ import { ReorderImagesDto } from '../common/dto/reoder-images.dto';
 import { ResourceProvider } from 'src/config/resource-provider.enum';
 import { CloudinaryPresets } from 'src/config';
 import { CLOUDINARY_FOLDERS } from 'src/config/cloudinary-folders';
+import { GuideVectorDto } from './dto/guide-vector.dto';
 
 @Injectable()
 export class GuidesService {
@@ -103,6 +104,39 @@ export class GuidesService {
     }
 
     return new GuidesListDto({ currentPage: page, pages: Math.ceil(count / limit), count }, guides);
+  }
+
+  async findPublicGuidesVector({ filters }: GuideFindAllParams = {}): Promise<GuideVectorDto[]> {
+    console.log(filters, 'filters');
+    const shouldRandomize = filters?.sortBy === 'random';
+    const { page = 1, limit = 25 } = filters ?? {};
+    const skip = (page - 1) * limit;
+    const { where, order } = generateGuideQueryFilters(filters);
+
+    const relations: FindOptionsRelations<Guide> = {
+      categories: { icon: true },
+      images: { imageResource: true },
+      user: true,
+    };
+
+    let guides;
+    const [_guides] = await this.guideRepository.find({
+      skip,
+      take: limit,
+      relations,
+      order,
+      where: {
+        ...where,
+        isPublic: true,
+      },
+    });
+    guides = _guides;
+
+    if (shouldRandomize) {
+      guides = guides.sort(() => Math.random() - 0.5);
+    }
+
+    return guides.map(guide => new GuideVectorDto({ data: guide }));
   }
 
   // ------------------------------------------------------------------------------------------------

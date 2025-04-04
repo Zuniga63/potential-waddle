@@ -18,6 +18,7 @@ import { CLOUDINARY_FOLDERS } from 'src/config/cloudinary-folders';
 import { CloudinaryPresets } from 'src/config';
 import { ReorderImagesDto } from '../common/dto/reoder-images.dto';
 import { Town } from '../towns/entities/town.entity';
+import { PlaceVectorDto } from './dto/place-vector.dto';
 
 @Injectable()
 export class PlacesService {
@@ -176,6 +177,32 @@ export class PlacesService {
     });
   }
 
+  // ------------------------------------------------------------------------------------------------
+  // Find all public places with full info
+  // ------------------------------------------------------------------------------------------------
+  async findPublicFullInfoPlaces(filters: PlaceFiltersDto = {}, user: User | null = null) {
+    const { where, order } = generatePlaceQueryFilters(filters);
+    const relations: FindOptionsRelations<Place> = {
+      town: { department: true },
+      reviews: true,
+      categories: { icon: true },
+      images: { imageResource: true },
+    };
+
+    const [places, reviews] = await Promise.all([
+      this.placeRepo.find({ relations, order, where: { ...where, isPublic: true } }),
+      user ? this.placeReviewService.getUserReviews({ userId: user.id }) : Promise.resolve<Review[]>([]),
+    ]);
+
+    return places.map(place => {
+      const review = reviews.find(r => r.place.id === place.id);
+      return new PlaceVectorDto({ place, reviewId: review?.id });
+    });
+  }
+
+  // ------------------------------------------------------------------------------------------------
+  // Find one place
+  // ------------------------------------------------------------------------------------------------
   async findOne(identifier: string, user: User | null = null) {
     const relations: FindOptionsRelations<Place> = {
       categories: { icon: true },

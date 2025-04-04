@@ -17,6 +17,7 @@ import { CloudinaryPresets } from 'src/config/cloudinary-presets.enum';
 import { ResourceProvider } from 'src/config/resource-provider.enum';
 import { User } from '../users/entities';
 import { RestaurantIndexDto } from './dto/restaurant-index.dto';
+import { RestaurantVectorDto } from './dto/restaurant-vector.dto';
 
 @Injectable()
 export class RestaurantsService {
@@ -69,6 +70,32 @@ export class RestaurantsService {
       restaurants = restaurants.sort(() => Math.random() - 0.5);
     }
     return restaurants.map(restaurant => new RestaurantIndexDto({ data: restaurant }));
+  }
+
+  // ------------------------------------------------------------------------------------------------
+  // Find all public restaurants with full info
+  // ------------------------------------------------------------------------------------------------
+  async findPublicFullInfoRestaurants({ filters }: RestaurantFindAllParams = {}) {
+    const shouldRandomize = filters?.sortBy === 'random';
+    const { where, order } = generateRestaurantQueryFiltersAndSort(filters);
+    let restaurants = await this.restaurantRepository.find({
+      relations: {
+        town: { department: true },
+        categories: { icon: true },
+        images: { imageResource: true },
+        facilities: { icon: true },
+      },
+      order,
+      where: {
+        ...where,
+        isPublic: true,
+      },
+    });
+
+    if (shouldRandomize) {
+      restaurants = restaurants.sort(() => Math.random() - 0.5);
+    }
+    return restaurants.map(restaurant => new RestaurantVectorDto({ data: restaurant }));
   }
 
   // ------------------------------------------------------------------------------------------------

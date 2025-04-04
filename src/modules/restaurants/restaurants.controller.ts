@@ -21,6 +21,7 @@ import { RestaurantFiltersDto, CreateRestaurantDto, UpdateRestaurantDto, Restaur
 import { OptionalAuth } from '../auth/decorators';
 import { RestaurantsService } from './restaurants.service';
 import { RestaurantFilters, RestaurantListApiQueries } from './decorators';
+import { RestaurantVectorDto } from './dto/restaurant-vector.dto';
 
 @Controller(SwaggerTags.Restaurants)
 @ApiTags(SwaggerTags.Restaurants)
@@ -38,11 +39,24 @@ export class RestaurantsController {
     return this.restaurantsService.findAll({ filters });
   }
 
+  // * ----------------------------------------------------------------------------------------------------------------
+  // * GET ALL PUBLIC RESTAURANTS
+  // * ----------------------------------------------------------------------------------------------------------------
   @Get('public')
   @OptionalAuth()
   @ApiOkResponse({ description: 'Restaurant List', type: [RestaurantDto] })
   findPublicRestaurants(@RestaurantFilters() filters: RestaurantFiltersDto) {
     return this.restaurantsService.findPublicRestaurants({ filters });
+  }
+
+  // * ----------------------------------------------------------------------------------------------------------------
+  // * GET ALL PUBLIC RESTAURANTS WITH FULL INFO
+  // * ----------------------------------------------------------------------------------------------------------------
+  @Get('public/full-info')
+  @OptionalAuth()
+  @ApiOkResponse({ description: 'Restaurant List', type: [RestaurantVectorDto] })
+  findPublicFullInfoRestaurants(@RestaurantFilters() filters: RestaurantFiltersDto) {
+    return this.restaurantsService.findPublicFullInfoRestaurants({ filters });
   }
 
   // * ----------------------------------------------------------------------------------------------------------------

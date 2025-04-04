@@ -16,6 +16,7 @@ import { CloudinaryService } from '../cloudinary/cloudinary.service';
 import { CloudinaryPresets } from 'src/config/cloudinary-presets.enum';
 import { ResourceProvider } from 'src/config/resource-provider.enum';
 import { ExperienceIndexDto } from './dto/experience-index.dto';
+import { ExperienceVectorDto } from './dto/experience-vector.dto';
 
 @Injectable()
 export class ExperiencesService {
@@ -84,6 +85,31 @@ export class ExperiencesService {
   }
 
   // ------------------------------------------------------------------------------------------------
+  // Find public experiences with full info
+  // ------------------------------------------------------------------------------------------------
+  async findPublicFullInfoExperiences({ filters }: ExperienceFindAllParams = {}): Promise<ExperienceVectorDto[]> {
+    const shouldRandomize = filters?.sortBy === 'random';
+    const { where, order } = generateExperienceQueryFiltersAndSort(filters);
+    let experiences = await this.experienceRepository.find({
+      relations: {
+        categories: { icon: true },
+        images: { imageResource: true },
+        town: { department: true },
+        guide: true,
+      },
+      order,
+      where: {
+        ...where,
+        isPublic: true,
+      },
+    });
+
+    if (shouldRandomize) {
+      experiences = experiences.sort(() => Math.random() - 0.5);
+    }
+    return experiences.map(experience => new ExperienceVectorDto({ data: experience }));
+  }
+
   // ------------------------------------------------------------------------------------------------
   // Find one experience by identifier
   // ------------------------------------------------------------------------------------------------

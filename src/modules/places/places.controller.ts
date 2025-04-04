@@ -38,6 +38,7 @@ import { CreateReviewDto, UpdateReviewDto } from '../reviews/dto';
 import { PlaceReviewsService } from '../reviews/services';
 import { ContentTypes } from '../common/constants';
 import { ReorderImagesDto } from '../common/dto/reoder-images.dto';
+import { PlaceVectorDto } from './dto/place-vector.dto';
 
 @Controller('places')
 @ApiTags(SwaggerTags.Places)
@@ -69,11 +70,24 @@ export class PlacesController {
     return this.placesService.findAll(filters, user);
   }
 
+  // * ----------------------------------------------------------------------------------------------------------------
+  // * GET ALL PUBLIC PLACES
+  // * ----------------------------------------------------------------------------------------------------------------
   @Get('public')
   @OptionalAuth()
   @ApiOkResponse({ description: 'Place List', type: [PlaceDto] })
   findPublicPlaces(@PlaceFilters() filters: PlaceFiltersDto, @GetUser() user: User | null) {
     return this.placesService.findPublicPlaces(filters, user);
+  }
+
+  // * ----------------------------------------------------------------------------------------------------------------
+  // * GET ALL PUBLIC PLACES WITH FULL INFO
+  // * ----------------------------------------------------------------------------------------------------------------
+  @Get('public/full-info')
+  @OptionalAuth()
+  @ApiOkResponse({ description: 'Place List', type: [PlaceVectorDto] })
+  findPublicFullInfoPlaces(@PlaceFilters() filters: PlaceFiltersDto, @GetUser() user: User | null) {
+    return this.placesService.findPublicFullInfoPlaces(filters, user);
   }
 
   // * ----------------------------------------------------------------------------------------------------------------

@@ -21,6 +21,7 @@ import { CreateLodgingDto, LodgingFiltersDto, LodgingFullDto, LodgingIndexDto, U
 import { FilesInterceptor } from '@nestjs/platform-express';
 import { ContentTypes } from '../common/constants';
 import { ReorderImagesDto } from '../common/dto/reoder-images.dto';
+import { LodgingVectorDto } from './dto/lodging-vector.dto';
 
 @Controller('lodgings')
 @ApiTags(SwaggerTags.Lodgings)
@@ -51,7 +52,7 @@ export class LodgingsController {
   // * GET ALL PUBLIC LODGINGS WITH FULL INFO
   // * ----------------------------------------------------------------------------------------------------------------
   @Get('public/full-info')
-  @ApiOkResponse({ description: 'Lodging List', type: [LodgingFullDto] })
+  @ApiOkResponse({ description: 'Lodging List', type: [LodgingVectorDto] })
   findPublicFullInfoLodgings(@LodgingFilters() filters: LodgingFiltersDto) {
     return this.lodgingsService.findPublicFullInfoLodgings({ filters });
   }

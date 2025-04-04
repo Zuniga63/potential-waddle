@@ -21,6 +21,7 @@ import { ExperienceFilters, ExperienceListApiQueries } from './decorators';
 import { FilesInterceptor } from '@nestjs/platform-express';
 import { ContentTypes } from '../common/constants';
 import { ReorderImagesDto } from '../common/dto/reoder-images.dto';
+import { ExperienceVectorDto } from './dto/experience-vector.dto';
 
 @Controller(SwaggerTags.Experiences)
 @ApiTags(SwaggerTags.Experiences)
@@ -47,6 +48,17 @@ export class ExperiencesController {
   findPublicExperiences(@ExperienceFilters() filters: ExperienceFiltersDto) {
     return this.experiencesService.findPublicExperiences({ filters });
   }
+
+  // * ----------------------------------------------------------------------------------------------------------------
+  // * GET ALL PUBLIC EXPERIENCES WITH FULL INFO
+  // * ----------------------------------------------------------------------------------------------------------------
+  @Get('public/full-info')
+  @OptionalAuth()
+  @ApiOkResponse({ description: 'Experience List', type: [ExperienceVectorDto] })
+  findPublicFullInfoExperiences(@ExperienceFilters() filters: ExperienceFiltersDto) {
+    return this.experiencesService.findPublicFullInfoExperiences({ filters });
+  }
+
   // * ----------------------------------------------------------------------------------------------------------------
   // * GET EXPERIENCE BY IDENTIFIER
   // * ----------------------------------------------------------------------------------------------------------------
