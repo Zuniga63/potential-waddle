@@ -1,8 +1,14 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+  InternalServerErrorException,
+  Logger,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { FindOptionsRelations, In, Point, Repository } from 'typeorm';
 
-import { Lodging, LodgingImage } from './entities';
+import { Lodging, LodgingImage, LodgingPlace } from './entities';
 import { CreateLodgingDto, LodgingFullDto, LodgingIndexDto, UpdateLodgingDto } from './dto';
 import { LodgingFindAllParams } from './interfaces';
 import { generateLodgingQueryFilters } from './utils';
@@ -14,9 +20,12 @@ import { CLOUDINARY_FOLDERS } from 'src/config/cloudinary-folders';
 import { User } from '../users/entities';
 import { Town } from '../towns/entities';
 import { LodgingVectorDto } from './dto/lodging-vector.dto';
-
+import { GooglePlacesService } from '../google-places/google-places.service';
+import { Place } from '../places/entities';
 @Injectable()
 export class LodgingsService {
+  private readonly logger = new Logger(LodgingsService.name);
+
   constructor(
     @InjectRepository(Lodging)
     private readonly lodgingRespository: Repository<Lodging>,
@@ -30,6 +39,11 @@ export class LodgingsService {
     private readonly townRepository: Repository<Town>,
     @InjectRepository(Facility)
     private readonly facilityRepository: Repository<Facility>,
+    @InjectRepository(Place)
+    private readonly placeRepository: Repository<Place>,
+    private readonly googlePlacesService: GooglePlacesService,
+    @InjectRepository(LodgingPlace)
+    private readonly lodgingPlaceRepository: Repository<LodgingPlace>,
   ) {}
 
   // ------------------------------------------------------------------------------------------------
@@ -112,6 +126,7 @@ export class LodgingsService {
       facilities: { icon: true },
       town: { department: true },
       images: { imageResource: true },
+      places: { place: true },
     };
 
     let lodging = await this.lodgingRespository.findOne({
@@ -135,12 +150,21 @@ export class LodgingsService {
       facilities: { icon: true },
       town: { department: true },
       images: { imageResource: true },
+      places: {
+        place: {
+          images: { imageResource: true },
+          town: { department: true },
+        },
+      },
     };
 
     let lodging = await this.lodgingRespository.findOne({
       where: { slug },
       relations,
-      order: { images: { order: 'ASC' } },
+      order: {
+        images: { order: 'ASC' },
+        places: { order: 'ASC' },
+      },
     });
 
     if (!lodging) lodging = await this.lodgingRespository.findOne({ where: { slug }, relations });
@@ -154,6 +178,7 @@ export class LodgingsService {
   // ------------------------------------------------------------------------------------------------
   async create(createLodgingDto: CreateLodgingDto) {
     const { latitude, longitude, ...restCreateDto } = createLodgingDto;
+
     const location: Point | null =
       latitude && longitude
         ? {
@@ -171,6 +196,10 @@ export class LodgingsService {
     const town = await this.townRepository.findOne({ where: { id: createLodgingDto.townId } });
     const user = await this.userRepository.findOne({ where: { id: createLodgingDto.userId } });
 
+    const places = createLodgingDto.placeIds
+      ? await this.placeRepository.findBy({ id: In(createLodgingDto.placeIds) })
+      : [];
+
     if (!town) {
       throw new NotFoundException('Town not found');
     }
@@ -180,7 +209,8 @@ export class LodgingsService {
     }
 
     try {
-      await this.lodgingRespository.save({
+      // Primero guardamos el alojamiento
+      const newLodging = await this.lodgingRespository.save({
         ...restCreateDto,
         location: location as any,
         categories,
@@ -188,6 +218,18 @@ export class LodgingsService {
         town,
         user: user ?? undefined,
       });
+
+      // Luego creamos las relaciones de lugares si hay lugares para guardar
+      if (places.length > 0) {
+        for (const [index, place] of places.entries()) {
+          await this.lodgingPlaceRepository.save({
+            lodging: newLodging,
+            place: place,
+            order: index + 1,
+            distance: 0,
+          });
+        }
+      }
 
       return { message: restCreateDto.name };
     } catch (error) {
@@ -200,13 +242,14 @@ export class LodgingsService {
   // ------------------------------------------------------------------------------------------------
   async update(id: string, updateLodgingDto: UpdateLodgingDto) {
     const lodging = await this.lodgingRespository.findOne({ where: { id } });
+    if (!lodging) throw new NotFoundException('Lodging not found');
+
     const categories = updateLodgingDto.categoryIds
       ? await this.categoryRepo.findBy({ id: In(updateLodgingDto.categoryIds) })
       : [];
     const facilities = updateLodgingDto.facilityIds
       ? await this.facilityRepository.findBy({ id: In(updateLodgingDto.facilityIds) })
       : [];
-    if (!lodging) throw new NotFoundException('Lodging not found');
 
     // Extraer lat y lng del DTO y crear el Point
     const { latitude, longitude, ...restUpdateDto } = updateLodgingDto;
@@ -218,14 +261,44 @@ export class LodgingsService {
           }
         : null;
 
-    await this.lodgingRespository.save({
-      id: lodging.id,
-      ...restUpdateDto,
-      location: location as any,
-      categories,
-      user: lodging.user,
-      facilities,
-    });
+    // 1. Obtener los IDs de los places del DTO
+    const placeIds = updateLodgingDto.placeIds || []; // Asegura que sea un array
+
+    // 2. Buscar las entidades Place correspondientes
+    const places = placeIds.length > 0 ? await this.placeRepository.findBy({ id: In(placeIds) }) : [];
+
+    // 3. Eliminar todas las relaciones existentes para este lodging
+    try {
+      await this.lodgingPlaceRepository.delete({ lodging: { id: lodging.id } });
+      // 4. Crear nuevas relaciones solo si hay places para guardar
+      if (places.length > 0) {
+        for (const [index, place] of places.entries()) {
+          await this.lodgingPlaceRepository.save({
+            lodging: lodging,
+            place: place,
+            order: index + 1,
+            distance: 0,
+          });
+        }
+      }
+    } catch (error) {
+      this.logger.error(`Error updating lodging places for ID ${id}: ${error.message}`, error.stack);
+      throw new InternalServerErrorException(`Error updating lodging places: ${error.message}`);
+    }
+
+    try {
+      await this.lodgingRespository.save({
+        id: lodging.id,
+        ...restUpdateDto,
+        location: location as any,
+        categories,
+        user: lodging.user, // Ensure user is preserved if not updated
+        facilities,
+      });
+    } catch (error) {
+      this.logger.error(`Error saving lodging update for ID ${id}: ${error.message}`, error.stack);
+      throw new InternalServerErrorException(`Error updating lodging: ${error.message}`);
+    }
 
     const relations: FindOptionsRelations<Lodging> = {
       categories: { icon: true },

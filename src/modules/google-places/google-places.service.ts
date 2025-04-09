@@ -325,4 +325,29 @@ export class GooglePlacesService {
       await this.lodgingRepository.update(placeId, { googleMapsId: null });
     }
   }
+
+  async getDrivingDistance(
+    originLat: number,
+    originLng: number,
+    destLat: number,
+    destLng: number,
+  ): Promise<{ distanceText: string; distanceValue: number }> {
+    const origin = `${originLat},${originLng}`;
+    const destination = `${destLat},${destLng}`;
+    const url = `https://maps.googleapis.com/maps/api/directions/json?origin=${origin}&destination=${destination}&key=${this.apiKey}`;
+
+    const response = await this.httpService.axiosRef.get(url);
+    const route = response.data.routes[0];
+
+    if (!route) {
+      throw new Error('No se encontró una ruta.');
+    }
+
+    const leg = route.legs[0];
+
+    return {
+      distanceText: leg.distance.text, // Ej: "7.8 km"
+      distanceValue: leg.distance.value / 1000, // valor en km (Google lo da en metros)
+    };
+  }
 }

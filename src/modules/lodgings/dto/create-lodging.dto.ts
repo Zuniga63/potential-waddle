@@ -247,4 +247,15 @@ export class CreateLodgingDto {
   })
   @IsOptional()
   paymentMethods?: string[];
+
+  @ApiProperty({
+    example: ['123e4567-e89b-12d3-a456-426614174000'],
+    description: 'Places of the lodging',
+    required: false,
+    type: 'object',
+    isArray: true,
+  })
+  @IsOptional()
+  @IsArray()
+  placeIds?: string[];
 }

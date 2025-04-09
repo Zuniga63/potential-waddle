@@ -242,7 +242,14 @@ export class UsersService {
   async getUserLodgings(id: string) {
     const user = await this.usersRepository.findOne({
       where: { id },
-      relations: ['lodgings', 'lodgings.categories', 'lodgings.images', 'lodgings.images.imageResource'],
+      relations: [
+        'lodgings',
+        'lodgings.categories',
+        'lodgings.images',
+        'lodgings.images.imageResource',
+        'lodgings.town',
+        'lodgings.town.department',
+      ],
     });
     const lodgings = user?.lodgings ? user?.lodgings.map(lodging => new UserLodgingDto(lodging)) : [];
     return lodgings ?? [];
@@ -251,7 +258,14 @@ export class UsersService {
   async getUserCommerce(id: string) {
     const user = await this.usersRepository.findOne({
       where: { id },
-      relations: ['commerces', 'commerces.images', 'commerces.images.imageResource', 'commerces.categories'],
+      relations: [
+        'commerces',
+        'commerces.images',
+        'commerces.images.imageResource',
+        'commerces.categories',
+        'commerces.town',
+        'commerces.town.department',
+      ],
     });
     return user?.commerces ? user?.commerces.map(commerce => new UserCommerceDto(commerce)) : [];
   }
@@ -259,9 +273,15 @@ export class UsersService {
   async getUserRestaurants(id: string) {
     const user = await this.usersRepository.findOne({
       where: { id },
-      relations: ['restaurants', 'restaurants.images', 'restaurants.images.imageResource', 'restaurants.categories'],
+      relations: [
+        'restaurants',
+        'restaurants.images',
+        'restaurants.images.imageResource',
+        'restaurants.categories',
+        'restaurants.town',
+        'restaurants.town.department',
+      ],
     });
-
     return user?.restaurants ? user?.restaurants.map(restaurant => new UserRestaurantDto(restaurant)) : [];
   }
 }

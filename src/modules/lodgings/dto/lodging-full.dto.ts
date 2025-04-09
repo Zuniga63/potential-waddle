@@ -2,6 +2,7 @@ import { ApiProperty } from '@nestjs/swagger';
 import { LodgingIndexDto } from './lodging-index.dto';
 import { FacilityDto } from 'src/modules/core/dto';
 import { Lodging } from '../entities';
+import { PlaceDto } from 'src/modules/places/dto';
 
 export class LodgingFullDto extends LodgingIndexDto {
   @ApiProperty({
@@ -153,6 +154,16 @@ export class LodgingFullDto extends LodgingIndexDto {
     required: false,
   })
   showGoogleMapsReviews?: boolean;
+
+  @ApiProperty({
+    example: [],
+    description: 'List of places associated with the lodging',
+    required: false,
+    type: PlaceDto,
+    isArray: true,
+  })
+  places?: PlaceDto[];
+
   constructor(lodging?: Lodging, userReview?: string) {
     super(lodging, userReview);
 
@@ -179,5 +190,6 @@ export class LodgingFullDto extends LodgingIndexDto {
     this.googleMapsRating = lodging.googleMapsRating || undefined;
     this.googleMapsReviewsCount = lodging.googleMapsReviewsCount || undefined;
     this.showGoogleMapsReviews = lodging.showGoogleMapsReviews || undefined;
+    this.places = lodging.places?.map(lodgingPlace => new PlaceDto(lodgingPlace.place)) || [];
   }
 }

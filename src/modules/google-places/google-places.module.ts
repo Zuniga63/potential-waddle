@@ -13,5 +13,6 @@ import { HttpModule } from '@nestjs/axios';
   controllers: [GooglePlacesController],
   providers: [GooglePlacesService],
   imports: [TypeOrmModule.forFeature([Lodging, Restaurant, Commerce]), HttpModule, ConfigModule],
+  exports: [GooglePlacesService],
 })
 export class GooglePlacesModule {}

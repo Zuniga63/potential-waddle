@@ -133,7 +133,8 @@ export class CommerceService {
       ? await this.facilityRepository.findBy({ id: In(createCommerceDto.facilityIds) })
       : [];
     const town = await this.townRepository.findOne({ where: { id: createCommerceDto.townId } });
-
+    const user = await this.userRepository.findOne({ where: { id: createCommerceDto.userId } });
+    if (!user) throw new NotFoundException('User not found');
     if (!town) {
       throw new NotFoundException('Town not found');
     }
@@ -144,6 +145,7 @@ export class CommerceService {
         categories,
         facilities,
         town: town ?? undefined,
+        user,
       });
 
       return { message: restCreateDto.name };

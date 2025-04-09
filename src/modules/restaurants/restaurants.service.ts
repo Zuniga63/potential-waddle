@@ -160,6 +160,9 @@ export class RestaurantsService {
       : [];
     const town = await this.townRepository.findOne({ where: { id: createRestaurantDto.townId } });
 
+    const user = await this.userRepository.findOne({ where: { id: createRestaurantDto.userId } });
+    if (!user) throw new NotFoundException('User not found');
+
     if (!town) {
       throw new NotFoundException('Town not found');
     }
@@ -170,6 +173,7 @@ export class RestaurantsService {
         categories,
         facilities,
         town: town ?? undefined,
+        user,
       });
 
       return { message: restCreateDto.name };

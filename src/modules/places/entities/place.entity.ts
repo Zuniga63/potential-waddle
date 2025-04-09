@@ -17,6 +17,7 @@ import { PlaceImage } from './place-image.entity';
 import { Review } from 'src/modules/reviews/entities';
 import { Restaurant } from 'src/modules/restaurants/entities';
 import { Category, Facility } from 'src/modules/core/entities';
+import { LodgingPlace } from 'src/modules/lodgings/entities';
 
 @Entity({ name: 'place' })
 export class Place {
@@ -47,6 +48,9 @@ export class Place {
 
   @OneToMany(() => Restaurant, restaurant => restaurant.place)
   restaurants?: Restaurant[];
+
+  @OneToMany(() => LodgingPlace, place => place.place)
+  lodgings: LodgingPlace[];
 
   // * ----------------------------------------------------------------------------------------------------------------
   // * MAIN FIELDS
