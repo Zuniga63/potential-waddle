@@ -23,6 +23,12 @@ export interface EnvironmentVariables {
     apiKey: string;
     apiSecret: string;
   };
+  serpApi: {
+    apiKey: string;
+  };
+  apify: {
+    apiKey: string;
+  };
   googleOAuth: {
     clientId: string;
     clientSecret: string;
@@ -34,6 +40,22 @@ export interface EnvironmentVariables {
   tinify: {
     apiKey: string;
     enabled: boolean;
+  };
+  pinecone: {
+    apiKey: string;
+    environment: string;
+    pineconeIndexGoogleReview: string;
+    pineconeIndexRafaClaude: string;
+  };
+  indexingApi: {
+    apiKey: string;
+  };
+  anthropic: {
+    apiKey: string;
+    model: string;
+  };
+  openai: {
+    apiKey: string;
   };
 }
 
@@ -73,8 +95,30 @@ export const appConfig = (): EnvironmentVariables => ({
   googlePlaces: {
     apiKey: process.env.GOOGLE_PLACES_API_KEY || '',
   },
+  serpApi: {
+    apiKey: process.env.SERP_API_KEY || '',
+  },
+  apify: {
+    apiKey: process.env.APIFY_API_KEY || '',
+  },
   tinify: {
     apiKey: process.env.TINYIFY_API_KEY || '',
     enabled: Boolean(process.env.TINYIFY_API_KEY),
+  },
+  pinecone: {
+    apiKey: process.env.PINECONE_API_KEY || '',
+    environment: process.env.PINECONE_ENVIRONMENT || '',
+    pineconeIndexGoogleReview: process.env.PINECONE_INDEX_BINNTU_GOOGLE_REVIEW || '',
+    pineconeIndexRafaClaude: process.env.PINECONE_INDEX_RAFA_CLAUDE || '',
+  },
+  indexingApi: {
+    apiKey: process.env.INDEXING_API_KEY || '',
+  },
+  anthropic: {
+    apiKey: process.env.ANTHROPIC_API_KEY || '',
+    model: process.env.ANTHROPIC_MODEL || '',
+  },
+  openai: {
+    apiKey: process.env.OPENAI_API_KEY || '',
   },
 });

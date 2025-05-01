@@ -1,0 +1,99 @@
+{
+  "nodes": [
+    {
+      "parameters": {
+        "authentication": "oAuth2",
+        "query": "'TU_ID_DE_CARPETA' in parents and mimeType='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' and trashed = false",
+        "drive": "myDrive",
+        "options": {
+          "limit": 1,
+          "fields": ["id", "name"]
+        }
+      },
+      "id": "1",
+      "name": "Buscar archivo Excel",
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 1,
+      "position": [300, 300],
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "TUID",
+          "name": "Google Drive account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "fileId": "={{ $json[\"id\"] }}"
+      },
+      "id": "2",
+      "name": "Descargar archivo",
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 1,
+      "position": [500, 300],
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "TUID",
+          "name": "Google Drive account"
+        }
+      },
+      "notesInFlow": true,
+      "notes": "Descarga el primer archivo de la carpeta. Puedes poner un filtro si hay muchos."
+    },
+    {
+      "parameters": {
+        "operation": "read",
+        "binaryPropertyName": "data",
+        "options": {}
+      },
+      "id": "3",
+      "name": "Leer Excel",
+      "type": "n8n-nodes-base.spreadsheetFile",
+      "typeVersion": 1,
+      "position": [700, 300]
+    },
+    {
+      "parameters": {
+        "functionCode": "// Mejorado para manejar diferentes formatos de fecha\nconst hoy = new Date();\n\nreturn items.filter(item => {\n  const fechaStr = item.json.FechaVencimiento;\n  const correo = item.json.Correo;\n  if (!fechaStr || !correo) return false;\n\n  try {\n    const fecha = new Date(fechaStr);\n    if (isNaN(fecha.getTime())) return false;\n    return fecha < hoy;\n  } catch(e) {\n    return false;\n  }\n});"
+      },
+      "id": "4",
+      "name": "Filtrar vencidos",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [900, 300]
+    },
+    {
+      "parameters": {
+        "fromEmail": "cda@tucorreo.com",
+        "toEmail": "={{ $json[\"Correo\"] }}",
+        "subject": "Alerta: Revisión vencida - Vehículo {{ $json[\"Placa\"] }}",
+        "text": "=Estimado usuario,\n\nLe informamos que la revisión del vehículo con placa {{ $json[\"Placa\"] }} se encuentra vencida desde el {{ new Date($json[\"FechaVencimiento\"]).toLocaleDateString() }}.\n\nPor favor programe su próxima inspección lo antes posible para evitar inconvenientes.\n\nSaludos cordiales,\nCentro de Diagnóstico Automotor"
+      },
+      "id": "5",
+      "name": "Enviar correo",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 1,
+      "position": [1100, 300],
+      "credentials": {
+        "smtp": {
+          "id": "TUID",
+          "name": "SMTP cuenta CDA"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Buscar archivo Excel": {
+      "main": [[{ "node": "Descargar archivo", "type": "main", "index": 0 }]]
+    },
+    "Descargar archivo": {
+      "main": [[{ "node": "Leer Excel", "type": "main", "index": 0 }]]
+    },
+    "Leer Excel": {
+      "main": [[{ "node": "Filtrar vencidos", "type": "main", "index": 0 }]]
+    },
+    "Filtrar vencidos": {
+      "main": [[{ "node": "Enviar correo", "type": "main", "index": 0 }]]
+    }
+  }
+}
