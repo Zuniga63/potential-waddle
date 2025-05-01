@@ -8,6 +8,7 @@ import { OpenAIEmbeddings } from '@langchain/openai';
 import { InjectRepository } from '@nestjs/typeorm';
 import { GoogleReview } from '../google-places/entities';
 import { Repository } from 'typeorm';
+import { DocumentWithMetadata } from '../ai/lib/anthropic/types';
 
 @Injectable()
 export class PineconeService {
@@ -60,8 +61,12 @@ export class PineconeService {
         id: vectorId,
         values: embeddingArrays[i],
         metadata: {
+          id: doc.metadata.id || '',
+          entityId: doc.metadata.entityId || '',
+          entityType: doc.metadata.entityType || '',
+          rating: doc.metadata.rating || 0,
           text: doc.pageContent,
-          ...doc.metadata,
+          source: doc.metadata.source || '',
         },
       };
     });
@@ -79,24 +84,109 @@ export class PineconeService {
   // ------------------------------------------------------------------------------------------------
   // Delete All Vectors By Entity Id
   // ------------------------------------------------------------------------------------------------
-  async deleteAllVectorsByEntityId(entityId: string, entityType: string) {
+  async deleteAllVectorsByEntityId(entityId: string, entityType: 'lodging' | 'restaurant') {
+    console.log('🔄 Iniciando proceso de eliminación de vectores...');
+
+    // Obtener las reseñas
     const reviews = await this.googleReviewRepository.find({
       where: {
         entityId: entityId,
-        entityType: entityType as 'Lodging' | 'Restaurant',
+        entityType: entityType,
       },
     });
 
-    const pineconeIds = reviews.map(review => review.pineconeId);
-    const index = await this.getPineconeIndex();
-    const results = await index.listPaginated({ prefix: entityId });
-    console.log(`✅ Results: ${results}`);
+    console.log(`📊 Encontradas ${reviews.length} reseñas para eliminar`);
 
-    // Implementación del borrado por lotes
-    const batchSize = 100;
-    for (let i = 0; i < pineconeIds.length; i += batchSize) {
-      const batch = pineconeIds.slice(i, i + batchSize);
-      await index.deleteMany(batch);
+    if (reviews.length === 0) {
+      console.log('⚠️ No se encontraron reseñas para eliminar');
+      return;
     }
+
+    // Filtrar solo los pineconeIds que no sean null
+    const pineconeIds = reviews.filter(review => review.pineconeId).map(review => review.pineconeId);
+
+    console.log(`🎯 PineconeIDs a eliminar: ${pineconeIds.length}`);
+
+    if (pineconeIds.length > 0) {
+      const index = await this.getPineconeIndex();
+
+      // Implementación del borrado por lotes
+      const batchSize = 1000;
+      for (let i = 0; i < pineconeIds.length; i += batchSize) {
+        const batch = pineconeIds.slice(i, i + batchSize);
+        try {
+          await index.deleteMany(batch);
+          console.log(`✅ Eliminado lote ${i / batchSize + 1}`);
+        } catch (error) {
+          console.error(`❌ Error al eliminar lote: ${error.message}`);
+        }
+      }
+    }
+  }
+
+  // ------------------------------------------------------------------------------------------------
+  // Search Documents
+  // ------------------------------------------------------------------------------------------------
+  async searchDocuments(query: string, entityId: string, entityType: 'lodging' | 'restaurant') {
+    try {
+      const index = await this.getPineconeIndex();
+
+      // Generar embedding para la consulta
+      const queryEmbedding = await this.embeddings.embedQuery(query);
+
+      // Buscar vectores similares en Pinecone con filtro por entityId
+      const searchResults = await index.query({
+        vector: queryEmbedding,
+        topK: 10,
+        includeMetadata: true,
+        filter: {
+          entityId: { $eq: entityId },
+          entityType: { $eq: entityType },
+        },
+      });
+
+      console.log(searchResults, 'searchResults');
+
+      // Convertir resultados a formato DocumentWithMetadata
+      const documents = searchResults.matches.map(match => {
+        const metadata = match.metadata as DocumentWithMetadata['metadata'];
+        return {
+          pageContent: metadata.text || '',
+          metadata: {
+            id: metadata.id || '',
+            entityId: metadata.entityId || '',
+            entityType: metadata.entityType || '',
+            rating: metadata.rating || 0,
+            text: metadata.text || '',
+            source: metadata.source || '',
+          },
+        };
+      });
+
+      return documents;
+    } catch (error) {
+      console.error('Error al buscar documentos:', error);
+      return [];
+    }
+  }
+
+  // ------------------------------------------------------------------------------------------------
+  // Format Search Results
+  // ------------------------------------------------------------------------------------------------
+  /**
+   * Formatea los resultados de búsqueda de Pinecone para enviarlos a Claude
+   * @param documents - Documentos obtenidos de Pinecone
+   * @returns Texto formateado con la información relevante
+   */
+  formatSearchResults(documents: DocumentWithMetadata[]): string {
+    if (!documents || documents.length === 0) {
+      return 'No se encontraron resultados.';
+    }
+
+    return documents
+      .map(doc => {
+        return `---\n${doc.pageContent}\n`;
+      })
+      .join('\n');
   }
 }

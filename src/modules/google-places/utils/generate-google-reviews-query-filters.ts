@@ -25,7 +25,7 @@ export function generateReviewsQueryFilters(filters?: GoogleReviewsFiltersDto, e
     where.entityId = entityId;
   }
 
-  if (entityType === 'Lodging' || entityType === 'Restaurant') {
+  if (entityType === 'lodging' || entityType === 'restaurant') {
     where.entityType = entityType;
   }
 

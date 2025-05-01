@@ -15,6 +15,11 @@ import { generateReviewsQueryFilters } from './utils/generate-google-reviews-que
 import { GoogleReviewsListDto } from './dto/google-reviews-list.dto';
 import { PineconeService } from '../pinecone/pinecone.service';
 import { GoogleReviewInterface } from './interfaces/google-review.interface';
+import { Anthropic } from '@anthropic-ai/sdk';
+import { Model } from '@anthropic-ai/sdk/resources/messages';
+import { GoogleReviewSummary } from './entities/google-review-summary.entity';
+import { generalAnalysisPrompt } from '../ai/lib/anthropic/anthropic';
+import { specificAnalysisPrompt } from '../ai/lib/anthropic/anthropic';
 @Injectable()
 export class GooglePlacesService {
   private readonly logger = new Logger(GooglePlacesService.name);
@@ -23,6 +28,8 @@ export class GooglePlacesService {
   private readonly serpApiKey: string | undefined;
   private readonly apifyToken: string | undefined;
   private readonly actorId = 'apify/google-maps-reviews-scraper';
+  private readonly anthropicModel: string | undefined;
+  private readonly anthropic: Anthropic;
   constructor(
     private readonly httpService: HttpService,
 
@@ -39,10 +46,17 @@ export class GooglePlacesService {
     @InjectRepository(GoogleReview)
     private googleReviewRepository: Repository<GoogleReview>,
     private readonly pineconeService: PineconeService,
+
+    @InjectRepository(GoogleReviewSummary)
+    private googleReviewSummaryRepository: Repository<GoogleReviewSummary>,
   ) {
     this.apiKey = configService.get<string>('googlePlaces.apiKey', { infer: true });
     this.serpApiKey = configService.get<string>('serpApi.apiKey', { infer: true });
     this.apifyToken = configService.get<string>('apify.apiKey', { infer: true });
+    this.anthropicModel = configService.get<string>('anthropic.model', { infer: true });
+    this.anthropic = new Anthropic({
+      apiKey: configService.get<string>('anthropic.apiKey', { infer: true }),
+    });
   }
 
   // 🔹 Find Place ID by Name
@@ -474,12 +488,12 @@ export class GooglePlacesService {
         }
       }
 
-      try {
+      /*    try {
         console.log('🔍 Creando vector en Pinecone');
         await this.pineconeService.createReviewVector(reviewsToSave as GoogleReviewInterface[]);
       } catch (err) {
         console.error('❌ Error al crear vector en Pinecone:', err.message);
-      }
+      } */
       return reviews;
     } catch (err) {
       console.error('❌ Error al obtener datos del dataset:', err.message);
@@ -512,15 +526,151 @@ export class GooglePlacesService {
   async deleteAllReviewsforEntity(entityId: string, entityType: string) {
     console.log('🔍 Eliminando todas las reseñas para la entidad:', entityId, entityType);
     if (entityType === 'lodging') {
-      console.log('🔍 Eliminando reseñas de alojamiento');
+      await this.pineconeService.deleteAllVectorsByEntityId(entityId, entityType);
       await this.googleReviewRepository.delete({ entityId, entityType: 'lodging' });
-      console.log('🔍 Eliminando vectores de alojamiento');
-      await this.pineconeService.deleteAllVectorsByEntityId(entityId, entityType);
+      await this.googleReviewSummaryRepository.delete({ entityId, entityType: 'lodging' });
     } else if (entityType === 'restaurant') {
-      console.log('🔍 Eliminando reseñas de restaurante');
-      await this.googleReviewRepository.delete({ entityId, entityType: 'restaurant' });
-      console.log('🔍 Eliminando vectores de restaurante');
       await this.pineconeService.deleteAllVectorsByEntityId(entityId, entityType);
+      await this.googleReviewRepository.delete({ entityId, entityType: 'restaurant' });
+      await this.googleReviewSummaryRepository.delete({ entityId, entityType: 'restaurant' });
     }
+  }
+
+  private formatSearchResults(docs: any[]): string {
+    // Implement your formatting logic here
+    if (!docs || docs.length === 0) {
+      return 'No se encontraron resultados.';
+    }
+
+    return docs
+      .map(doc => {
+        return `---\n${doc.pageContent}\n`;
+      })
+      .join('\n');
+  }
+
+  async reviewSummary(
+    message: string,
+    entityId: string,
+    entityType: 'lodging' | 'restaurant',
+    type: 'general' | 'specific',
+  ) {
+    try {
+      // Use the message directly since it's now a string
+      const userQuestion = message;
+      let contextMessage = '';
+      // Search for relevant documents in Pinecone
+      if (type === 'specific') {
+        const relevantDocs = await this.pineconeService.searchDocuments(userQuestion, entityId, entityType);
+        // Format the results for context
+        const formattedResults = this.formatSearchResults(relevantDocs);
+
+        // Create context message
+        contextMessage = `
+      Here is the most relevant information about lodgings in San Rafael, Antioquia to answer the user:
+
+      ${formattedResults}
+
+      Remember to respond using the appropriate format when recommending specific lodging.
+      `;
+      } else {
+        if (entityType === 'lodging') {
+          const lodgings = await this.googleReviewRepository.find({
+            where: { entityType: 'lodging', entityId: entityId },
+          });
+          const lodgingsToSave = lodgings.map(lodging => {
+            return {
+              authorName: lodging.authorName,
+              rating: lodging.rating,
+              text: lodging.text,
+              reviewDate: lodging.reviewDate,
+            };
+          });
+          console.log(lodgings.length, 'londgings-length');
+          contextMessage = JSON.stringify(lodgingsToSave);
+        } else {
+          const restaurants = await this.googleReviewRepository.find({
+            where: { entityType: 'restaurant', entityId: entityId },
+          });
+          const restaurantsToSave = restaurants.map(restaurant => {
+            return {
+              authorName: restaurant.authorName,
+              rating: restaurant.rating,
+              text: restaurant.text,
+              reviewDate: restaurant.reviewDate,
+            };
+          });
+          console.log(restaurants.length, 'restaurants-length');
+          contextMessage = JSON.stringify(restaurantsToSave);
+        }
+      }
+      console.log(contextMessage, 'contextMessage');
+      // Send the query to Claude with relevant context
+      const response = await this.anthropic.messages.create({
+        model: this.anthropicModel as Model,
+        max_tokens: 1024,
+        messages: [
+          {
+            role: 'user',
+            content: `${type === 'general' ? generalAnalysisPrompt : specificAnalysisPrompt}\n\n${contextMessage}\n\n${message}`,
+          },
+        ],
+        temperature: 0.7,
+      });
+
+      const responseText = response.content[0].type === 'text' ? response.content[0].text : '';
+
+      // Save the summary
+      const summary = this.googleReviewSummaryRepository.create({
+        entityId,
+        entityType,
+        question: userQuestion,
+        content: responseText,
+        createdAt: new Date(),
+      });
+      await this.googleReviewSummaryRepository.save(summary);
+
+      return {
+        response: responseText,
+      };
+    } catch (error) {
+      this.logger.error('Error processing request:', error);
+      throw error;
+    }
+  }
+
+  async getReviewsSummary(entityId: string, entityType: 'lodging' | 'restaurant') {
+    const reviews = await this.googleReviewSummaryRepository.find({
+      where: { entityId, entityType },
+      order: { createdAt: 'DESC' },
+      take: 1,
+    });
+    return reviews;
+  }
+
+  async getReviewsCountByRating(entityId: string, entityType: 'lodging' | 'restaurant') {
+    const reviews = await this.googleReviewRepository.find({
+      where: { entityId, entityType },
+    });
+    // Contar cuántos reviews hay por cada rating
+    const numberToText: Record<number, string> = {
+      0: 'Cero',
+      1: 'uno',
+      2: 'dos',
+      3: 'tres',
+      4: 'cuatro',
+      5: 'cinco',
+    };
+    const counts: Record<string, number> = {};
+    for (const review of reviews) {
+      const key = numberToText[review.rating] || review.rating.toString();
+      counts[key] = (counts[key] || 0) + 1;
+    }
+    // Transforma el objeto counts a un array ordenado
+    const result = [5, 4, 3, 2, 1, 0].map(num => ({
+      name: numberToText[num],
+      value: counts[numberToText[num]] || 0,
+    }));
+    return result;
   }
 }

@@ -6,6 +6,7 @@ import { RemoveGooglePlaceIdDto } from './dto/remove-google-place-id.dto';
 import { GoogleReviewsListQueryDocsGroup } from './decorators/google-reviews-list-query-docs-group.decorator';
 import { GoogleReviewsFilters } from './decorators/google-reviews-filters.decorator';
 import { GoogleReviewsFiltersDto } from './dto/google-reviews-filters.dto';
+import { GoogleReviewSummaryRequestDto } from './dto/google-review-summary-request.dto';
 
 @Controller('google-places')
 @ApiTags(SwaggerTags.GooglePlaces)
@@ -88,5 +89,34 @@ export class GooglePlacesController {
   })
   deleteAllReviews(@Param('entityId') entityId: string, @Param('entityType') entityType: string) {
     return this.googlePlacesService.deleteAllReviewsforEntity(entityId, entityType);
+  }
+
+  @Post('review-summary')
+  @ApiOkResponse({
+    description: 'Review summary retrieved successfully',
+  })
+  reviewSummary(@Body() body: GoogleReviewSummaryRequestDto) {
+    return this.googlePlacesService.reviewSummary(
+      body.message,
+      body.entityId,
+      body.entityType as 'lodging' | 'restaurant',
+      body.type as 'general' | 'specific',
+    );
+  }
+
+  @Get('last-review-summary/:entityId/:entityType')
+  @ApiOkResponse({
+    description: 'Last review summary retrieved successfully',
+  })
+  getReviewsSummary(@Param('entityId') entityId: string, @Param('entityType') entityType: string) {
+    return this.googlePlacesService.getReviewsSummary(entityId, entityType as 'lodging' | 'restaurant');
+  }
+
+  @Get('reviews-for-chart/:entityId/:entityType')
+  @ApiOkResponse({
+    description: 'Reviews for chart retrieved successfully',
+  })
+  getReviewsforChart(@Param('entityId') entityId: string, @Param('entityType') entityType: string) {
+    return this.googlePlacesService.getReviewsCountByRating(entityId, entityType as 'lodging' | 'restaurant');
   }
 }

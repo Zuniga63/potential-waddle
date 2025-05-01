@@ -10,12 +10,13 @@ import { GooglePlacesController } from './google-places.controller';
 import { HttpModule } from '@nestjs/axios';
 import { GoogleReview } from './entities/google-review.entity';
 import { PineconeModule } from '../pinecone/pinecone.module';
+import { GoogleReviewSummary } from './entities/google-review-summary.entity';
 
 @Module({
   controllers: [GooglePlacesController],
   providers: [GooglePlacesService],
   imports: [
-    TypeOrmModule.forFeature([Lodging, Restaurant, Commerce, GoogleReview]),
+    TypeOrmModule.forFeature([Lodging, Restaurant, Commerce, GoogleReview, GoogleReviewSummary]),
     HttpModule,
     ConfigModule,
     PineconeModule,
