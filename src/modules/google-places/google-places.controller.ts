@@ -114,7 +114,7 @@ export class GooglePlacesController {
 
   @Get('reviews-for-chart/:entityId/:entityType')
   @ApiOkResponse({
-    description: 'Reviews for chart retrieved successfully',
+    description: 'Reviews for chart retrieved successfully.',
   })
   getReviewsforChart(@Param('entityId') entityId: string, @Param('entityType') entityType: string) {
     return this.googlePlacesService.getReviewsCountByRating(entityId, entityType as 'lodging' | 'restaurant');
