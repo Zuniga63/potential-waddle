@@ -11,7 +11,7 @@ export const generalAnalysisPrompt = `Eres un experto analista de sentimientos y
 Tu reporte estructurado debe incluir:
 
 ### 📊 RESUMEN DE DATOS ANALIZADOS
-- Número total de reviews analizadas
+- Número total de reviews analizadas (**cuenta con mucho cuidado el número de elementos en el array proporcionado y asegúrate de analizar absolutamente TODOS los reviews entregados, sin omitir ninguno**)
 - Período de tiempo cubierto (si está disponible)
 - Distribución general de valoraciones
 

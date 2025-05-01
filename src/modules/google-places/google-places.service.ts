@@ -608,7 +608,7 @@ export class GooglePlacesService {
       // Send the query to Claude with relevant context
       const response = await this.anthropic.messages.create({
         model: this.anthropicModel as Model,
-        max_tokens: 1024,
+        max_tokens: 5000,
         messages: [
           {
             role: 'user',
@@ -617,7 +617,6 @@ export class GooglePlacesService {
         ],
         temperature: 0.7,
       });
-
       const responseText = response.content[0].type === 'text' ? response.content[0].text : '';
 
       // Save the summary
