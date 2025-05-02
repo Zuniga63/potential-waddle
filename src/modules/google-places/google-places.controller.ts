@@ -119,4 +119,12 @@ export class GooglePlacesController {
   getReviewsforChart(@Param('entityId') entityId: string, @Param('entityType') entityType: string) {
     return this.googlePlacesService.getReviewsCountByRating(entityId, entityType as 'lodging' | 'restaurant');
   }
+
+  @Get('reviews-for-chart-by-year/:entityId/:entityType')
+  @ApiOkResponse({
+    description: 'Reviews for chart by year retrieved successfully.',
+  })
+  getReviewsforChartByYear(@Param('entityId') entityId: string, @Param('entityType') entityType: string) {
+    return this.googlePlacesService.getReviewsCountByYear(entityId, entityType as 'lodging' | 'restaurant');
+  }
 }

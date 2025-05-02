@@ -672,4 +672,25 @@ export class GooglePlacesService {
     }));
     return result;
   }
+
+  async getReviewsCountByYear(entityId: string, entityType: 'lodging' | 'restaurant') {
+    const reviews = await this.googleReviewRepository.find({
+      where: { entityId, entityType },
+    });
+
+    // Agrupar por año
+    const counts: Record<string, number> = {};
+    for (const review of reviews) {
+      if (!review.reviewDate) continue;
+      const year = new Date(review.reviewDate).getFullYear().toString();
+      counts[year] = (counts[year] || 0) + 1;
+    }
+
+    // Convertir a array de objetos [{name: "2023", value: 10}, ...]
+    const result = Object.entries(counts)
+      .map(([year, value]) => ({ name: year, value }))
+      .sort((a, b) => a.name.localeCompare(b.name)); // Opcional: ordenar por año
+
+    return result;
+  }
 }
