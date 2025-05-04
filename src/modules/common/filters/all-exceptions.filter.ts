@@ -56,7 +56,7 @@ export class AllExceptionsFilter implements ExceptionFilter {
         httpStatus = HttpStatus.UNPROCESSABLE_ENTITY;
         errorType = 'Duplicate key';
 
-        const error: IValidationError = { [property]: { message: 'Already exists in the database', value } };
+        const error: IValidationError = { [property]: { message: 'El email ya está en uso', value } };
 
         validationErrors = error;
 
