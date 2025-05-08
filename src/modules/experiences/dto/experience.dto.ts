@@ -81,13 +81,13 @@ export class ExperienceDto {
     this.price = data.price;
     this.departure = {
       description: data.departureDescription || undefined,
-      longitude: data.departureLocation.coordinates[0],
-      latitude: data.departureLocation.coordinates[1],
+      longitude: data.departureLocation?.coordinates[0],
+      latitude: data.departureLocation?.coordinates[1],
     };
     this.arrival = {
       description: data.arrivalDescription || undefined,
-      longitude: data.arrivalLocation.coordinates[0],
-      latitude: data.arrivalLocation.coordinates[1],
+      longitude: data.arrivalLocation?.coordinates[0],
+      latitude: data.arrivalLocation?.coordinates[1],
     };
     this.guide = data.guide ? new GuideDto({ data: data.guide }) : undefined;
     this.travelTime = data.travelTime || 0;

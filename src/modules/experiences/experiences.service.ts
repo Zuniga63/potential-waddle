@@ -160,7 +160,7 @@ export class ExperiencesService {
   async create(createExperienceDto: CreateExperienceDto) {
     const { departure, arrival, ...restCreateDto } = createExperienceDto;
     const arrivalLocation: Point | null =
-      arrival.latitude && arrival.longitude
+      arrival?.latitude && arrival?.longitude
         ? {
             type: 'Point',
             coordinates: [arrival.longitude, arrival.latitude],
@@ -168,15 +168,15 @@ export class ExperiencesService {
         : null;
 
     const departureLocation: Point | null =
-      departure.latitude && departure.longitude
+      departure?.latitude && departure?.longitude
         ? {
             type: 'Point',
             coordinates: [departure.longitude, departure.latitude],
           }
         : null;
 
-    const departureDescription = departure.description;
-    const arrivalDescription = arrival.description;
+    const departureDescription = departure?.description;
+    const arrivalDescription = arrival?.description;
 
     const categories = createExperienceDto.categoryIds
       ? await this.categoryRepository.findBy({ id: In(createExperienceDto.categoryIds) })

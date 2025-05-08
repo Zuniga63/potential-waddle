@@ -29,19 +29,19 @@ class LocationDto {
   @ApiProperty({
     description: 'Longitude coordinate',
     example: '-73.935242',
-    required: true,
+    required: false,
   })
   @IsString()
-  @IsNotEmpty()
+  @IsOptional()
   longitude: string;
 
   @ApiProperty({
     description: 'Latitude coordinate',
     example: '40.73061',
-    required: true,
+    required: false,
   })
   @IsString()
-  @IsNotEmpty()
+  @IsOptional()
   latitude: string;
 }
 
@@ -107,12 +107,12 @@ export class CreateExperienceDto {
   @ApiProperty({
     description: 'Departure location details',
     type: LocationDto,
-    required: true,
+    required: false,
   })
   @ValidateNested()
   @Type(() => LocationDto)
-  @IsNotEmpty()
-  departure: {
+  @IsOptional()
+  departure?: {
     description?: string;
     longitude: number;
     latitude: number;
@@ -121,12 +121,12 @@ export class CreateExperienceDto {
   @ApiProperty({
     description: 'Arrival location details',
     type: LocationDto,
-    required: true,
+    required: false,
   })
   @ValidateNested()
   @Type(() => LocationDto)
-  @IsNotEmpty()
-  arrival: {
+  @IsOptional()
+  arrival?: {
     description?: string;
     longitude: number;
     latitude: number;

@@ -77,14 +77,14 @@ export class Experience {
   @Column('text', { name: 'departure_description', nullable: true })
   departureDescription: string | null;
 
-  @Column('geometry', { spatialFeatureType: 'Point', srid: 4326, name: 'departure_location' })
+  @Column('geometry', { spatialFeatureType: 'Point', srid: 4326, name: 'departure_location', nullable: true })
   @Index({ spatial: true })
   departureLocation: Point;
 
   @Column('text', { name: 'arrival_description', nullable: true })
   arrivalDescription: string | null;
 
-  @Column('geometry', { spatialFeatureType: 'Point', srid: 4326, name: 'arrival_location' })
+  @Column('geometry', { spatialFeatureType: 'Point', srid: 4326, name: 'arrival_location', nullable: true })
   @Index({ spatial: true })
   arrivalLocation: Point;
 
