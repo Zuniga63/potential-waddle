@@ -1,7 +1,18 @@
-import { IsArray, IsEmail, IsNotEmpty, IsOptional, IsString, IsUUID, MinLength, ValidateIf } from 'class-validator';
+import {
+  IsArray,
+  IsEmail,
+  IsNotEmpty,
+  IsOptional,
+  IsString,
+  IsUUID,
+  MinLength,
+  ValidateIf,
+  ValidateNested,
+} from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 import { parseArrayValue } from 'src/utils';
-import { Transform } from 'class-transformer';
+import { Transform, Type } from 'class-transformer';
+import { CreateLodgingRoomTypeDto } from './create-lodging-room-type.dto';
 
 export class CreateLodgingDto {
   @ApiProperty({ description: 'Slug of the place', example: '' })
@@ -112,17 +123,6 @@ export class CreateLodgingDto {
   @IsOptional()
   @Transform(({ value }) => (value === '' ? null : Number(value)))
   urbanCenterDistance?: number;
-
-  @IsOptional()
-  @ApiProperty({
-    example: ['Single', 'Double', 'Triple'],
-    description: 'List of room types of the lodging',
-    readOnly: true,
-    required: false,
-    type: 'string',
-    isArray: true,
-  })
-  roomTypes: string[];
 
   @ApiProperty({
     example: ['WiFi', 'Parking', 'Pool'],
@@ -258,4 +258,28 @@ export class CreateLodgingDto {
   @IsOptional()
   @IsArray()
   placeIds?: string[];
+
+  @ApiProperty({
+    example: ['Standard Room', 'Deluxe Room', 'Suite'],
+    description: 'List of room types (legacy field)',
+    required: false,
+    type: 'string',
+    isArray: true,
+  })
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  roomTypes?: string[];
+
+  @ApiProperty({
+    description: 'Array of detailed room types for the lodging',
+    required: false,
+    type: CreateLodgingRoomTypeDto,
+    isArray: true,
+  })
+  @IsOptional()
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => CreateLodgingRoomTypeDto)
+  lodgingRoomTypes?: CreateLodgingRoomTypeDto[];
 }

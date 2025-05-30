@@ -18,6 +18,7 @@ import { LodgingImage } from './lodging-image.entity';
 import { Review } from 'src/modules/reviews/entities';
 import { User } from 'src/modules/users/entities';
 import { LodgingPlace } from './lodging-place.entity';
+import { LodgingRoomType } from './lodging-room-type.entity';
 
 @Entity({ name: 'lodging' })
 export class Lodging {
@@ -59,6 +60,9 @@ export class Lodging {
 
   @OneToMany(() => LodgingPlace, place => place.lodging)
   places: LodgingPlace[];
+
+  @OneToMany(() => LodgingRoomType, roomType => roomType.lodging)
+  lodgingRoomTypes: LodgingRoomType[];
 
   // * ----------------------------------------------------------------------------------------------------------------
   // * MAIN FIELDS

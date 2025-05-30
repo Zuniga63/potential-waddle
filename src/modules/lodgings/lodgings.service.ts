@@ -8,7 +8,7 @@ import {
 import { InjectRepository } from '@nestjs/typeorm';
 import { FindOptionsRelations, In, Point, Repository } from 'typeorm';
 
-import { Lodging, LodgingImage, LodgingPlace } from './entities';
+import { Lodging, LodgingImage, LodgingPlace, LodgingRoomType } from './entities';
 import { CreateLodgingDto, LodgingFullDto, LodgingIndexDto, UpdateLodgingDto } from './dto';
 import { LodgingFindAllParams } from './interfaces';
 import { generateLodgingQueryFilters } from './utils';
@@ -44,6 +44,8 @@ export class LodgingsService {
     private readonly googlePlacesService: GooglePlacesService,
     @InjectRepository(LodgingPlace)
     private readonly lodgingPlaceRepository: Repository<LodgingPlace>,
+    @InjectRepository(LodgingRoomType)
+    private readonly lodgingRoomTypeRepository: Repository<LodgingRoomType>,
   ) {}
 
   // ------------------------------------------------------------------------------------------------
@@ -177,7 +179,8 @@ export class LodgingsService {
   // Create lodging
   // ------------------------------------------------------------------------------------------------
   async create(createLodgingDto: CreateLodgingDto) {
-    const { latitude, longitude, ...restCreateDto } = createLodgingDto;
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const { latitude, longitude, lodgingRoomTypes, ...restCreateDto } = createLodgingDto;
 
     const location: Point | null =
       latitude && longitude
@@ -222,12 +225,24 @@ export class LodgingsService {
       // Luego creamos las relaciones de lugares si hay lugares para guardar
       if (places.length > 0) {
         for (const [index, place] of places.entries()) {
-          await this.lodgingPlaceRepository.save({
+          const lodgingPlace = this.lodgingPlaceRepository.create({
             lodging: newLodging,
             place: place,
             order: index + 1,
             distance: 0,
           });
+          await this.lodgingPlaceRepository.save(lodgingPlace);
+        }
+      }
+
+      // Crear lodging room types si se proporcionan
+      if (lodgingRoomTypes && lodgingRoomTypes.length > 0) {
+        for (const roomTypeData of lodgingRoomTypes) {
+          const lodgingRoomType = this.lodgingRoomTypeRepository.create({
+            ...roomTypeData,
+            lodging: newLodging,
+          });
+          await this.lodgingRoomTypeRepository.save(lodgingRoomType);
         }
       }
 
@@ -252,7 +267,8 @@ export class LodgingsService {
       : [];
 
     // Extraer lat y lng del DTO y crear el Point
-    const { latitude, longitude, ...restUpdateDto } = updateLodgingDto;
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const { latitude, longitude, lodgingRoomTypes, ...restUpdateDto } = updateLodgingDto;
     const location =
       latitude && longitude
         ? {
@@ -273,17 +289,40 @@ export class LodgingsService {
       // 4. Crear nuevas relaciones solo si hay places para guardar
       if (places.length > 0) {
         for (const [index, place] of places.entries()) {
-          await this.lodgingPlaceRepository.save({
+          const lodgingPlace = this.lodgingPlaceRepository.create({
             lodging: lodging,
             place: place,
             order: index + 1,
             distance: 0,
           });
+          await this.lodgingPlaceRepository.save(lodgingPlace);
         }
       }
     } catch (error) {
       this.logger.error(`Error updating lodging places for ID ${id}: ${error.message}`, error.stack);
       throw new InternalServerErrorException(`Error updating lodging places: ${error.message}`);
+    }
+
+    // Manejar lodgingRoomTypes si se proporcionan
+    if (lodgingRoomTypes !== undefined) {
+      try {
+        // Eliminar todos los lodgingRoomTypes existentes para este lodging
+        await this.lodgingRoomTypeRepository.delete({ lodging: { id: lodging.id } });
+
+        // Crear nuevos lodgingRoomTypes si se proporcionan
+        if (lodgingRoomTypes && lodgingRoomTypes.length > 0) {
+          for (const roomTypeData of lodgingRoomTypes) {
+            const lodgingRoomType = this.lodgingRoomTypeRepository.create({
+              ...roomTypeData,
+              lodging: lodging,
+            });
+            await this.lodgingRoomTypeRepository.save(lodgingRoomType);
+          }
+        }
+      } catch (error) {
+        this.logger.error(`Error updating lodging room types for ID ${id}: ${error.message}`, error.stack);
+        throw new InternalServerErrorException(`Error updating lodging room types: ${error.message}`);
+      }
     }
 
     try {
@@ -329,6 +368,7 @@ export class LodgingsService {
         images: {
           imageResource: true,
         },
+        lodgingRoomTypes: true,
       },
     });
 
@@ -337,8 +377,16 @@ export class LodgingsService {
     try {
       // Delete everything in a single transaction
       await this.lodgingRespository.manager.transaction(async manager => {
+        // 1. Delete lodgingRoomTypes first
+        if (lodging.lodgingRoomTypes && lodging.lodgingRoomTypes.length > 0) {
+          await manager.delete(
+            LodgingRoomType,
+            lodging.lodgingRoomTypes.map(roomType => roomType.id),
+          );
+        }
+
         if (lodging.images && lodging.images.length > 0) {
-          // 1. Delete images from Cloudinary
+          // 2. Delete images from Cloudinary
           await Promise.all(
             lodging.images.map(image =>
               image.imageResource.publicId
@@ -347,20 +395,20 @@ export class LodgingsService {
             ),
           );
 
-          // 2. Delete LodgingImage entries first
+          // 3. Delete LodgingImage entries
           await manager.delete(
             LodgingImage,
             lodging.images.map(image => image.id),
           );
 
-          // 3. Delete ImageResource entries
+          // 4. Delete ImageResource entries
           await manager.delete(
             ImageResource,
             lodging.images.map(image => image.imageResource.id),
           );
         }
 
-        // 4. Finally delete the lodging
+        // 5. Finally delete the lodging
         await manager.delete(Lodging, { id: lodging.id });
       });
 
