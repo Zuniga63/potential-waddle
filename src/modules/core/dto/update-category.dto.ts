@@ -1,16 +1,16 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsNotEmpty, IsOptional, IsString, IsUUID, IsBoolean } from 'class-validator';
+import { IsOptional, IsString, IsUUID, IsBoolean } from 'class-validator';
 
-export class CreateCategoryDto {
-  @ApiProperty({ example: 'Food & Restaurants', description: 'The name of the category' })
+export class UpdateCategoryDto {
+  @ApiProperty({ example: 'Food & Restaurants', description: 'The name of the category', required: false })
   @IsString()
-  @IsNotEmpty()
-  name: string;
+  @IsOptional()
+  name?: string;
 
-  @ApiProperty({ example: 'food-restaurants', description: 'The slug of the category' })
+  @ApiProperty({ example: 'food-restaurants', description: 'The slug of the category', required: false })
   @IsString()
-  @IsNotEmpty()
-  slug: string;
+  @IsOptional()
+  slug?: string;
 
   @ApiProperty({
     example: 'Category for food and restaurant establishments',
@@ -34,7 +34,6 @@ export class CreateCategoryDto {
     example: true,
     description: 'Whether the category is enabled',
     required: false,
-    default: true,
   })
   @IsBoolean()
   @IsOptional()

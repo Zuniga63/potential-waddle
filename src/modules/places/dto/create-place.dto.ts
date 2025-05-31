@@ -50,7 +50,7 @@ export class CreatePlaceDto {
   difficultyLevel: number;
 
   @ApiProperty({ description: 'This is the score awarded for reaching the site, on a scale from 1 to 100.' })
-  @Max(100)
+  @Max(500)
   @Min(1)
   @IsNumber()
   @IsNotEmpty()

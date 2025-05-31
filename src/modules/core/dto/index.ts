@@ -1,6 +1,7 @@
 export { CreateModelDto } from './create-model.dto';
 export { CreateFacilityDto } from './create-facility.dto';
 export { CreateCategoryDto } from './create-category.dto';
+export { UpdateCategoryDto } from './update-category.dto';
 export { CreateLanguageDto } from './create-language.dto';
 export { CategoryDto } from './category.dto';
 export { FacilityDto } from './facility.dto';

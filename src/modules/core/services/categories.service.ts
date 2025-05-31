@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Category, Model } from '../entities';
 import {
@@ -11,7 +11,7 @@ import {
   Not,
   Repository,
 } from 'typeorm';
-import { CreateCategoryDto } from '../dto';
+import { CreateCategoryDto, UpdateCategoryDto } from '../dto';
 import { ModelsEnum } from '../enums';
 
 @Injectable()
@@ -105,21 +105,134 @@ export class CategoriesService {
   }
 
   // * -------------------------------------------------------------------------------------------------------------
+  // * GET ALL CATEGORIES (FULL)
+  // * -------------------------------------------------------------------------------------------------------------
+  async findAllFull() {
+    const order: FindOptionsOrder<Category> = { name: 'ASC' };
+    const relations: FindOptionsRelations<Category> = {
+      icon: true,
+      models: true,
+      places: true,
+      restaurants: true,
+      lodgings: true,
+      experiences: true,
+      commerces: true,
+      guides: true,
+      transports: true,
+    };
+    const select: FindOptionsSelect<Category> = {
+      models: { id: true, name: true, slug: true },
+      places: { id: true },
+      restaurants: { id: true },
+      lodgings: { id: true },
+      experiences: { id: true },
+      commerces: { id: true },
+      guides: { id: true },
+      transports: { id: true },
+    };
+
+    return this.categoriesRepository.find({
+      order,
+      relations,
+      select,
+    });
+  }
+
+  // * -------------------------------------------------------------------------------------------------------------
   // * GET CATEGORY BY ID
   // * -------------------------------------------------------------------------------------------------------------
-  findOne() {
-    return 'This action returns a category by ID';
+  async findOne(id: string) {
+    const category = await this.categoriesRepository.findOne({
+      where: { id },
+      relations: { icon: true, models: true },
+      select: { models: { id: true, name: true, slug: true } },
+    });
+
+    if (!category) {
+      throw new NotFoundException('Category not found');
+    }
+
+    return category;
   }
+
   // * -------------------------------------------------------------------------------------------------------------
   // * UPDATE CATEGORY
   // * -------------------------------------------------------------------------------------------------------------
-  update() {
-    return 'This action updates a category';
+  async update(id: string, updateCategoryDto: UpdateCategoryDto) {
+    const { models: modelsDto, ...res } = updateCategoryDto;
+
+    // Verificar que la categoría existe
+    const existingCategory = await this.categoriesRepository.findOne({
+      where: { id },
+      relations: { models: true },
+    });
+
+    if (!existingCategory) {
+      throw new NotFoundException('Category not found');
+    }
+
+    // Si se proporcionan modelos, buscarlos en la base de datos
+    let models: Model[] = [];
+    if (modelsDto && modelsDto.length > 0) {
+      models = await this.modelsRepository.findBy({ id: In(modelsDto) });
+    }
+
+    // Actualizar la categoría
+    const updatedCategory = await this.categoriesRepository.save({
+      ...existingCategory,
+      ...res,
+      models: modelsDto !== undefined ? models : existingCategory.models,
+    });
+
+    // Retornar la categoría actualizada con sus relaciones
+    return this.categoriesRepository.findOne({
+      where: { id: updatedCategory.id },
+      relations: { icon: true, models: true },
+      select: { models: { id: true, name: true, slug: true } },
+    });
   }
+
   // * -------------------------------------------------------------------------------------------------------------
   // * DELETE CATEGORY
   // * -------------------------------------------------------------------------------------------------------------
-  remove() {
-    return 'This action removes a category';
+  async remove(id: string) {
+    // Verificar que la categoría existe
+    const category = await this.categoriesRepository.findOne({
+      where: { id },
+      relations: {
+        places: true,
+        restaurants: true,
+        lodgings: true,
+        experiences: true,
+        commerces: true,
+        guides: true,
+        transports: true,
+      },
+    });
+
+    if (!category) {
+      throw new NotFoundException('Category not found');
+    }
+
+    // Verificar si la categoría tiene relaciones activas
+    const hasRelations =
+      (category.places && category.places.length > 0) ||
+      (category.restaurants && category.restaurants.length > 0) ||
+      (category.lodgings && category.lodgings.length > 0) ||
+      (category.experiences && category.experiences.length > 0) ||
+      (category.commerces && category.commerces.length > 0) ||
+      (category.guides && category.guides.length > 0) ||
+      (category.transports && category.transports.length > 0);
+
+    if (hasRelations) {
+      throw new ConflictException(
+        'Cannot delete category with active relationships. Please remove all associated items first.',
+      );
+    }
+
+    // Eliminar la categoría
+    await this.categoriesRepository.remove(category);
+
+    return { message: `Category "${category.name}" has been successfully deleted` };
   }
 }

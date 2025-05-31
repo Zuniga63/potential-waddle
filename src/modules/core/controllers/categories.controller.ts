@@ -4,18 +4,20 @@ import {
   Delete,
   Get,
   HttpStatus,
+  Param,
   ParseBoolPipe,
   ParseEnumPipe,
+  ParseUUIDPipe,
   Patch,
   Post,
   Query,
 } from '@nestjs/common';
-import { ApiOperation, ApiQuery, ApiResponse, ApiTags } from '@nestjs/swagger';
+import { ApiOperation, ApiQuery, ApiResponse, ApiTags, ApiParam } from '@nestjs/swagger';
 import { SwaggerTags } from 'src/config';
-import { CreateCategoryDto } from '../dto';
+import { CreateCategoryDto, UpdateCategoryDto } from '../dto';
 import { CategoriesService } from '../services';
 import { ModelsEnum } from '../enums';
-import { PublicCategoryDto } from '../dto/categories';
+import { PublicCategoryDto, FullCategoryDto } from '../dto/categories';
 
 @Controller('categories')
 @ApiTags(SwaggerTags.Categories)
@@ -65,30 +67,71 @@ export class CategoriesController {
     return this.categoriesService.findAll({ model, onlyEnabled, onlyAsigned });
   }
   // * -------------------------------------------------------------------------------------------------------------
+  // * GET ALL CATEGORIES (FULL)
+  // * -------------------------------------------------------------------------------------------------------------
+  @Get('full')
+  @ApiOperation({ summary: 'Get all categories with complete information' })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    type: [FullCategoryDto],
+    description: 'Returns all categories with complete information including all relationships',
+  })
+  findAllFull() {
+    return this.categoriesService.findAllFull();
+  }
+  // * -------------------------------------------------------------------------------------------------------------
   // * GET CATEGORY BY ID
   // * -------------------------------------------------------------------------------------------------------------
   @Get(':id')
-  @ApiOperation({ summary: 'This endpoint is currently disabled' })
-  @ApiResponse({ status: HttpStatus.FORBIDDEN, description: 'This endpoint is disabled' })
-  findOne() {
-    return 'This action returns a model by ID';
+  @ApiOperation({ summary: 'Get a category by ID' })
+  @ApiParam({ name: 'id', description: 'Category UUID', type: 'string' })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    type: FullCategoryDto,
+    description: 'Returns the category with complete information',
+  })
+  @ApiResponse({ status: HttpStatus.NOT_FOUND, description: 'Category not found' })
+  findOne(@Param('id', ParseUUIDPipe) id: string) {
+    return this.categoriesService.findOne(id);
   }
   // * -------------------------------------------------------------------------------------------------------------
   // * UPDATE CATEGORY
   // * -------------------------------------------------------------------------------------------------------------
   @Patch(':id')
-  @ApiOperation({ summary: 'This endpoint is currently disabled' })
-  @ApiResponse({ status: HttpStatus.FORBIDDEN, description: 'This endpoint is disabled' })
-  update() {
-    return 'This action updates a category';
+  @ApiOperation({ summary: 'Update a category' })
+  @ApiParam({ name: 'id', description: 'Category UUID', type: 'string' })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    type: FullCategoryDto,
+    description: 'Returns the updated category',
+  })
+  @ApiResponse({ status: HttpStatus.NOT_FOUND, description: 'Category not found' })
+  @ApiResponse({ status: HttpStatus.BAD_REQUEST, description: 'Invalid input data' })
+  update(@Param('id', ParseUUIDPipe) id: string, @Body() updateCategoryDto: UpdateCategoryDto) {
+    return this.categoriesService.update(id, updateCategoryDto);
   }
   // * -------------------------------------------------------------------------------------------------------------
   // * DELETE CATEGORY
   // * -------------------------------------------------------------------------------------------------------------
   @Delete(':id')
-  @ApiOperation({ summary: 'This endpoint is currently disabled' })
-  @ApiResponse({ status: HttpStatus.FORBIDDEN, description: 'This endpoint is disabled' })
-  remove() {
-    return 'This action removes a category';
+  @ApiOperation({ summary: 'Delete a category' })
+  @ApiParam({ name: 'id', description: 'Category UUID', type: 'string' })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'Category successfully deleted',
+    schema: {
+      type: 'object',
+      properties: {
+        message: { type: 'string', example: 'Category "Food" has been successfully deleted' },
+      },
+    },
+  })
+  @ApiResponse({ status: HttpStatus.NOT_FOUND, description: 'Category not found' })
+  @ApiResponse({
+    status: HttpStatus.CONFLICT,
+    description: 'Cannot delete category with active relationships',
+  })
+  remove(@Param('id', ParseUUIDPipe) id: string) {
+    return this.categoriesService.remove(id);
   }
 }
