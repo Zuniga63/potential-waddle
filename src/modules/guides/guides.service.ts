@@ -86,7 +86,6 @@ export class GuidesService {
       user: true,
     };
 
-    let guides;
     const [_guides, count] = await this.guideRepository.findAndCount({
       skip,
       take: limit,
@@ -97,10 +96,14 @@ export class GuidesService {
         isPublic: true,
       },
     });
-    guides = _guides;
+    const guides = _guides;
 
     if (shouldRandomize) {
-      guides = guides.sort(() => Math.random() - 0.5);
+      // Fisher-Yates shuffle algorithm for better randomization
+      for (let i = guides.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [guides[i], guides[j]] = [guides[j], guides[i]];
+      }
     }
 
     return new GuidesListDto({ currentPage: page, pages: Math.ceil(count / limit), count }, guides);
