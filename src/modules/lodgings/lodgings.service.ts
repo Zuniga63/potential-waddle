@@ -129,6 +129,7 @@ export class LodgingsService {
       town: { department: true },
       images: { imageResource: true },
       places: { place: true },
+      lodgingRoomTypes: true,
     };
 
     let lodging = await this.lodgingRespository.findOne({
@@ -158,6 +159,7 @@ export class LodgingsService {
           town: { department: true },
         },
       },
+      lodgingRoomTypes: true,
     };
 
     let lodging = await this.lodgingRespository.findOne({

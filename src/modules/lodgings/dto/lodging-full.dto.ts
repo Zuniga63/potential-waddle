@@ -3,6 +3,7 @@ import { LodgingIndexDto } from './lodging-index.dto';
 import { FacilityDto } from 'src/modules/core/dto';
 import { Lodging } from '../entities';
 import { PlaceDto } from 'src/modules/places/dto';
+import { LodgingRoomTypeDto } from './lodging-room-type.dto';
 
 export class LodgingFullDto extends LodgingIndexDto {
   @ApiProperty({
@@ -26,13 +27,22 @@ export class LodgingFullDto extends LodgingIndexDto {
 
   @ApiProperty({
     example: ['Single', 'Double', 'Triple'],
-    description: 'List of room types of the lodging',
+    description: 'List of room types of the lodging (legacy field)',
     readOnly: true,
     required: false,
     type: 'string',
     isArray: true,
   })
   roomTypes: string[];
+
+  @ApiProperty({
+    description: 'List of detailed room types of the lodging',
+    readOnly: true,
+    required: false,
+    type: LodgingRoomTypeDto,
+    isArray: true,
+  })
+  lodgingRoomTypes: LodgingRoomTypeDto[];
 
   @ApiProperty({
     example: '123 Main St',
@@ -171,6 +181,7 @@ export class LodgingFullDto extends LodgingIndexDto {
     this.facilities = lodging.facilities?.map(facility => new FacilityDto(facility)) || [];
     this.amenities = lodging.amenities || [];
     this.roomTypes = lodging.roomTypes || [];
+    this.lodgingRoomTypes = lodging.lodgingRoomTypes?.map(roomType => new LodgingRoomTypeDto(roomType)) || [];
     this.address = lodging.address || undefined;
     this.phoneNumbers = lodging.phoneNumbers || [];
     this.email = lodging.email || undefined;

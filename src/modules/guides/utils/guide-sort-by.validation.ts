@@ -5,6 +5,7 @@ import { GuideSortByEnum } from '../constants';
 @ValidatorConstraint({ name: 'GuideSortByValidation', async: false })
 export class GuideSortByValidation implements ValidatorConstraintInterface {
   validate(value: any) {
+    console.log(value, 'value');
     const regex = new RegExp(`^(-)?(${Object.values(GuideSortByEnum).join('|')})$`);
     return typeof value === 'string' && regex.test(value);
   }
