@@ -7,4 +7,9 @@ export class UpdatePlaceDto extends PartialType(CreatePlaceDto) {
   @IsOptional()
   @ApiProperty({ description: 'Whether the place is public', required: false })
   showLocation?: boolean;
+
+  @IsBoolean()
+  @IsOptional()
+  @ApiProperty({ description: 'Whether the place is public', required: false })
+  isFeatured?: boolean;
 }

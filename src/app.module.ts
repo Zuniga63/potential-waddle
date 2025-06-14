@@ -23,6 +23,7 @@ import { TransportModule } from './modules/transport/transport.module';
 import { CommerceModule } from './modules/commerce/commerce.module';
 import { GuidesModule } from './modules/guides/guides.module';
 import { GooglePlacesModule } from './modules/google-places/google-places.module';
+import { HomeModule } from './modules/home/home.module';
 
 @Module({
   imports: [
@@ -72,6 +73,8 @@ import { GooglePlacesModule } from './modules/google-places/google-places.module
     GuidesModule,
 
     GooglePlacesModule,
+
+    HomeModule,
   ],
   controllers: [],
   providers: [],
