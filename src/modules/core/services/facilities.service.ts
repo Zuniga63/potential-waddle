@@ -2,8 +2,9 @@ import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Facility, Model } from '../entities';
 import { FindOptionsOrder, FindOptionsRelations, FindOptionsWhere, In, IsNull, Not, Repository } from 'typeorm';
-import { CreateFacilityDto } from '../dto';
+import { CreateFacilityDto, UpdateFacilityDto } from '../dto';
 import { ModelsEnum } from '../enums';
+import { NotFoundException } from '@nestjs/common';
 
 @Injectable()
 export class FacilitiesService {
@@ -25,7 +26,7 @@ export class FacilitiesService {
       const models = await this.modelsRepository.findBy({ id: In(modelsDto) });
       facility.models = models;
     }
-
+    facility.isEnabled = true;
     return this.facilitiesRepository.save(facility);
   }
   // * -------------------------------------------------------------------------------------------------------------
@@ -75,19 +76,64 @@ export class FacilitiesService {
   // * -------------------------------------------------------------------------------------------------------------
   // * GET FACILITY BY ID
   // * -------------------------------------------------------------------------------------------------------------
-  findOne() {
-    return 'This action returns a facility by ID';
+  async findOne(id: string) {
+    const facility = await this.facilitiesRepository.findOne({
+      where: { id },
+      relations: {
+        icon: true,
+        models: true,
+        places: true,
+        restaurants: true,
+        lodgings: true,
+        experiences: true,
+        commerces: true,
+      },
+    });
+
+    if (!facility) {
+      throw new NotFoundException('Facility not found');
+    }
+
+    return facility;
   }
   // * -------------------------------------------------------------------------------------------------------------
   // * UPDATE FACILITY
   // * -------------------------------------------------------------------------------------------------------------
-  update() {
-    return 'This action updates a facility';
+  async update(id: string, updateFacilityDto: UpdateFacilityDto) {
+    const facility = await this.facilitiesRepository.findOne({
+      where: { id },
+      relations: { models: true },
+    });
+
+    if (!facility) {
+      throw new NotFoundException('Facility not found');
+    }
+
+    const { models: modelsDto, ...rest } = updateFacilityDto;
+
+    // Update basic fields
+    Object.assign(facility, rest);
+
+    // Update models if provided
+    if (modelsDto && modelsDto.length) {
+      const models = await this.modelsRepository.findBy({ id: In(modelsDto) });
+      facility.models = models;
+    }
+    facility.isEnabled = true;
+
+    return this.facilitiesRepository.save(facility);
   }
   // * -------------------------------------------------------------------------------------------------------------
   // * DELETE FACILITY
   // * -------------------------------------------------------------------------------------------------------------
-  remove() {
-    return 'This action removes a facility';
+  async remove(id: string) {
+    const facility = await this.facilitiesRepository.findOne({ where: { id } });
+
+    if (!facility) {
+      throw new NotFoundException('Facility not found');
+    }
+
+    await this.facilitiesRepository.remove(facility);
+    return { message: 'Facility deleted successfully' };
   }
 }

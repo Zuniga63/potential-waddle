@@ -1,7 +1,7 @@
-import { Body, Controller, Delete, Get, HttpStatus, ParseEnumPipe, Patch, Post, Query } from '@nestjs/common';
+import { Body, Controller, Delete, Get, HttpStatus, ParseEnumPipe, Patch, Post, Query, Param } from '@nestjs/common';
 import { ApiOperation, ApiQuery, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { SwaggerTags } from 'src/config';
-import { CreateFacilityDto } from '../dto';
+import { CreateFacilityDto, UpdateFacilityDto } from '../dto';
 import { FacilitiesService } from '../services';
 import { ModelsEnum } from '../enums';
 
@@ -49,27 +49,30 @@ export class FacilitiesController {
   // * GET FACILITY BY ID
   // * -------------------------------------------------------------------------------------------------------------
   @Get(':id')
-  @ApiOperation({ summary: 'This endpoint is currently disabled' })
-  @ApiResponse({ status: HttpStatus.FORBIDDEN, description: 'This endpoint is disabled' })
-  findOne() {
-    return 'This action returns a model by ID';
+  @ApiOperation({ summary: 'Get facility by ID' })
+  @ApiResponse({ status: HttpStatus.OK, description: 'Facility retrieved successfully' })
+  @ApiResponse({ status: HttpStatus.NOT_FOUND, description: 'Facility not found' })
+  findOne(@Param('id') id: string) {
+    return this.facilitiesService.findOne(id);
   }
   // * -------------------------------------------------------------------------------------------------------------
   // * UPDATE FACILITY
   // * -------------------------------------------------------------------------------------------------------------
   @Patch(':id')
-  @ApiOperation({ summary: 'This endpoint is currently disabled' })
-  @ApiResponse({ status: HttpStatus.FORBIDDEN, description: 'This endpoint is disabled' })
-  update() {
-    return 'This action updates a category';
+  @ApiOperation({ summary: 'Update facility by ID' })
+  @ApiResponse({ status: HttpStatus.OK, description: 'Facility updated successfully' })
+  @ApiResponse({ status: HttpStatus.NOT_FOUND, description: 'Facility not found' })
+  update(@Param('id') id: string, @Body() updateFacilityDto: UpdateFacilityDto) {
+    return this.facilitiesService.update(id, updateFacilityDto);
   }
   // * -------------------------------------------------------------------------------------------------------------
   // * DELETE FACILITY
   // * -------------------------------------------------------------------------------------------------------------
   @Delete(':id')
-  @ApiOperation({ summary: 'This endpoint is currently disabled' })
-  @ApiResponse({ status: HttpStatus.FORBIDDEN, description: 'This endpoint is disabled' })
-  remove() {
-    return 'This action removes a category';
+  @ApiOperation({ summary: 'Delete facility by ID' })
+  @ApiResponse({ status: HttpStatus.OK, description: 'Facility deleted successfully' })
+  @ApiResponse({ status: HttpStatus.NOT_FOUND, description: 'Facility not found' })
+  remove(@Param('id') id: string) {
+    return this.facilitiesService.remove(id);
   }
 }

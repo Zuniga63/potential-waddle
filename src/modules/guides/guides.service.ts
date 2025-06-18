@@ -148,7 +148,13 @@ export class GuidesService {
       },
     };
 
-    const guide = await this.guideRepository.findOne({ where: { slug: identifier }, relations });
+    const guide = await this.guideRepository.findOne({
+      where: {
+        slug: identifier,
+        experiences: { isPublic: true },
+      },
+      relations,
+    });
     if (!guide) throw new NotFoundException('Guide not found');
     return new GuideDto({ data: guide });
   }
@@ -164,7 +170,13 @@ export class GuidesService {
       },
     };
 
-    const guide = await this.guideRepository.findOne({ where: { id }, relations });
+    const guide = await this.guideRepository.findOne({
+      where: {
+        id,
+        experiences: { isPublic: true },
+      },
+      relations,
+    });
     if (!guide) throw new NotFoundException('Guide not found');
     return new GuideDto({ data: guide });
   }
