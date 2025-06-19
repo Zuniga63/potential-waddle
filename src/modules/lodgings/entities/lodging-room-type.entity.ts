@@ -1,6 +1,7 @@
-import { Column, CreateDateColumn, Entity, JoinColumn, ManyToOne, PrimaryGeneratedColumn } from 'typeorm';
+import { Column, CreateDateColumn, Entity, JoinColumn, ManyToOne, OneToMany, PrimaryGeneratedColumn } from 'typeorm';
 
 import { Lodging } from './lodging.entity';
+import { LodgingRoomTypeImage } from './lodging-room-type-image.entity';
 
 @Entity({ name: 'lodging_room_type' })
 export class LodgingRoomType {
@@ -13,6 +14,9 @@ export class LodgingRoomType {
   @ManyToOne(() => Lodging, lodging => lodging.roomTypes, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'lodging_id' })
   lodging: Lodging;
+
+  @OneToMany(() => LodgingRoomTypeImage, image => image.roomType)
+  images: LodgingRoomTypeImage[];
 
   // * ----------------------------------------------------------------------------------------------------------------
   // * MAIN FIELDS

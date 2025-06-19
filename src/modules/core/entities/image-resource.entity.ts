@@ -8,6 +8,7 @@ import { ExperienceImage } from 'src/modules/experiences/entities';
 import { RestaurantImage } from 'src/modules/restaurants/entities';
 import { CommerceImage } from 'src/modules/commerce/entities';
 import { GuideImage } from 'src/modules/guides/entities/guide-image.entity';
+import { LodgingRoomTypeImage } from 'src/modules/lodgings/entities/lodging-room-type-image.entity';
 
 @Entity({ name: 'image_resource' })
 export class ImageResource {
@@ -37,6 +38,9 @@ export class ImageResource {
 
   @OneToMany(() => GuideImage, guideImage => guideImage.imageResource)
   guides: GuideImage[];
+
+  @OneToMany(() => LodgingRoomTypeImage, roomTypeImage => roomTypeImage.imageResource)
+  roomTypeImages: LodgingRoomTypeImage[];
 
   // * ----------------------------------------------------------------------------------------------------------------
   // * MAIN FIELDS

@@ -66,6 +66,13 @@ export class LodgingRoomTypeDto {
   @ApiProperty({ description: 'Last update date', example: '2023-01-01T00:00:00.000Z' })
   updatedAt: Date;
 
+  @ApiProperty({
+    description: 'List of image URLs for the room type',
+    example: ['https://example.com/image1.jpg', 'https://example.com/image2.jpg'],
+    required: false,
+  })
+  images?: string[];
+
   constructor(lodgingRoomType?: LodgingRoomType) {
     if (!lodgingRoomType) return;
 
@@ -89,5 +96,6 @@ export class LodgingRoomTypeDto {
     this.isActive = lodgingRoomType.isActive;
     this.createdAt = lodgingRoomType.createdAt;
     this.updatedAt = lodgingRoomType.updatedAt;
+    this.images = lodgingRoomType.images?.sort((a, b) => a.order - b.order).map(image => image.imageResource.url) || [];
   }
 }

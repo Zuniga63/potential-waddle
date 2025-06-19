@@ -1,9 +1,23 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, ParseUUIDPipe } from '@nestjs/common';
-import { ApiTags, ApiOkResponse, ApiBadRequestResponse } from '@nestjs/swagger';
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Patch,
+  Param,
+  Delete,
+  ParseUUIDPipe,
+  UseInterceptors,
+  UploadedFiles,
+} from '@nestjs/common';
+import { ApiTags, ApiOkResponse, ApiBadRequestResponse, ApiBody, ApiConsumes } from '@nestjs/swagger';
+import { FilesInterceptor } from '@nestjs/platform-express';
 
 import { SwaggerTags } from 'src/config';
 import { LodgingRoomTypesService } from './lodging-room-types.service';
 import { CreateLodgingRoomTypeDto, UpdateLodgingRoomTypeDto } from './dto';
+import { ContentTypes } from '../common/constants';
+import { ReorderImagesDto } from '../common/dto/reoder-images.dto';
 
 @Controller('lodgings/:lodgingId/room-types')
 @ApiTags(SwaggerTags.Lodgings)
@@ -52,5 +66,52 @@ export class LodgingRoomTypesController {
   @ApiBadRequestResponse({ description: 'Room type not found' })
   delete(@Param('id', ParseUUIDPipe) id: string) {
     return this.lodgingRoomTypesService.delete(id);
+  }
+
+  // * ----------------------------------------------------------------------------------------------------------------
+  // * ROOM TYPE IMAGE ENDPOINTS
+  // * ----------------------------------------------------------------------------------------------------------------
+
+  @Post(':id/upload-images')
+  @UseInterceptors(FilesInterceptor('files', 10))
+  @ApiConsumes(ContentTypes.MULTIPART_FORM_DATA)
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        files: {
+          type: 'array',
+          items: {
+            type: 'string',
+            format: 'binary',
+          },
+        },
+      },
+    },
+  })
+  @ApiOkResponse({ description: 'Images uploaded successfully' })
+  @ApiBadRequestResponse({ description: 'The images cannot be uploaded' })
+  uploadImages(@UploadedFiles() files: Express.Multer.File[], @Param('id', ParseUUIDPipe) id: string) {
+    return this.lodgingRoomTypesService.uploadImages(id, files);
+  }
+
+  @Get(':id/images')
+  @ApiOkResponse({ description: 'Room type images list' })
+  getImages(@Param('id', ParseUUIDPipe) id: string) {
+    return this.lodgingRoomTypesService.getImages(id);
+  }
+
+  @Delete(':id/images/:imageId')
+  @ApiOkResponse({ description: 'Image deleted successfully' })
+  @ApiBadRequestResponse({ description: 'Image not found' })
+  deleteImage(@Param('id', ParseUUIDPipe) id: string, @Param('imageId', ParseUUIDPipe) imageId: string) {
+    return this.lodgingRoomTypesService.deleteImage(id, imageId);
+  }
+
+  @Patch(':id/images/reorder')
+  @ApiOkResponse({ description: 'Images reordered successfully' })
+  @ApiBadRequestResponse({ description: 'Error reordering images' })
+  reorderImages(@Param('id', ParseUUIDPipe) id: string, @Body() reorderDto: ReorderImagesDto) {
+    return this.lodgingRoomTypesService.reorderImages(id, reorderDto);
   }
 }

@@ -129,7 +129,9 @@ export class LodgingsService {
       town: { department: true },
       images: { imageResource: true },
       places: { place: true },
-      lodgingRoomTypes: true,
+      lodgingRoomTypes: {
+        images: { imageResource: true },
+      },
     };
 
     let lodging = await this.lodgingRespository.findOne({
@@ -159,7 +161,9 @@ export class LodgingsService {
           town: { department: true },
         },
       },
-      lodgingRoomTypes: true,
+      lodgingRoomTypes: {
+        images: { imageResource: true },
+      },
     };
 
     let lodging = await this.lodgingRespository.findOne({
@@ -308,17 +312,38 @@ export class LodgingsService {
     // Manejar lodgingRoomTypes si se proporcionan
     if (lodgingRoomTypes !== undefined) {
       try {
-        // Eliminar todos los lodgingRoomTypes existentes para este lodging
-        await this.lodgingRoomTypeRepository.delete({ lodging: { id: lodging.id } });
+        // Obtener los IDs de los room types que vienen en la request
+        const incomingRoomTypeIds = lodgingRoomTypes.filter(rt => rt.id).map(rt => rt.id as string);
 
-        // Crear nuevos lodgingRoomTypes si se proporcionan
+        // Eliminar los room types que ya no están en la lista (fueron eliminados por el usuario)
+        if (incomingRoomTypeIds.length > 0) {
+          await this.lodgingRoomTypeRepository
+            .createQueryBuilder()
+            .delete()
+            .from(LodgingRoomType)
+            .where('lodging_id = :lodgingId', { lodgingId: lodging.id })
+            .andWhere('id NOT IN (:...ids)', { ids: incomingRoomTypeIds })
+            .execute();
+        } else {
+          // Si no hay IDs entrantes, eliminar todos los room types existentes
+          await this.lodgingRoomTypeRepository.delete({ lodging: { id: lodging.id } });
+        }
+
+        // Procesar cada room type: actualizar existentes o crear nuevos
         if (lodgingRoomTypes && lodgingRoomTypes.length > 0) {
           for (const roomTypeData of lodgingRoomTypes) {
-            const lodgingRoomType = this.lodgingRoomTypeRepository.create({
-              ...roomTypeData,
-              lodging: lodging,
-            });
-            await this.lodgingRoomTypeRepository.save(lodgingRoomType);
+            if (roomTypeData.id) {
+              // Actualizar room type existente
+              const { id: roomTypeId, ...updateData } = roomTypeData;
+              await this.lodgingRoomTypeRepository.update(roomTypeId, updateData);
+            } else {
+              // Crear nuevo room type
+              const lodgingRoomType = this.lodgingRoomTypeRepository.create({
+                ...roomTypeData,
+                lodging: lodging,
+              });
+              await this.lodgingRoomTypeRepository.save(lodgingRoomType);
+            }
           }
         }
       } catch (error) {

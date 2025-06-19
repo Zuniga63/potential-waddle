@@ -1,7 +1,7 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 
-import { Lodging, LodgingImage, LodgingPlace, LodgingRoomType } from './entities';
+import { Lodging, LodgingImage, LodgingPlace, LodgingRoomType, LodgingRoomTypeImage } from './entities';
 import { LodgingsService } from './lodgings.service';
 import { LodgingsController } from './lodgings.controller';
 import { LodgingRoomTypesService } from './lodging-room-types.service';
@@ -27,6 +27,7 @@ import { GooglePlacesModule } from '../google-places/google-places.module';
       LodgingPlace,
       Place,
       LodgingRoomType,
+      LodgingRoomTypeImage,
     ]),
     CloudinaryModule,
     GooglePlacesModule,
