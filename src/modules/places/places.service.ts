@@ -285,7 +285,7 @@ export class PlacesService {
   // ------------------------------------------------------------------------------------------------
   // Upload image
   // ------------------------------------------------------------------------------------------------
-  async uploadImages(id: string, files: Express.Multer.File[]) {
+  async uploadImages(id: string, files: Express.Multer.File[], mediaFormat?: string, videoUrl?: string) {
     const place = await this.placeRepo.findOne({
       where: { id },
       relations: { images: { imageResource: true } },
@@ -325,6 +325,8 @@ export class PlacesService {
           imageResource,
           order: place.images.length + index + 1,
           place: { id: place.id },
+          mediaFormat: mediaFormat || 'image',
+          videoUrl: videoUrl || undefined,
         });
 
         await this.placeRepo.manager.save(PlaceImage, placeImage);

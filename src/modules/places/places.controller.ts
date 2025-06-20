@@ -236,6 +236,15 @@ export class PlacesController {
             format: 'binary',
           },
         },
+        mediaFormat: {
+          type: 'string',
+          enum: ['image', 'video'],
+          description: 'The media format type',
+        },
+        videoUrl: {
+          type: 'string',
+          description: 'The video URL if media format is video',
+        },
       },
     },
   })
@@ -244,8 +253,13 @@ export class PlacesController {
     type: PlaceDto,
   })
   @ApiBadRequestResponse({ description: 'The images cannot be uploaded' })
-  uploadImages(@UploadedFiles() files: Express.Multer.File[], @Param('identifier') identifier: string) {
-    return this.placesService.uploadImages(identifier, files);
+  uploadImages(
+    @UploadedFiles() files: Express.Multer.File[],
+    @Param('identifier') identifier: string,
+    @Body('mediaFormat') mediaFormat?: string,
+    @Body('videoUrl') videoUrl?: string,
+  ) {
+    return this.placesService.uploadImages(identifier, files, mediaFormat, videoUrl);
   }
 
   // * ----------------------------------------------------------------------------------------------------------------
