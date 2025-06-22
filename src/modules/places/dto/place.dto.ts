@@ -53,13 +53,32 @@ export class PlaceDto {
   latitude: number;
 
   @ApiProperty({
-    example: 'https://image.jpg',
+    example: [
+      {
+        id: '624013aa-9555-4a69-bf08-30cf990c56dd',
+        order: 1,
+        isPublic: true,
+        mediaFormat: 'image',
+        videoUrl: null,
+        imageResource: {
+          id: '624013aa-9555-4a69-bf08-30cf990c56dd',
+          url: 'https://image.jpg',
+          publicId: 'folder/image_abc123',
+          fileName: 'Place Name',
+          width: 1920,
+          height: 1080,
+          format: 'jpg',
+          resourceType: 'image',
+          provider: 'Cloudinary',
+        },
+      },
+    ],
     isArray: true,
-    description: 'The image of the place',
+    description: 'The images of the place with complete information',
     readOnly: true,
     required: false,
   })
-  images: string[];
+  images: any[];
 
   @ApiProperty({
     description: 'List of categories of the place',
@@ -175,7 +194,28 @@ export class PlaceDto {
     this.latitude = place.location?.coordinates[1];
     this.images = (place.images ?? [])
       .sort((a, b) => a.order - b.order)
-      .map(image => image.imageResource?.url)
+      .map(image => ({
+        id: image.id,
+        order: image.order,
+        isPublic: image.isPublic,
+        mediaFormat: image.mediaFormat,
+        videoUrl: image.videoUrl,
+        createdAt: image.createdAt,
+        updatedAt: image.updatedAt,
+        imageResource: {
+          id: image.imageResource?.id,
+          url: image.imageResource?.url,
+          publicId: image.imageResource?.publicId,
+          fileName: image.imageResource?.fileName,
+          width: image.imageResource?.width,
+          height: image.imageResource?.height,
+          format: image.imageResource?.format,
+          resourceType: image.imageResource?.resourceType,
+          provider: image.imageResource?.provider,
+          createdAt: image.imageResource?.createdAt,
+          updatedAt: image.imageResource?.updatedAt,
+        },
+      }))
       .slice(0, 4);
     this.categories = place.categories?.map(category => new CategoryDto(category));
     this.facilities = place.facilities?.map(facility => new FacilityDto(facility));

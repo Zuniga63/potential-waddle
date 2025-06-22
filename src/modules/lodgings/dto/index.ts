@@ -6,3 +6,5 @@ export { UpdateLodgingDto } from './update-lodging.dto';
 export { CreateLodgingRoomTypeDto } from './create-lodging-room-type.dto';
 export { UpdateLodgingRoomTypeDto } from './update-lodging-room-type.dto';
 export { LodgingRoomTypeDto } from './lodging-room-type.dto';
+export { UploadLodgingImagesDto } from './upload-lodging-images.dto';
+export { LodgingImageDto } from './lodging-image.dto';

@@ -17,7 +17,14 @@ import { OptionalAuth } from '../auth/decorators';
 
 import { LodgingsService } from './lodgings.service';
 import { LodgingFilters, LodgingListQueryParamsDocs } from './decorators';
-import { CreateLodgingDto, LodgingFiltersDto, LodgingFullDto, LodgingIndexDto, UpdateLodgingDto } from './dto';
+import {
+  CreateLodgingDto,
+  LodgingFiltersDto,
+  LodgingFullDto,
+  LodgingIndexDto,
+  UpdateLodgingDto,
+  UploadLodgingImagesDto,
+} from './dto';
 import { FilesInterceptor } from '@nestjs/platform-express';
 import { ContentTypes } from '../common/constants';
 import { ReorderImagesDto } from '../common/dto/reoder-images.dto';
@@ -157,6 +164,14 @@ export class LodgingsController {
             format: 'binary',
           },
         },
+        mediaFormat: {
+          type: 'string',
+          enum: ['image', 'video'],
+          default: 'image',
+        },
+        videoUrl: {
+          type: 'string',
+        },
       },
     },
   })
@@ -165,8 +180,17 @@ export class LodgingsController {
     type: LodgingFullDto,
   })
   @ApiBadRequestResponse({ description: 'The images cannot be uploaded' })
-  uploadImages(@UploadedFiles() files: Express.Multer.File[], @Param('identifier') identifier: string) {
-    return this.lodgingsService.uploadImages(identifier, files);
+  uploadImages(
+    @UploadedFiles() files: Express.Multer.File[],
+    @Param('identifier') identifier: string,
+    @Body() uploadLodgingImagesDto: UploadLodgingImagesDto,
+  ) {
+    return this.lodgingsService.uploadImages(
+      identifier,
+      files,
+      uploadLodgingImagesDto.mediaFormat,
+      uploadLodgingImagesDto.videoUrl,
+    );
   }
 
   // * ----------------------------------------------------------------------------------------------------------------

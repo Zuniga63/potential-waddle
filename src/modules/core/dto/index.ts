@@ -7,3 +7,4 @@ export { CreateLanguageDto } from './create-language.dto';
 export { CategoryDto } from './category.dto';
 export { FacilityDto } from './facility.dto';
 export { AppIconDto } from './app-icon.dto';
+export { ImageResourceDto } from './image-resource.dto';

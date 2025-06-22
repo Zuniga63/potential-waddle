@@ -456,7 +456,7 @@ export class LodgingsService {
   // ------------------------------------------------------------------------------------------------
   // Upload image
   // ------------------------------------------------------------------------------------------------
-  async uploadImages(id: string, files: Express.Multer.File[]) {
+  async uploadImages(id: string, files: Express.Multer.File[], mediaFormat?: string, videoUrl?: string) {
     const lodging = await this.lodgingRespository.findOne({
       where: { id },
       relations: { images: { imageResource: true } },
@@ -496,6 +496,8 @@ export class LodgingsService {
           imageResource,
           order: lodging.images.length + index + 1,
           lodging: { id: lodging.id },
+          mediaFormat: mediaFormat || 'image',
+          videoUrl: videoUrl || undefined,
         });
 
         await this.lodgingRespository.manager.save(LodgingImage, lodgingImage);

@@ -161,6 +161,29 @@ export class PlaceDetailDto extends PlaceDto {
     this.googleMapsUrl = place?.googleMapsUrl ?? '';
     this.howToDress = place?.howToDress ?? '';
     this.reviewCount = place?.reviewCount ?? 0;
-    this.images = place?.images?.map(image => image.imageResource?.url) ?? [];
+    this.images = (place?.images ?? [])
+      .sort((a, b) => a.order - b.order)
+      .map(image => ({
+        id: image.id,
+        order: image.order,
+        isPublic: image.isPublic,
+        mediaFormat: image.mediaFormat,
+        videoUrl: image.videoUrl,
+        createdAt: image.createdAt,
+        updatedAt: image.updatedAt,
+        imageResource: {
+          id: image.imageResource?.id,
+          url: image.imageResource?.url,
+          publicId: image.imageResource?.publicId,
+          fileName: image.imageResource?.fileName,
+          width: image.imageResource?.width,
+          height: image.imageResource?.height,
+          format: image.imageResource?.format,
+          resourceType: image.imageResource?.resourceType,
+          provider: image.imageResource?.provider,
+          createdAt: image.imageResource?.createdAt,
+          updatedAt: image.imageResource?.updatedAt,
+        },
+      }));
   }
 }

@@ -28,6 +28,12 @@ export class LodgingImage {
   @Column('boolean', { default: true, name: 'is_public' })
   isPublic: boolean;
 
+  @Column('varchar', { length: 50, nullable: true, name: 'media_format', default: 'image' })
+  mediaFormat: string;
+
+  @Column('text', { nullable: true, name: 'video_url' })
+  videoUrl: string;
+
   @CreateDateColumn({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP', name: 'created_at' })
   createdAt: Date;
 
