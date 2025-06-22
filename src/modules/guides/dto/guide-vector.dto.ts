@@ -150,7 +150,6 @@ export class GuideVectorDto {
   isPublic?: boolean;
 
   constructor({ data }: { data: Guide }) {
-    console.log(data.experiences);
     if (!data) return;
 
     this.id = data.id;
