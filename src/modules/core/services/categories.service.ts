@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Category, Model } from '../entities';
+import { Category, Model, AppIcon } from '../entities';
 import {
   FindOptionsOrder,
   FindOptionsRelations,
@@ -21,18 +21,27 @@ export class CategoriesService {
     private readonly categoriesRepository: Repository<Category>,
     @InjectRepository(Model)
     private readonly modelsRepository: Repository<Model>,
+    @InjectRepository(AppIcon)
+    private readonly appIconsRepository: Repository<AppIcon>,
   ) {}
 
   // * -------------------------------------------------------------------------------------------------------------
   // * CREATE NEW CATEGORY
   // * -------------------------------------------------------------------------------------------------------------
   async create(createCategoryDto: CreateCategoryDto) {
-    const { models: modelsDto, ...res } = createCategoryDto;
+    const { models: modelsDto, iconId, ...res } = createCategoryDto;
     const category = this.categoriesRepository.create(res);
 
     if (modelsDto && modelsDto.length) {
       const models = await this.modelsRepository.findBy({ id: In(modelsDto) });
       category.models = models;
+    }
+
+    if (iconId) {
+      const icon = await this.appIconsRepository.findOne({ where: { id: iconId } });
+      if (icon) {
+        category.icon = icon;
+      }
     }
 
     return this.categoriesRepository.save(category);
@@ -159,12 +168,12 @@ export class CategoriesService {
   // * UPDATE CATEGORY
   // * -------------------------------------------------------------------------------------------------------------
   async update(id: string, updateCategoryDto: UpdateCategoryDto) {
-    const { models: modelsDto, ...res } = updateCategoryDto;
+    const { models: modelsDto, iconId, ...res } = updateCategoryDto;
 
     // Verificar que la categoría existe
     const existingCategory = await this.categoriesRepository.findOne({
       where: { id },
-      relations: { models: true },
+      relations: { models: true, icon: true },
     });
 
     if (!existingCategory) {
@@ -177,12 +186,29 @@ export class CategoriesService {
       models = await this.modelsRepository.findBy({ id: In(modelsDto) });
     }
 
+    // Handle icon update
+    if (iconId !== undefined) {
+      if (iconId) {
+        const icon = await this.appIconsRepository.findOne({ where: { id: iconId } });
+        if (!icon) {
+          throw new NotFoundException('Icon not found');
+        }
+        existingCategory.icon = icon;
+      } else {
+        existingCategory.icon = undefined;
+      }
+    }
+
+    // Update basic fields
+    Object.assign(existingCategory, res);
+
+    // Update models if provided
+    if (modelsDto !== undefined) {
+      existingCategory.models = models;
+    }
+
     // Actualizar la categoría
-    const updatedCategory = await this.categoriesRepository.save({
-      ...existingCategory,
-      ...res,
-      models: modelsDto !== undefined ? models : existingCategory.models,
-    });
+    const updatedCategory = await this.categoriesRepository.save(existingCategory);
 
     // Retornar la categoría actualizada con sus relaciones
     return this.categoriesRepository.findOne({

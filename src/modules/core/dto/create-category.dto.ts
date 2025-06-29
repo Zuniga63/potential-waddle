@@ -31,6 +31,15 @@ export class CreateCategoryDto {
   models?: string[];
 
   @ApiProperty({
+    example: 'icon-uuid',
+    description: 'The UUID of the icon for this category',
+    required: false,
+  })
+  @IsUUID('4')
+  @IsOptional()
+  iconId?: string;
+
+  @ApiProperty({
     example: true,
     description: 'Whether the category is enabled',
     required: false,

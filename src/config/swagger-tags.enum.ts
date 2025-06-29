@@ -10,6 +10,7 @@ export enum SwaggerTags {
   Facilities = 'Facilities',
   Categories = 'Categories',
   Languages = 'Languages',
+  AppIcons = 'App Icons',
   Images = 'Images',
   Places = 'Places',
   Lodgings = 'Lodgings',

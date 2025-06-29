@@ -4,6 +4,8 @@ export { UpdateFacilityDto } from './update-facility.dto';
 export { CreateCategoryDto } from './create-category.dto';
 export { UpdateCategoryDto } from './update-category.dto';
 export { CreateLanguageDto } from './create-language.dto';
+export { CreateAppIconDto } from './create-app-icon.dto';
+export { UpdateAppIconDto } from './update-app-icon.dto';
 export { CategoryDto } from './category.dto';
 export { FacilityDto } from './facility.dto';
 export { AppIconDto } from './app-icon.dto';
