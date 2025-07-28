@@ -24,6 +24,7 @@ import { CommerceModule } from './modules/commerce/commerce.module';
 import { GuidesModule } from './modules/guides/guides.module';
 import { GooglePlacesModule } from './modules/google-places/google-places.module';
 import { HomeModule } from './modules/home/home.module';
+import { PromotionsModule } from './modules/promotions/promotions.module';
 
 @Module({
   imports: [
@@ -75,6 +76,8 @@ import { HomeModule } from './modules/home/home.module';
     GooglePlacesModule,
 
     HomeModule,
+
+    PromotionsModule,
   ],
   controllers: [],
   providers: [],
