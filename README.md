@@ -70,17 +70,17 @@ Este proyecto tiene como objetivo proporcionar un punto de partida para el desar
 
 1. Crear o actualizar la entidad del modelo de la base de datos.
 2. Verifica que la base de datos esté en ejecución antes de continuar.
-3. Detén la aplicación de NestJS si está en ejecución y, a continuación, ejecuta el siguiente comando: ```pnpm migration:generate --name=your_migration_name```
+3. Detén la aplicación de NestJS si está en ejecución y, a continuación, ejecuta el siguiente comando: `pnpm migration:generate --name=your_migration_name`
 4. La migración se generará en la carpeta src/migrations y contendrá un archivo .ts con el nombre especificado.
-5. Aplica la migración utilizando: ```pnpm migration:run```, Esto ejecutará la migración en la base de datos.
+5. Aplica la migración utilizando: `pnpm migration:run`, Esto ejecutará la migración en la base de datos.
 6. Revisa la tabla de migraciones en la base de datos para confirmar que se haya creado y aplicado correctamente.
 
 ## Procedimiento para crear migraciones manuales
 
-1. Ejecutar el comando ```pnpm migration:create --name=your_migration_name```
+1. Ejecutar el comando `pnpm migration:create --name=your_migration_name`
 2. Buscar la migración en la carpeta src/migrations/your_migration_name.ts y crear los comandos.
-3. Ejecutar el comando ```pnpm build``` para compilar la migración
-4. Aplica la migración utilizando: ```pnpm migration:run```
+3. Ejecutar el comando `pnpm build` para compilar la migración
+4. Aplica la migración utilizando: `pnpm migration:run`
 5. Revisa la tabla de migraciones en la base de datos para confirmar que se haya creado y aplicado correctamente.
 
 ## Migraciones en producción
@@ -93,7 +93,7 @@ al desplegar la aplicación.
 Para revertir una migración, es crucial que el servicio de la aplicación esté detenido.
 
 1. Ejecuta el comando `pnpm build` para crear o actualizar el folder "dist".
-2. Ejecutar el comando ```pnpm migration:revert```
+2. Ejecutar el comando `pnpm migration:revert`
 3. Revisa la tabla de migraciones en la base de datos para confirmar que se haya revertido correctamente.
 4. Eliminar la ultima migración de la carpeta src/migrations.
 5. Repetir si es necesario
@@ -149,10 +149,74 @@ $ pnpm run test:cov
 5. Copiar todas las carpetas de **place_script** dentro del folder **places** de Cloudinary.
 6. [Correr el seed desde la API](http://localhost:8080/api/docs#/Seeds/SeedsController_seedFromFile).
 
-
 ## Instalaciones adicionales y otras configuraciones
 
 - [Table Plus](https://tableplus.com/) o [PgAdmin](https://www.pgadmin.org/download/)
+
+# Respaldo de la Base de Datos
+
+Esta sección explica cómo instalar las herramientas de cliente `pg_dump` en diferentes
+sistemas operativos y cómo ejecutar el script de respaldo desde el proyecto usando
+`pnpm`.
+
+---
+
+## Requisitos Previos
+
+- Node.js y pnpm instalados.
+- Acceso remoto a la base de datos PostgreSQL (host, puerto, usuario, contraseña, nombre
+  de la base).
+- Variables de entorno configuradas en un archivo `.env` en la raíz del proyecto:
+
+```env
+DB_HOST=tu_host_remoto
+DB_PORT=5432
+DB_USER=tu_usuario
+DB_PASSWORD=tu_contraseña
+DB_NAME=tu_base_de_datos
+```
+
+---
+
+## Instalación de pg_dump
+
+Para poder generar el volcado de la base de datos, necesitas tener la herramienta
+`pg_dump`. Puedes instalar solo las herramientas cliente de PostgreSQL sin instalar el
+servidor completo.
+Consulta más detalles en:
+https://www.bytebase.com/reference/postgres/how-to/how-to-install-pgdump-on-mac-ubuntu-centos-windows/
+
+## Configuración del Script de Respaldo
+
+El proyecto incluye un script en TypeScript (`scripts/backup.ts`) que:
+
+1. Verifica/crea la carpeta `backup/` en la raíz del proyecto.
+2. Dentro de `backup/`, crea una subcarpeta con la fecha actual (`YYYY-MM-DD`).
+3. Genera dos archivos:
+
+- `<DB_NAME>.dump` (formato personalizado)
+- `<DB_NAME>.sql` (volcado SQL plano)
+  Asegúrate de que `pg_dump` esté accesible en tu terminal:
+
+```bash
+pg_dump --version
+```
+
+## Ejecutar Respaldo con pnpm
+
+1. Instala dependencias (si no lo has hecho):
+
+```bash
+pnpm install
+```
+
+2. Ejecuta el respaldo:
+
+```bash
+pnpm run backup:db
+```
+
+Esto generará los archivos de respaldo dentro de la carpeta `backup/YYYY-MM-DD/`.
 
 ## Extensiones de VSCode
 
