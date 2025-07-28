@@ -15,6 +15,13 @@ export class FileUploadDto {
   entityType: 'lodging' | 'restaurant' | 'experience' | 'guide';
 
   @ApiProperty({
+    description: 'The slug of the entity (optional, will be fetched if not provided)',
+    example: 'hotel-binntu-amazing',
+    required: false,
+  })
+  entitySlug?: string;
+
+  @ApiProperty({
     description: 'The name of the promotion',
     example: 'Summer Special Discount',
   })
@@ -67,6 +74,13 @@ export class UpdateFileUploadDto {
     required: false,
   })
   entityType?: 'lodging' | 'restaurant' | 'experience' | 'guide';
+
+  @ApiProperty({
+    description: 'The slug of the entity (optional, will be fetched if not provided)',
+    example: 'hotel-binntu-amazing',
+    required: false,
+  })
+  entitySlug?: string;
 
   @ApiProperty({
     description: 'The name of the promotion',

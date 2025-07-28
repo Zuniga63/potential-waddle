@@ -12,6 +12,9 @@ export class Promotion {
   @Column({ name: 'entity_type' })
   entityType: 'lodging' | 'restaurant' | 'experience' | 'guide';
 
+  @Column({ name: 'entity_slug', nullable: true })
+  entitySlug?: string;
+
   @Column()
   name: string;
 

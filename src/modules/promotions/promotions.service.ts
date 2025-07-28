@@ -30,8 +30,15 @@ export class PromotionsService {
       throw new BadRequestException('Error uploading image');
     }
 
+    // Obtener el slug de la entidad si no se proporcionó
+    let entitySlug = createPromotionDto.entitySlug;
+    if (!entitySlug) {
+      entitySlug = (await this.getEntitySlug(createPromotionDto.entityType, createPromotionDto.entityId)) || undefined;
+    }
+
     const promotion = this.promotionRepository.create({
       ...createPromotionDto,
+      entitySlug,
       image: cloudinaryResponse.url,
       validFrom: new Date(createPromotionDto.validFrom),
       validTo: new Date(createPromotionDto.validTo),
@@ -116,6 +123,36 @@ export class PromotionsService {
       return result[0] || null;
     } catch (error) {
       console.error('Error fetching entity info:', error);
+      return null;
+    }
+  }
+
+  private async getEntitySlug(entityType: string, entityId: string): Promise<string | null> {
+    try {
+      let query = '';
+      const params = [entityId];
+
+      switch (entityType) {
+        case 'lodging':
+          query = 'SELECT slug FROM lodging WHERE id = $1';
+          break;
+        case 'restaurant':
+          query = 'SELECT slug FROM restaurant WHERE id = $1';
+          break;
+        case 'experience':
+          query = 'SELECT slug FROM experience WHERE id = $1';
+          break;
+        case 'guide':
+          query = 'SELECT slug FROM guide WHERE id = $1';
+          break;
+        default:
+          return null;
+      }
+
+      const result = await this.promotionRepository.query(query, params);
+      return result[0]?.slug || null;
+    } catch (error) {
+      console.error('Error fetching entity slug:', error);
       return null;
     }
   }
