@@ -47,6 +47,7 @@ lerna-debug.log*
 .temp
 .tmp
 postgres
+backups
 
 # Runtime data
 pids
