@@ -22,6 +22,7 @@ import { Town } from '../towns/entities';
 import { LodgingVectorDto } from './dto/lodging-vector.dto';
 import { GooglePlacesService } from '../google-places/google-places.service';
 import { Place } from '../places/entities';
+import { PromotionsService } from '../promotions/promotions.service';
 @Injectable()
 export class LodgingsService {
   private readonly logger = new Logger(LodgingsService.name);
@@ -46,6 +47,7 @@ export class LodgingsService {
     private readonly lodgingPlaceRepository: Repository<LodgingPlace>,
     @InjectRepository(LodgingRoomType)
     private readonly lodgingRoomTypeRepository: Repository<LodgingRoomType>,
+    private readonly promotionsService: PromotionsService,
   ) {}
 
   // ------------------------------------------------------------------------------------------------
@@ -90,7 +92,22 @@ export class LodgingsService {
     if (shouldRandomize) {
       lodgings = lodgings.sort(() => Math.random() - 0.5);
     }
-    return lodgings.map(lodging => new LodgingIndexDto(lodging));
+
+    // Check for active promotions for each lodging
+    const lodgingsWithPromotions = await Promise.all(
+      lodgings.map(async lodging => {
+        const hasPromotions = await this.promotionsService.hasActivePromotions(lodging.id, 'lodging');
+        const latestPromotion = await this.promotionsService.getLatestActivePromotion(lodging.id, 'lodging');
+        return { lodging, hasPromotions, latestPromotion };
+      }),
+    );
+
+    return lodgingsWithPromotions.map(({ lodging, hasPromotions, latestPromotion }) => {
+      const dto = new LodgingIndexDto(lodging);
+      dto.hasPromotions = hasPromotions;
+      dto.latestPromotionValue = latestPromotion?.value;
+      return dto;
+    });
   }
 
   // ------------------------------------------------------------------------------------------------
@@ -178,7 +195,17 @@ export class LodgingsService {
     if (!lodging) lodging = await this.lodgingRespository.findOne({ where: { slug }, relations });
     if (!lodging) throw new NotFoundException('Lodging not found');
 
-    return new LodgingFullDto(lodging);
+    // Check for active promotions
+    const hasPromotions = await this.promotionsService.hasActivePromotions(lodging.id, 'lodging');
+    const latestPromotion = await this.promotionsService.getLatestActivePromotion(lodging.id, 'lodging');
+    const activePromotions = await this.promotionsService.getActivePromotions(lodging.id, 'lodging');
+
+    const dto = new LodgingFullDto(lodging);
+    (dto as any).hasPromotions = hasPromotions;
+    (dto as any).latestPromotionValue = latestPromotion?.value;
+    (dto as any).activePromotions = activePromotions;
+
+    return dto;
   }
 
   // ------------------------------------------------------------------------------------------------

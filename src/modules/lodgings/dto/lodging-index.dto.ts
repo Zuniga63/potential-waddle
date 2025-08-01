@@ -189,6 +189,20 @@ export class LodgingIndexDto {
   })
   showGoogleMapsReviews?: boolean;
 
+  @ApiProperty({
+    example: true,
+    description: 'Indicates if the lodging has active promotions',
+    required: false,
+  })
+  hasPromotions?: boolean;
+
+  @ApiProperty({
+    example: 25,
+    description: 'Percentage of the latest active promotion',
+    required: false,
+  })
+  latestPromotionValue?: number;
+
   constructor(lodging?: Lodging, userReview?: string) {
     if (!lodging) return;
     this.id = lodging.id;

@@ -9,5 +9,6 @@ import { CloudinaryModule } from '../cloudinary/cloudinary.module';
   imports: [TypeOrmModule.forFeature([Promotion]), CloudinaryModule],
   controllers: [PromotionsController],
   providers: [PromotionsService],
+  exports: [PromotionsService],
 })
 export class PromotionsModule {}

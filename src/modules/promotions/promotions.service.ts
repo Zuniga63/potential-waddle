@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, LessThanOrEqual, MoreThanOrEqual } from 'typeorm';
 import { Promotion } from './entities/promotion.entity';
 import { CreatePromotionDto } from './dto/create-promotion.dto';
 import { UpdatePromotionDto } from './dto/update-promotion.dto';
@@ -76,6 +76,56 @@ export class PromotionsService {
     );
 
     return enrichedPromotions;
+  }
+
+  async hasActivePromotions(
+    entityId: string,
+    entityType: 'lodging' | 'restaurant' | 'experience' | 'guide',
+  ): Promise<boolean> {
+    const now = new Date();
+
+    const count = await this.promotionRepository.count({
+      where: {
+        entityId,
+        entityType,
+        validFrom: LessThanOrEqual(now),
+        validTo: MoreThanOrEqual(now),
+      },
+    });
+
+    return count > 0;
+  }
+
+  async getLatestActivePromotion(entityId: string, entityType: 'lodging' | 'restaurant' | 'experience' | 'guide') {
+    const now = new Date();
+
+    const promotion = await this.promotionRepository.findOne({
+      where: {
+        entityId,
+        entityType,
+        validFrom: LessThanOrEqual(now),
+        validTo: MoreThanOrEqual(now),
+      },
+      order: { createdAt: 'DESC' },
+    });
+
+    return promotion;
+  }
+
+  async getActivePromotions(entityId: string, entityType: 'lodging' | 'restaurant' | 'experience' | 'guide') {
+    const now = new Date();
+
+    const promotions = await this.promotionRepository.find({
+      where: {
+        entityId,
+        entityType,
+        validFrom: LessThanOrEqual(now),
+        validTo: MoreThanOrEqual(now),
+      },
+      order: { createdAt: 'DESC' },
+    });
+
+    return promotions;
   }
 
   private async getEntityInfo(entityType: string, entityId: string) {
