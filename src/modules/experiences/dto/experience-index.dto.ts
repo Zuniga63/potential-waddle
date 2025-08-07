@@ -70,6 +70,10 @@ export class ExperienceIndexDto {
   paymentMethods?: string[];
 
   isPublic: boolean;
+
+  hasPromotions?: boolean;
+
+  latestPromotionValue?: number;
   constructor({ data }: { data: Experience }) {
     if (!data) return;
 

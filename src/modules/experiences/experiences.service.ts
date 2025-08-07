@@ -17,6 +17,7 @@ import { CloudinaryPresets } from 'src/config/cloudinary-presets.enum';
 import { ResourceProvider } from 'src/config/resource-provider.enum';
 import { ExperienceIndexDto } from './dto/experience-index.dto';
 import { ExperienceVectorDto } from './dto/experience-vector.dto';
+import { PromotionsService } from '../promotions/promotions.service';
 
 @Injectable()
 export class ExperiencesService {
@@ -37,6 +38,7 @@ export class ExperiencesService {
     private readonly guideRepository: Repository<Guide>,
 
     private readonly cloudinaryService: CloudinaryService,
+    private readonly promotionsService: PromotionsService,
   ) {}
 
   // ------------------------------------------------------------------------------------------------
@@ -81,7 +83,22 @@ export class ExperiencesService {
     if (shouldRandomize) {
       experiences = experiences.sort(() => Math.random() - 0.5);
     }
-    return experiences.map(experience => new ExperienceIndexDto({ data: experience }));
+
+    // Check for active promotions for each experience
+    const experiencesWithPromotions = await Promise.all(
+      experiences.map(async experience => {
+        const hasPromotions = await this.promotionsService.hasActivePromotions(experience.id, 'experience');
+        const latestPromotion = await this.promotionsService.getLatestActivePromotion(experience.id, 'experience');
+        return { experience, hasPromotions, latestPromotion };
+      }),
+    );
+
+    return experiencesWithPromotions.map(({ experience, hasPromotions, latestPromotion }) => {
+      const dto = new ExperienceIndexDto({ data: experience });
+      (dto as any).hasPromotions = hasPromotions;
+      (dto as any).latestPromotionValue = latestPromotion?.value;
+      return dto;
+    });
   }
 
   // ------------------------------------------------------------------------------------------------
@@ -151,7 +168,17 @@ export class ExperiencesService {
     if (!experience) experience = await this.experienceRepository.findOne({ where: { slug }, relations });
     if (!experience) throw new NotFoundException('Experience not found');
 
-    return new ExperienceDto({ data: experience });
+    // Check for active promotions
+    const hasPromotions = await this.promotionsService.hasActivePromotions(experience.id, 'experience');
+    const latestPromotion = await this.promotionsService.getLatestActivePromotion(experience.id, 'experience');
+    const activePromotions = await this.promotionsService.getActivePromotions(experience.id, 'experience');
+
+    const dto = new ExperienceDto({ data: experience });
+    (dto as any).hasPromotions = hasPromotions;
+    (dto as any).latestPromotionValue = latestPromotion?.value;
+    (dto as any).activePromotions = activePromotions;
+
+    return dto;
   }
 
   // ------------------------------------------------------------------------------------------------

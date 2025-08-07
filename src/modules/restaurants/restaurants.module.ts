@@ -8,9 +8,14 @@ import { RestaurantsController } from './restaurants.controller';
 import { CloudinaryModule } from '../cloudinary/cloudinary.module';
 import { Town } from '../towns/entities';
 import { User } from '../users/entities';
+import { PromotionsModule } from '../promotions/promotions.module';
 @Module({
   controllers: [RestaurantsController],
   providers: [RestaurantsService],
-  imports: [TypeOrmModule.forFeature([Restaurant, ImageResource, Category, Facility, Town, User]), CloudinaryModule],
+  imports: [
+    TypeOrmModule.forFeature([Restaurant, ImageResource, Category, Facility, Town, User]),
+    CloudinaryModule,
+    PromotionsModule,
+  ],
 })
 export class RestaurantsModule {}

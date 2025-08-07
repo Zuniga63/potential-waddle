@@ -18,6 +18,7 @@ import { ResourceProvider } from 'src/config/resource-provider.enum';
 import { User } from '../users/entities';
 import { RestaurantIndexDto } from './dto/restaurant-index.dto';
 import { RestaurantVectorDto } from './dto/restaurant-vector.dto';
+import { PromotionsService } from '../promotions/promotions.service';
 
 @Injectable()
 export class RestaurantsService {
@@ -38,6 +39,7 @@ export class RestaurantsService {
     private readonly userRepository: Repository<User>,
 
     private readonly cloudinaryService: CloudinaryService,
+    private readonly promotionsService: PromotionsService,
   ) {}
 
   async findAll({ filters }: RestaurantFindAllParams = {}) {
@@ -69,7 +71,22 @@ export class RestaurantsService {
     if (shouldRandomize) {
       restaurants = restaurants.sort(() => Math.random() - 0.5);
     }
-    return restaurants.map(restaurant => new RestaurantIndexDto({ data: restaurant }));
+
+    // Check for active promotions for each restaurant
+    const restaurantsWithPromotions = await Promise.all(
+      restaurants.map(async restaurant => {
+        const hasPromotions = await this.promotionsService.hasActivePromotions(restaurant.id, 'restaurant');
+        const latestPromotion = await this.promotionsService.getLatestActivePromotion(restaurant.id, 'restaurant');
+        return { restaurant, hasPromotions, latestPromotion };
+      }),
+    );
+
+    return restaurantsWithPromotions.map(({ restaurant, hasPromotions, latestPromotion }) => {
+      const dto = new RestaurantIndexDto({ data: restaurant });
+      (dto as any).hasPromotions = hasPromotions;
+      (dto as any).latestPromotionValue = latestPromotion?.value;
+      return dto;
+    });
   }
 
   // ------------------------------------------------------------------------------------------------
@@ -136,7 +153,17 @@ export class RestaurantsService {
     if (!restaurant) restaurant = await this.restaurantRepository.findOne({ where: { slug }, relations });
     if (!restaurant) throw new NotFoundException('Restaurant not found');
 
-    return new RestaurantDto({ data: restaurant });
+    // Check for active promotions
+    const hasPromotions = await this.promotionsService.hasActivePromotions(restaurant.id, 'restaurant');
+    const latestPromotion = await this.promotionsService.getLatestActivePromotion(restaurant.id, 'restaurant');
+    const activePromotions = await this.promotionsService.getActivePromotions(restaurant.id, 'restaurant');
+
+    const dto = new RestaurantDto({ data: restaurant });
+    (dto as any).hasPromotions = hasPromotions;
+    (dto as any).latestPromotionValue = latestPromotion?.value;
+    (dto as any).activePromotions = activePromotions;
+
+    return dto;
   }
 
   // ------------------------------------------------------------------------------------------------

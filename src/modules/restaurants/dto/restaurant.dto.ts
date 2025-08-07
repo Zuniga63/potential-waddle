@@ -74,6 +74,12 @@ export class RestaurantDto {
 
   showGoogleMapsReviews?: boolean;
 
+  hasPromotions?: boolean;
+
+  latestPromotionValue?: number;
+
+  activePromotions?: any[];
+
   constructor({ data }: { data?: Restaurant | null }) {
     if (!data) return;
 
