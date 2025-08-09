@@ -150,13 +150,18 @@ export class TransportService {
   }
 
   async updateAvailability(id: string, isAvailable: boolean) {
-    const transport = await this.transportRepository.findOne({ where: { id } });
+    const transport = await this.transportRepository.findOne({
+      where: { id },
+      relations: ['categories', 'categories.icon', 'town', 'town.department', 'user'],
+    });
     if (!transport) throw new NotFoundException('Transport not found');
 
-    return this.transportRepository.save({
+    const updatedTransport = await this.transportRepository.save({
       ...transport,
       isAvailable,
     });
+
+    return new TransportDto({ data: updatedTransport });
   }
   // ------------------------------------------------------------------------------------------------
   // Update user in transport
