@@ -26,4 +26,5 @@ export enum SwaggerTags {
   GooglePlaces = 'Google Places',
   Home = 'Home',
   Promotions = 'Promotions',
+  PublicEvents = 'Public Events',
 }

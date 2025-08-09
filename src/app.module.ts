@@ -1,13 +1,10 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { ConfigModule, ConfigService } from '@nestjs/config';
-
 import { appConfig, JoiValidationSchema, typeOrmConfig } from './config';
-
 import { AuthModule } from './modules/auth/auth.module';
 import { CommonModule } from './modules/common/common.module';
 import { CloudinaryModule } from './modules/cloudinary/cloudinary.module';
-
 import { UsersModule } from './modules/users/users.module';
 import { RolesModule } from './modules/roles/roles.module';
 import { TownsModule } from './modules/towns/towns.module';
@@ -25,6 +22,7 @@ import { GuidesModule } from './modules/guides/guides.module';
 import { GooglePlacesModule } from './modules/google-places/google-places.module';
 import { HomeModule } from './modules/home/home.module';
 import { PromotionsModule } from './modules/promotions/promotions.module';
+import { PublicEventsModule } from './modules/public-events/public-events.module';
 
 @Module({
   imports: [
@@ -40,44 +38,26 @@ import { PromotionsModule } from './modules/promotions/promotions.module';
     }),
 
     CommonModule,
-
     AuthModule,
-
     UsersModule,
-
     RolesModule,
-
     CloudinaryModule,
-
     TownsModule,
-
     CoreModule,
-
     PlacesModule,
-
     SeedsModule,
-
     ReviewsModule,
-
     LodgingsModule,
-
     ExperiencesModule,
-
     RestaurantsModule,
-
     TinifyModule,
-
     TransportModule,
-
     CommerceModule,
-
     GuidesModule,
-
     GooglePlacesModule,
-
     HomeModule,
-
     PromotionsModule,
+    PublicEventsModule,
   ],
   controllers: [],
   providers: [],
