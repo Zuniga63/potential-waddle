@@ -1,7 +1,15 @@
 import { Controller, Get, Post, Patch, Param, Delete, Body, ParseUUIDPipe } from '@nestjs/common';
 import { TransportService } from './transport.service';
 import { SwaggerTags } from 'src/config';
-import { ApiOkResponse, ApiOperation, ApiParam, ApiTags, ApiBody, ApiBadRequestResponse } from '@nestjs/swagger';
+import {
+  ApiOkResponse,
+  ApiOperation,
+  ApiParam,
+  ApiTags,
+  ApiBody,
+  ApiBadRequestResponse,
+  ApiConflictResponse,
+} from '@nestjs/swagger';
 import { TransportFiltersDto } from './dto';
 import { TransportFilters } from './decorators';
 import { TransportListQueryDocsGroup } from './decorators/transport-list-query-docs-group.decorator';
@@ -22,6 +30,9 @@ export class TransportController {
   @Post()
   @ApiOperation({ summary: 'Create a new transport' })
   @ApiOkResponse({ description: 'The transport has been successfully created.', type: TransportDto })
+  @ApiConflictResponse({
+    description: 'User already has a transport associated. Each user can only have one transport.',
+  })
   create(@Body() createTransportDto: CreateTransportDto) {
     return this.transportService.create(createTransportDto);
   }
@@ -57,6 +68,9 @@ export class TransportController {
   @Patch(':id')
   @ApiParam({ name: 'id', type: 'string', description: 'The UUID of the transport' })
   @ApiOkResponse({ description: 'The transport has been successfully updated.', type: TransportDto })
+  @ApiConflictResponse({
+    description: 'User already has a transport associated. Each user can only have one transport.',
+  })
   update(@Param('id', ParseUUIDPipe) id: string, @Body() updateTransportDto: UpdateTransportDto) {
     return this.transportService.update(id, updateTransportDto);
   }
@@ -94,8 +108,11 @@ export class TransportController {
   // * ----------------------------------------------------------------------------------------------------------------
   @Patch(':identifier/users/:userId')
   @OptionalAuth()
-  @ApiOkResponse({ description: 'User Updated in Restaurant', type: RestaurantDto })
-  @ApiBadRequestResponse({ description: 'The user cannot be updated in the restaurant' })
+  @ApiOkResponse({ description: 'User Updated in Transport', type: RestaurantDto })
+  @ApiBadRequestResponse({ description: 'The user cannot be updated in the transport' })
+  @ApiConflictResponse({
+    description: 'User already has a transport associated. Each user can only have one transport.',
+  })
   updateUser(@Param('identifier') identifier: string, @Param('userId', ParseUUIDPipe) userId: string) {
     return this.transportService.updateUser(identifier, userId);
   }

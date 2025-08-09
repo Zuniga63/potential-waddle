@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
 import { TransportDto } from './dto/transport.dto';
 import { TransportFindAllParams } from './interfaces/transport-find-all-params.interface';
 import { generateTransportQueryFiltersAndSort } from './logic/generate-transport-query-filters-and-sort';
@@ -33,6 +33,17 @@ export class TransportService {
     const categories = categoryIds ? await this.categoryRepo.findBy({ id: In(categoryIds) }) : [];
     const town = townId ? await this.townRepo.findOneBy({ id: townId }) : undefined;
     if (!town) throw new NotFoundException('Town not found');
+
+    // Check if user already has a transport
+    if (restDto.userId) {
+      const existingTransport = await this.transportRepository.findOne({
+        where: { user: { id: restDto.userId } },
+      });
+      if (existingTransport) {
+        throw new ConflictException('User already has a transport associated. Each user can only have one transport.');
+      }
+    }
+
     const user = restDto.userId ? await this.userRepo.findOneBy({ id: restDto.userId }) : undefined;
 
     const transport = this.transportRepository.create({
@@ -107,9 +118,20 @@ export class TransportService {
     const { categoryIds, townId, userId, ...restDto } = updateTransportDto;
     const categories = categoryIds ? await this.categoryRepo.findBy({ id: In(categoryIds) }) : [];
     const town = townId ? await this.townRepo.findOneBy({ id: townId }) : undefined;
-    const user = userId ? await this.userRepo.findOneBy({ id: userId }) : undefined;
     const transport = await this.transportRepository.findOne({ where: { id } });
     if (!transport) throw new NotFoundException('Transport not found');
+
+    // Check if user already has a transport (only if changing user)
+    if (userId && userId !== transport.user?.id) {
+      const existingTransport = await this.transportRepository.findOne({
+        where: { user: { id: userId } },
+      });
+      if (existingTransport) {
+        throw new ConflictException('User already has a transport associated. Each user can only have one transport.');
+      }
+    }
+
+    const user = userId ? await this.userRepo.findOneBy({ id: userId }) : undefined;
 
     return this.transportRepository.save({
       ...transport,
@@ -145,6 +167,17 @@ export class TransportService {
 
     const user = await this.userRepo.findOne({ where: { id: userId } });
     if (!user) throw new NotFoundException('User not found');
+
+    // Check if user already has a transport (only if changing user)
+    if (userId !== transport.user?.id) {
+      const existingTransport = await this.transportRepository.findOne({
+        where: { user: { id: userId } },
+      });
+      if (existingTransport) {
+        throw new ConflictException('User already has a transport associated. Each user can only have one transport.');
+      }
+    }
+
     transport.user = user;
     await this.transportRepository.save(transport);
 
