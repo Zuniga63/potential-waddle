@@ -170,6 +170,32 @@ export class PublicEventsService {
     }
   }
 
+  async debugAll() {
+    try {
+      const events = await this.publicEventRepository.find({
+        relations: ['town', 'user', 'images', 'images.imageResource'],
+        order: { createdAt: 'DESC' },
+      });
+
+      return {
+        total: events.length,
+        events: events.map(event => ({
+          id: event.id,
+          eventName: event.eventName,
+          startDate: event.startDate,
+          isActive: event.isActive,
+          createdAt: event.createdAt,
+          town: event.town?.name,
+          user: event.user?.username,
+          imageCount: event.images?.length || 0,
+        })),
+      };
+    } catch (error) {
+      console.error('Error in debugAll:', error);
+      throw error;
+    }
+  }
+
   private snakeCase(str: string): string {
     return str.replace(/[A-Z]/g, letter => `_${letter.toLowerCase()}`);
   }

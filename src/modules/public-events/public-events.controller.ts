@@ -67,6 +67,12 @@ export class PublicEventsController {
     return this.publicEventsService.findAll(filters);
   }
 
+  @Get('debug/all')
+  @ApiOperation({ summary: 'Debug: Get all events without filters' })
+  async debugAll() {
+    return this.publicEventsService.debugAll();
+  }
+
   @Get(':id')
   @ApiOperation({ summary: 'Get a public event by ID' })
   @ApiResponse({
