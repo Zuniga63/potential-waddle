@@ -11,6 +11,7 @@ import {
   UpdateDateColumn,
 } from 'typeorm';
 import { PublicEventImage } from './public-event-image.entity';
+import { PublicEventPrice } from '../interfaces/public-event-price.interface';
 
 @Entity({ name: 'public_event' })
 export class PublicEvent {
@@ -60,6 +61,9 @@ export class PublicEvent {
 
   @Column('decimal', { precision: 10, scale: 2, nullable: true })
   price: number;
+
+  @Column('jsonb', { nullable: true, default: [] })
+  prices: Array<PublicEventPrice>;
 
   @Column('text')
   address: string;

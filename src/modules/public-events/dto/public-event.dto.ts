@@ -25,6 +25,22 @@ class UserDto {
   email: string;
 }
 
+class PublicEventPriceDto {
+  @ApiProperty({
+    description: 'Name of the price option',
+    example: 'Entrada General',
+  })
+  @Expose()
+  name: string;
+
+  @ApiProperty({
+    description: 'Price value',
+    example: 50.00,
+  })
+  @Expose()
+  value: number;
+}
+
 class ImageDto {
   @ApiProperty()
   @Expose()
@@ -97,6 +113,14 @@ export class PublicEventDto {
   })
   @Expose()
   price: number;
+
+  @ApiProperty({
+    description: 'Event prices',
+    type: [PublicEventPriceDto],
+  })
+  @Expose()
+  @Type(() => PublicEventPriceDto)
+  prices: PublicEventPriceDto[];
 
   @ApiProperty({
     description: 'Event address',

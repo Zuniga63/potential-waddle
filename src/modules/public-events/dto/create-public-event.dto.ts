@@ -7,9 +7,29 @@ import {
   IsUUID,
   IsDateString,
   MaxLength,
+  IsArray,
+  ValidateNested,
 } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
-import { Transform } from 'class-transformer';
+import { Transform, Type } from 'class-transformer';
+
+class PublicEventPriceDto {
+  @ApiProperty({
+    description: 'Name of the price option',
+    example: 'Entrada General',
+  })
+  @IsString()
+  @IsNotEmpty()
+  name: string;
+
+  @ApiProperty({
+    description: 'Price value',
+    example: 50.00,
+  })
+  @IsNumber()
+  @IsPositive()
+  value: number;
+}
 
 export class CreatePublicEventDto {
   @ApiProperty({
@@ -106,6 +126,17 @@ export class CreatePublicEventDto {
   @IsOptional()
   @Transform(({ value }) => (value === '' || value === 0 ? undefined : Number(value)))
   price?: number;
+
+  @ApiProperty({
+    description: 'Prices for the event',
+    example: [{ name: 'Entrada General', value: 50.00 }],
+    required: false,
+  })
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => PublicEventPriceDto)
+  @IsOptional()
+  prices?: PublicEventPriceDto[];
 
   @ApiProperty({
     description: 'Address of the event',

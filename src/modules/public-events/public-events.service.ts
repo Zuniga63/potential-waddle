@@ -236,48 +236,23 @@ export class PublicEventsService {
   async remove(id: string): Promise<void> {
     const publicEvent = await this.findOne(id);
 
-    try {
-      // Delete everything in a single transaction
-      await this.publicEventRepository.manager.transaction(async manager => {
-        if (publicEvent.images && publicEvent.images.length > 0) {
-          // 1. Delete images from Cloudinary
-          await Promise.all(
-            publicEvent.images.map(image =>
-              image.imageResource.publicId
-                ? this.cloudinaryService.destroyFile(image.imageResource.publicId)
-                : Promise.resolve(),
-            ),
-          );
-
-          // 2. Delete PublicEventImage entries first
-          await manager.delete(
-            PublicEventImage,
-            publicEvent.images.map(image => image.id),
-          );
-
-          // 3. Delete ImageResource entries
-          await manager.delete(
-            ImageResource,
-            publicEvent.images.map(image => image.imageResource.id),
-          );
+    // Delete images from Cloudinary
+    if (publicEvent.images && publicEvent.images.length > 0) {
+      for (const image of publicEvent.images) {
+        if (image.imageResource?.publicId) {
+          await this.cloudinaryService.destroyFile(image.imageResource.publicId);
         }
-
-        // 4. Finally delete the public event
-        await manager.delete(PublicEvent, { id: publicEvent.id });
-      });
-
-      // After all database operations complete, delete the folder
-      try {
-        await this.cloudinaryService.destroyFolder(
-          `${CLOUDINARY_FOLDERS.PUBLIC_EVENT_GALLERY}/${publicEvent.slug}`,
-        );
-      } catch (folderError) {
-        console.warn(`Could not delete Cloudinary folder for public event ${publicEvent.slug}:`, folderError);
-        // Continue with the process, as the main deletion was successful
       }
-    } catch (error) {
-      throw new BadRequestException(`Error deleting public event: ${error.message}`);
     }
+
+    // Delete folder from Cloudinary
+    if (publicEvent.slug) {
+      await this.cloudinaryService.destroyFolder(
+        `${CLOUDINARY_FOLDERS.PUBLIC_EVENT_GALLERY}/${publicEvent.slug}`,
+      );
+    }
+
+    await this.publicEventRepository.remove(publicEvent);
   }
 
   async uploadImages(id: string, files: Express.Multer.File[], mediaFormat?: string, videoUrl?: string) {
