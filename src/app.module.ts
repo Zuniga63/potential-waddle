@@ -23,6 +23,7 @@ import { GooglePlacesModule } from './modules/google-places/google-places.module
 import { HomeModule } from './modules/home/home.module';
 import { PromotionsModule } from './modules/promotions/promotions.module';
 import { PublicEventsModule } from './modules/public-events/public-events.module';
+import { WhatsappClicksModule } from './modules/whatsapp-clicks/whatsapp-clicks.module';
 
 @Module({
   imports: [
@@ -58,6 +59,7 @@ import { PublicEventsModule } from './modules/public-events/public-events.module
     HomeModule,
     PromotionsModule,
     PublicEventsModule,
+    WhatsappClicksModule,
   ],
   controllers: [],
   providers: [],
