@@ -6,12 +6,11 @@ import { Restaurant } from '../restaurants/entities/restaurant.entity';
 import { Experience } from '../experiences/entities/experience.entity';
 import { Commerce } from '../commerce/entities/commerce.entity';
 import { Place } from '../places/entities/place.entity';
-import { Guide } from '../guides/entities/guide.entity';
 
-interface NearbyPlace {
+export interface NearbyPlace {
   id: string;
   name: string;
-  type: 'lodging' | 'restaurant' | 'experience' | 'commerce' | 'place' | 'guide';
+  type: 'lodging' | 'restaurant' | 'experience' | 'commerce' | 'place';
   latitude: number;
   longitude: number;
   address: string | null;
@@ -33,8 +32,6 @@ export class MapService {
     private readonly commerceRepository: Repository<Commerce>,
     @InjectRepository(Place)
     private readonly placeRepository: Repository<Place>,
-    @InjectRepository(Guide)
-    private readonly guideRepository: Repository<Guide>,
   ) {}
 
   /**
@@ -90,7 +87,6 @@ export class MapService {
       'experience',
       'commerce',
       'place',
-      'guide',
     ];
 
     // Buscar Lodgings
@@ -98,6 +94,7 @@ export class MapService {
       const lodgings = await this.lodgingRepository
         .createQueryBuilder('lodging')
         .leftJoinAndSelect('lodging.images', 'images')
+        .leftJoinAndSelect('images.imageResource', 'imageResource')
         .where('lodging.isPublic = :isPublic', { isPublic: true })
         .andWhere('lodging.stateDB = :stateDB', { stateDB: true })
         .andWhere(
@@ -128,7 +125,7 @@ export class MapService {
               latitude: lat,
               longitude: lon,
               address: lodging.address,
-              image: lodging.images?.[0]?.imageUrl || null,
+              image: lodging.images?.[0]?.imageResource?.url || null,
               slug: lodging.slug,
               distance,
             });
@@ -142,6 +139,7 @@ export class MapService {
       const restaurants = await this.restaurantRepository
         .createQueryBuilder('restaurant')
         .leftJoinAndSelect('restaurant.images', 'images')
+        .leftJoinAndSelect('images.imageResource', 'imageResource')
         .where('restaurant.isPublic = :isPublic', { isPublic: true })
         .andWhere(
           `ST_DWithin(
@@ -170,7 +168,7 @@ export class MapService {
               latitude: lat,
               longitude: lon,
               address: restaurant.address,
-              image: restaurant.images?.[0]?.imageUrl || null,
+              image: restaurant.images?.[0]?.imageResource?.url || null,
               slug: restaurant.slug,
               distance,
             });
@@ -184,6 +182,7 @@ export class MapService {
       const experiences = await this.experienceRepository
         .createQueryBuilder('experience')
         .leftJoinAndSelect('experience.images', 'images')
+        .leftJoinAndSelect('images.imageResource', 'imageResource')
         .where('experience.isPublic = :isPublic', { isPublic: true })
         .andWhere(
           `(
@@ -222,7 +221,7 @@ export class MapService {
               latitude: lat,
               longitude: lon,
               address: experience.departureDescription || experience.arrivalDescription || null,
-              image: experience.images?.[0]?.imageUrl || null,
+              image: experience.images?.[0]?.imageResource?.url || null,
               slug: experience.slug,
               distance,
             });
@@ -236,6 +235,7 @@ export class MapService {
       const commerces = await this.commerceRepository
         .createQueryBuilder('commerce')
         .leftJoinAndSelect('commerce.images', 'images')
+        .leftJoinAndSelect('images.imageResource', 'imageResource')
         .where('commerce.isPublic = :isPublic', { isPublic: true })
         .andWhere('commerce.stateDB = :stateDB', { stateDB: true })
         .andWhere(
@@ -265,7 +265,7 @@ export class MapService {
               latitude: lat,
               longitude: lon,
               address: commerce.address,
-              image: commerce.images?.[0]?.imageUrl || null,
+              image: commerce.images?.[0]?.imageResource?.url || null,
               slug: commerce.slug,
               distance,
             });
@@ -279,6 +279,7 @@ export class MapService {
       const places = await this.placeRepository
         .createQueryBuilder('place')
         .leftJoinAndSelect('place.images', 'images')
+        .leftJoinAndSelect('images.imageResource', 'imageResource')
         .where('place.isPublic = :isPublic', { isPublic: true })
         .andWhere('place.stateDB = :stateDB', { stateDB: true })
         .andWhere(
@@ -308,52 +309,8 @@ export class MapService {
               latitude: lat,
               longitude: lon,
               address: place.googleMapsUrl || null,
-              image: place.images?.[0]?.imageUrl || null,
+              image: place.images?.[0]?.imageResource?.url || null,
               slug: place.slug,
-              distance,
-            });
-          }
-        }
-      });
-    }
-
-    // Buscar Guides - SOLO si tienen coordenadas válidas
-    if (typesToSearch.includes('guide')) {
-      const guides = await this.guideRepository
-        .createQueryBuilder('guide')
-        .leftJoinAndSelect('guide.images', 'images')
-        .where('guide.isPublic = :isPublic', { isPublic: true })
-        // Filtrar solo guías con location válido
-        .andWhere('guide.location IS NOT NULL')
-        .andWhere(
-          `ST_DWithin(
-            guide.location::geography,
-            ST_SetSRID(ST_MakePoint(:longitude, :latitude), 4326)::geography,
-            :radius
-          )`,
-          { latitude, longitude, radius: radiusMeters },
-        )
-        .orderBy('images.order', 'ASC')
-        .getMany();
-
-      guides.forEach(guide => {
-        if (guide.location && (guide.location as any).coordinates) {
-          const [lon, lat] = (guide.location as any).coordinates;
-
-          if (typeof lat === 'number' && typeof lon === 'number' &&
-              !isNaN(lat) && !isNaN(lon) &&
-              lat !== 0 && lon !== 0) {
-            const distance = this.calculateDistance(latitude, longitude, lat, lon);
-
-            allPlaces.push({
-              id: guide.id,
-              name: `${guide.firstName} ${guide.lastName}`,
-              type: 'guide',
-              latitude: lat,
-              longitude: lon,
-              address: guide.address,
-              image: guide.images?.[0]?.imageUrl || null,
-              slug: guide.slug,
               distance,
             });
           }

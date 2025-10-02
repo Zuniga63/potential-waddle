@@ -7,7 +7,6 @@ import { Restaurant } from '../restaurants/entities/restaurant.entity';
 import { Experience } from '../experiences/entities/experience.entity';
 import { Commerce } from '../commerce/entities/commerce.entity';
 import { Place } from '../places/entities/place.entity';
-import { Guide } from '../guides/entities/guide.entity';
 
 @Module({
   imports: [
@@ -17,7 +16,6 @@ import { Guide } from '../guides/entities/guide.entity';
       Experience,
       Commerce,
       Place,
-      Guide,
     ]),
   ],
   controllers: [MapController],
