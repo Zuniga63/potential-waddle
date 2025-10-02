@@ -24,6 +24,7 @@ import { HomeModule } from './modules/home/home.module';
 import { PromotionsModule } from './modules/promotions/promotions.module';
 import { PublicEventsModule } from './modules/public-events/public-events.module';
 import { WhatsappClicksModule } from './modules/whatsapp-clicks/whatsapp-clicks.module';
+import { MapModule } from './modules/map/map.module';
 
 @Module({
   imports: [
@@ -60,6 +61,7 @@ import { WhatsappClicksModule } from './modules/whatsapp-clicks/whatsapp-clicks.
     PromotionsModule,
     PublicEventsModule,
     WhatsappClicksModule,
+    MapModule,
   ],
   controllers: [],
   providers: [],
