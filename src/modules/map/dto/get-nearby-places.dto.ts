@@ -19,8 +19,8 @@ export class GetNearbyPlacesDto {
   @IsNumber()
   @Type(() => Number)
   @Min(0.1)
-  @Max(100)
-  radius?: number = 10; // Radio en kilómetros (default 10km)
+  @Max(500)
+  radius?: number = 10; // Radio en kilómetros (default 10km, max 500km)
 
   @IsOptional()
   @IsArray()

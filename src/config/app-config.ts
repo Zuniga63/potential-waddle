@@ -57,6 +57,9 @@ export interface EnvironmentVariables {
   openai: {
     apiKey: string;
   };
+  googleRoutesApi: {
+    apiKey: string;
+  };
 }
 
 export const appConfig = (): EnvironmentVariables => ({
@@ -120,5 +123,8 @@ export const appConfig = (): EnvironmentVariables => ({
   },
   openai: {
     apiKey: process.env.OPENAI_API_KEY || '',
+  },
+  googleRoutesApi: {
+    apiKey: process.env.GOOGLE_ROUTES_API_KEY || '',
   },
 });

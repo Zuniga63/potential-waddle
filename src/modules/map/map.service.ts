@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
+import { ConfigService } from '@nestjs/config';
 import { Lodging } from '../lodgings/entities/lodging.entity';
 import { Restaurant } from '../restaurants/entities/restaurant.entity';
 import { Experience } from '../experiences/entities/experience.entity';
@@ -21,6 +22,8 @@ export interface NearbyPlace {
 
 @Injectable()
 export class MapService {
+  private readonly googleApiKey: string;
+
   constructor(
     @InjectRepository(Lodging)
     private readonly lodgingRepository: Repository<Lodging>,
@@ -32,15 +35,14 @@ export class MapService {
     private readonly commerceRepository: Repository<Commerce>,
     @InjectRepository(Place)
     private readonly placeRepository: Repository<Place>,
-  ) {}
+    private readonly configService: ConfigService,
+  ) {
+    this.googleApiKey = this.configService.get<string>('GOOGLE_PLACES_API_KEY') || '';
+  }
 
   /**
    * Calcula la distancia entre dos puntos geográficos usando la fórmula Haversine
-   * @param lat1 Latitud del primer punto
-   * @param lon1 Longitud del primer punto
-   * @param lat2 Latitud del segundo punto
-   * @param lon2 Longitud del segundo punto
-   * @returns Distancia en metros
+   * (distancia en línea recta - usada para filtrar candidatos)
    */
   private calculateDistance(
     lat1: number,
@@ -64,6 +66,100 @@ export class MapService {
   }
 
   /**
+   * Calcula distancias reales por carretera usando Google Routes API
+   * @param origin Coordenadas de origen (lat,lng)
+   * @param destinations Array de coordenadas de destino [{lat, lng}]
+   * @returns Map de distancias en metros por ID
+   */
+  private async calculateRoadDistances(
+    origin: { lat: number; lng: number },
+    destinations: Array<{ lat: number; lng: number; id: string }>,
+  ): Promise<Map<string, number>> {
+    if (destinations.length === 0) {
+      return new Map();
+    }
+
+    const distanceMap = new Map<string, number>();
+
+    // Procesar cada destino individualmente con Routes API
+    for (const destination of destinations) {
+      try {
+        const url = `https://routes.googleapis.com/directions/v2:computeRoutes`;
+
+        const requestBody = {
+          origin: {
+            location: {
+              latLng: {
+                latitude: origin.lat,
+                longitude: origin.lng,
+              },
+            },
+          },
+          destination: {
+            location: {
+              latLng: {
+                latitude: destination.lat,
+                longitude: destination.lng,
+              },
+            },
+          },
+          travelMode: 'DRIVE',
+          routingPreference: 'TRAFFIC_UNAWARE',
+          computeAlternativeRoutes: false,
+        };
+
+        const response = await fetch(url, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-Goog-Api-Key': this.googleApiKey,
+            'X-Goog-FieldMask': 'routes.distanceMeters,routes.duration',
+          },
+          body: JSON.stringify(requestBody),
+        });
+
+        const data = await response.json();
+
+        console.log(`  🔍 Response for ${destination.id}:`, JSON.stringify(data).substring(0, 200));
+
+        if (data.routes && data.routes.length > 0 && data.routes[0].distanceMeters) {
+          const distanceMeters = data.routes[0].distanceMeters;
+          distanceMap.set(destination.id, distanceMeters);
+          console.log(`  📏 Road distance to ${destination.id}: ${distanceMeters}m (${(distanceMeters / 1000).toFixed(1)} km)`);
+        } else {
+          // Si no hay ruta por carretera, usar distancia en línea recta
+          const straightDistance = this.calculateDistance(
+            origin.lat,
+            origin.lng,
+            destination.lat,
+            destination.lng,
+          );
+          distanceMap.set(destination.id, straightDistance);
+          console.log(`  📏 No road route for ${destination.id}, using straight line: ${straightDistance}m`);
+          if (data.error) {
+            console.log(`    ❌ API Error: ${data.error.message || data.error.status}`);
+          }
+        }
+
+        // Pequeño delay para no exceder rate limits (100 requests por segundo)
+        await new Promise(resolve => setTimeout(resolve, 50));
+      } catch (error) {
+        console.error(`❌ Error calculating route for ${destination.id}:`, error.message);
+        // Fallback a distancia en línea recta
+        const straightDistance = this.calculateDistance(
+          origin.lat,
+          origin.lng,
+          destination.lat,
+          destination.lng,
+        );
+        distanceMap.set(destination.id, straightDistance);
+      }
+    }
+
+    return distanceMap;
+  }
+
+  /**
    * Obtiene todos los lugares cercanos a una ubicación
    * @param latitude Latitud del usuario
    * @param longitude Longitud del usuario
@@ -77,6 +173,8 @@ export class MapService {
     radiusKm: number = 10,
     types?: string[],
   ): Promise<NearbyPlace[]> {
+    console.log('🔍 getNearbyPlaces called with:', { latitude, longitude, radiusKm, types });
+
     const radiusMeters = radiusKm * 1000;
     const allPlaces: NearbyPlace[] = [];
 
@@ -84,13 +182,14 @@ export class MapService {
     const typesToSearch = types && types.length > 0 ? types : [
       'lodging',
       'restaurant',
-      'experience',
-      'commerce',
       'place',
     ];
 
+    console.log('📍 Search parameters:', { radiusMeters, typesToSearch });
+
     // Buscar Lodgings
     if (typesToSearch.includes('lodging')) {
+      console.log('🏨 Searching for lodgings...');
       const lodgings = await this.lodgingRepository
         .createQueryBuilder('lodging')
         .leftJoinAndSelect('lodging.images', 'images')
@@ -108,15 +207,25 @@ export class MapService {
         .orderBy('images.order', 'ASC')
         .getMany();
 
-      lodgings.forEach(lodging => {
+      console.log(`🏨 Found ${lodgings.length} lodgings from DB`);
+
+      lodgings.forEach((lodging, index) => {
+        console.log(`  🏨 Lodging ${index + 1}:`, {
+          name: lodging.name,
+          hasLocation: !!lodging.location,
+          location: lodging.location
+        });
+
         if (lodging.location && (lodging.location as any).coordinates) {
           const [lon, lat] = (lodging.location as any).coordinates;
+          console.log(`    📍 Coordinates:`, { lat, lon });
 
           // Validar que las coordenadas sean números válidos
           if (typeof lat === 'number' && typeof lon === 'number' &&
               !isNaN(lat) && !isNaN(lon) &&
               lat !== 0 && lon !== 0) {
             const distance = this.calculateDistance(latitude, longitude, lat, lon);
+            console.log(`    ✅ Valid! Distance: ${distance}m`);
 
             allPlaces.push({
               id: lodging.id,
@@ -129,9 +238,15 @@ export class MapService {
               slug: lodging.slug,
               distance,
             });
+          } else {
+            console.log(`    ❌ Invalid coordinates:`, { lat, lon });
           }
+        } else {
+          console.log(`    ❌ No valid location`);
         }
       });
+
+      console.log(`🏨 Added ${allPlaces.length} lodgings to results`);
     }
 
     // Buscar Restaurants
@@ -318,7 +433,41 @@ export class MapService {
       });
     }
 
-    // Ordenar por distancia (más cercanos primero)
-    return allPlaces.sort((a, b) => a.distance - b.distance);
+    console.log(`📊 Total places found with straight-line distance: ${allPlaces.length}`);
+
+    // Calcular distancias reales por carretera usando Google Distance Matrix API
+    console.log('🚗 Calculating real road distances...');
+    const destinations = allPlaces.map(p => ({
+      lat: p.latitude,
+      lng: p.longitude,
+      id: p.id,
+    }));
+
+    const roadDistances = await this.calculateRoadDistances(
+      { lat: latitude, lng: longitude },
+      destinations,
+    );
+
+    // Actualizar distancias con las distancias reales por carretera
+    allPlaces.forEach(place => {
+      const roadDistance = roadDistances.get(place.id);
+      if (roadDistance !== undefined) {
+        place.distance = roadDistance;
+      }
+    });
+
+    // Ordenar por distancia real (más cercanos primero)
+    const sortedPlaces = allPlaces.sort((a, b) => a.distance - b.distance);
+
+    console.log('✅ Final results with road distances:', {
+      totalPlaces: sortedPlaces.length,
+      byType: {
+        lodging: sortedPlaces.filter(p => p.type === 'lodging').length,
+        restaurant: sortedPlaces.filter(p => p.type === 'restaurant').length,
+        place: sortedPlaces.filter(p => p.type === 'place').length,
+      }
+    });
+
+    return sortedPlaces;
   }
 }
