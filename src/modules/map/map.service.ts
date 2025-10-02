@@ -456,8 +456,13 @@ export class MapService {
       }
     });
 
+    // Filtrar lugares que excedan el radio después de calcular distancia real por carretera
+    const filteredPlaces = allPlaces.filter(place => place.distance <= radiusMeters);
+
+    console.log(`🔍 Filtered ${allPlaces.length - filteredPlaces.length} places that exceeded ${radiusKm} km by road`);
+
     // Ordenar por distancia real (más cercanos primero)
-    const sortedPlaces = allPlaces.sort((a, b) => a.distance - b.distance);
+    const sortedPlaces = filteredPlaces.sort((a, b) => a.distance - b.distance);
 
     console.log('✅ Final results with road distances:', {
       totalPlaces: sortedPlaces.length,
