@@ -42,4 +42,28 @@ export class WhatsappClicksController {
   ) {
     return this.whatsappClicksService.getDetailedAnalytics(entityId, entityType);
   }
+
+  @Get('admin/aggregated')
+  @ApiOperation({ summary: 'Get aggregated WhatsApp analytics for all entities (Admin panel)' })
+  @ApiQuery({ name: 'startDate', required: false, description: 'Start date filter (YYYY-MM-DD)' })
+  @ApiQuery({ name: 'endDate', required: false, description: 'End date filter (YYYY-MM-DD)' })
+  @ApiQuery({ name: 'entityType', required: false, description: 'Filter by entity type' })
+  @ApiQuery({ name: 'page', required: false, description: 'Page number', type: Number })
+  @ApiQuery({ name: 'limit', required: false, description: 'Items per page', type: Number })
+  @ApiResponse({ status: 200, description: 'Aggregated analytics retrieved successfully' })
+  async getAggregatedAnalytics(
+    @Query('startDate') startDate?: string,
+    @Query('endDate') endDate?: string,
+    @Query('entityType') entityType?: string,
+    @Query('page') page?: string,
+    @Query('limit') limit?: string,
+  ) {
+    return this.whatsappClicksService.getAggregatedAnalytics({
+      startDate,
+      endDate,
+      entityType,
+      page: page ? parseInt(page, 10) : 1,
+      limit: limit ? parseInt(limit, 10) : 20,
+    });
+  }
 }

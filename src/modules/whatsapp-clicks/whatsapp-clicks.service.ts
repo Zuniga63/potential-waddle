@@ -238,6 +238,152 @@ export class WhatsappClicksService {
   }
 
   /**
+   * Get aggregated analytics for admin panel (all entities)
+   */
+  async getAggregatedAnalytics(filters: {
+    startDate?: string;
+    endDate?: string;
+    entityType?: string;
+    page: number;
+    limit: number;
+  }) {
+    const { startDate, endDate, entityType, page, limit } = filters;
+    const offset = (page - 1) * limit;
+
+    // Build WHERE clause for date filters
+    let dateFilter = '';
+    const params: any[] = [];
+    let paramIndex = 1;
+
+    if (startDate) {
+      dateFilter += ` AND wc.clicked_at >= $${paramIndex}`;
+      params.push(new Date(startDate));
+      paramIndex++;
+    }
+
+    if (endDate) {
+      const endDateTime = new Date(endDate);
+      endDateTime.setHours(23, 59, 59, 999);
+      dateFilter += ` AND wc.clicked_at <= $${paramIndex}`;
+      params.push(endDateTime);
+      paramIndex++;
+    }
+
+    if (entityType) {
+      dateFilter += ` AND wc.entity_type = $${paramIndex}`;
+      params.push(entityType);
+      paramIndex++;
+    }
+
+    // Query to get aggregated data with entity names
+    const query = `
+      WITH entity_clicks AS (
+        SELECT
+          wc.entity_id,
+          wc.entity_type,
+          wc.entity_slug,
+          COUNT(*) as total_clicks,
+          COUNT(*) FILTER (WHERE wc.is_repeat_click = false) as unique_clicks,
+          MAX(wc.clicked_at) as last_click_at,
+          CASE
+            WHEN wc.entity_type = 'restaurant' THEN (SELECT name FROM restaurant WHERE id = wc.entity_id::uuid LIMIT 1)
+            WHEN wc.entity_type = 'lodging' THEN (SELECT name FROM lodging WHERE id = wc.entity_id::uuid LIMIT 1)
+            WHEN wc.entity_type = 'experience' THEN (SELECT title FROM experience WHERE id = wc.entity_id::uuid LIMIT 1)
+            WHEN wc.entity_type = 'guide' THEN (SELECT CONCAT(first_name, ' ', last_name) FROM guide WHERE id = wc.entity_id::uuid LIMIT 1)
+            WHEN wc.entity_type = 'commerce' THEN (SELECT name FROM commerce WHERE id = wc.entity_id::uuid LIMIT 1)
+            WHEN wc.entity_type = 'transport' THEN (SELECT CONCAT(driver_first_name, ' ', driver_last_name) FROM transport WHERE id = wc.entity_id::uuid LIMIT 1)
+            WHEN wc.entity_type = 'place' THEN (SELECT name FROM place WHERE id = wc.entity_id::uuid LIMIT 1)
+            ELSE 'Unknown'
+          END as entity_name
+        FROM whatsapp_click wc
+        WHERE 1=1 ${dateFilter}
+        GROUP BY wc.entity_id, wc.entity_type, wc.entity_slug
+      )
+      SELECT
+        entity_id,
+        entity_type,
+        entity_slug,
+        entity_name,
+        total_clicks,
+        unique_clicks,
+        last_click_at
+      FROM entity_clicks
+      WHERE entity_name IS NOT NULL
+      ORDER BY total_clicks DESC
+      LIMIT $${paramIndex} OFFSET $${paramIndex + 1}
+    `;
+
+    params.push(limit, offset);
+
+    // Execute query
+    const entities = await this.whatsappClickRepository.query(query, params);
+
+    // Get total count for pagination
+    const countQuery = `
+      WITH entity_clicks AS (
+        SELECT
+          wc.entity_id,
+          wc.entity_type,
+          CASE
+            WHEN wc.entity_type = 'restaurant' THEN (SELECT name FROM restaurant WHERE id = wc.entity_id::uuid LIMIT 1)
+            WHEN wc.entity_type = 'lodging' THEN (SELECT name FROM lodging WHERE id = wc.entity_id::uuid LIMIT 1)
+            WHEN wc.entity_type = 'experience' THEN (SELECT title FROM experience WHERE id = wc.entity_id::uuid LIMIT 1)
+            WHEN wc.entity_type = 'guide' THEN (SELECT CONCAT(first_name, ' ', last_name) FROM guide WHERE id = wc.entity_id::uuid LIMIT 1)
+            WHEN wc.entity_type = 'commerce' THEN (SELECT name FROM commerce WHERE id = wc.entity_id::uuid LIMIT 1)
+            WHEN wc.entity_type = 'transport' THEN (SELECT CONCAT(driver_first_name, ' ', driver_last_name) FROM transport WHERE id = wc.entity_id::uuid LIMIT 1)
+            WHEN wc.entity_type = 'place' THEN (SELECT name FROM place WHERE id = wc.entity_id::uuid LIMIT 1)
+            ELSE 'Unknown'
+          END as entity_name
+        FROM whatsapp_click wc
+        WHERE 1=1 ${dateFilter}
+        GROUP BY wc.entity_id, wc.entity_type
+      )
+      SELECT COUNT(DISTINCT entity_id) as count
+      FROM entity_clicks
+      WHERE entity_name IS NOT NULL
+    `;
+
+    const countParams = params.slice(0, -2); // Remove limit and offset
+    const [countResult] = await this.whatsappClickRepository.query(countQuery, countParams);
+    const total = parseInt(countResult?.count || '0', 10);
+
+    // Get summary stats
+    const summaryQuery = `
+      SELECT
+        COUNT(DISTINCT entity_id) as total_entities,
+        COUNT(*) as total_clicks,
+        COUNT(*) FILTER (WHERE is_repeat_click = false) as total_unique_clicks
+      FROM whatsapp_click
+      WHERE 1=1 ${dateFilter}
+    `;
+
+    const [summary] = await this.whatsappClickRepository.query(summaryQuery, countParams);
+
+    return {
+      entities: entities.map((e: any) => ({
+        entityId: e.entity_id,
+        entityType: e.entity_type,
+        entitySlug: e.entity_slug,
+        entityName: e.entity_name,
+        totalClicks: parseInt(e.total_clicks, 10),
+        uniqueClicks: parseInt(e.unique_clicks, 10),
+        lastClickAt: e.last_click_at,
+      })),
+      pagination: {
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit),
+      },
+      summary: {
+        totalEntities: parseInt(summary?.total_entities || '0', 10),
+        totalClicks: parseInt(summary?.total_clicks || '0', 10),
+        totalUniqueClicks: parseInt(summary?.total_unique_clicks || '0', 10),
+      },
+    };
+  }
+
+  /**
    * Get detailed analytics for entity dashboard
    */
   async getDetailedAnalytics(entityId: string, entityType: string) {
