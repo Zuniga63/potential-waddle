@@ -291,7 +291,7 @@ export class WhatsappClicksService {
             WHEN wc.entity_type = 'experience' THEN (SELECT title FROM experience WHERE id = wc.entity_id::uuid LIMIT 1)
             WHEN wc.entity_type = 'guide' THEN (SELECT CONCAT(first_name, ' ', last_name) FROM guide WHERE id = wc.entity_id::uuid LIMIT 1)
             WHEN wc.entity_type = 'commerce' THEN (SELECT name FROM commerce WHERE id = wc.entity_id::uuid LIMIT 1)
-            WHEN wc.entity_type = 'transport' THEN (SELECT CONCAT(driver_first_name, ' ', driver_last_name) FROM transport WHERE id = wc.entity_id::uuid LIMIT 1)
+            WHEN wc.entity_type = 'transport' THEN (SELECT CONCAT(first_name, ' ', last_name) FROM transport WHERE id = wc.entity_id::uuid LIMIT 1)
             WHEN wc.entity_type = 'place' THEN (SELECT name FROM place WHERE id = wc.entity_id::uuid LIMIT 1)
             ELSE 'Unknown'
           END as entity_name
@@ -330,7 +330,7 @@ export class WhatsappClicksService {
             WHEN wc.entity_type = 'experience' THEN (SELECT title FROM experience WHERE id = wc.entity_id::uuid LIMIT 1)
             WHEN wc.entity_type = 'guide' THEN (SELECT CONCAT(first_name, ' ', last_name) FROM guide WHERE id = wc.entity_id::uuid LIMIT 1)
             WHEN wc.entity_type = 'commerce' THEN (SELECT name FROM commerce WHERE id = wc.entity_id::uuid LIMIT 1)
-            WHEN wc.entity_type = 'transport' THEN (SELECT CONCAT(driver_first_name, ' ', driver_last_name) FROM transport WHERE id = wc.entity_id::uuid LIMIT 1)
+            WHEN wc.entity_type = 'transport' THEN (SELECT CONCAT(first_name, ' ', last_name) FROM transport WHERE id = wc.entity_id::uuid LIMIT 1)
             WHEN wc.entity_type = 'place' THEN (SELECT name FROM place WHERE id = wc.entity_id::uuid LIMIT 1)
             ELSE 'Unknown'
           END as entity_name
