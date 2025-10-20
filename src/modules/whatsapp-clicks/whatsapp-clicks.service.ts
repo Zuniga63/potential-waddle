@@ -350,10 +350,10 @@ export class WhatsappClicksService {
     // Get summary stats
     const summaryQuery = `
       SELECT
-        COUNT(DISTINCT entity_id) as total_entities,
+        COUNT(DISTINCT wc.entity_id) as total_entities,
         COUNT(*) as total_clicks,
-        COUNT(*) FILTER (WHERE is_repeat_click = false) as total_unique_clicks
-      FROM whatsapp_click
+        COUNT(*) FILTER (WHERE wc.is_repeat_click = false) as total_unique_clicks
+      FROM whatsapp_click wc
       WHERE 1=1 ${dateFilter}
     `;
 
