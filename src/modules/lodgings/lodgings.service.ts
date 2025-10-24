@@ -289,7 +289,10 @@ export class LodgingsService {
   // Update lodging
   // ------------------------------------------------------------------------------------------------
   async update(id: string, updateLodgingDto: UpdateLodgingDto) {
-    const lodging = await this.lodgingRespository.findOne({ where: { id } });
+    const lodging = await this.lodgingRespository.findOne({
+      where: { id },
+      relations: ['town'], // Load town relation to preserve it if not updated
+    });
     if (!lodging) throw new NotFoundException('Lodging not found');
 
     const categories = updateLodgingDto.categoryIds
@@ -298,6 +301,18 @@ export class LodgingsService {
     const facilities = updateLodgingDto.facilityIds
       ? await this.facilityRepository.findBy({ id: In(updateLodgingDto.facilityIds) })
       : [];
+
+    // Cargar town si townId está presente
+    let town = lodging.town; // Preservar el town actual por defecto
+    if (updateLodgingDto.townId) {
+      const foundTown = await this.townRepository.findOne({
+        where: { id: updateLodgingDto.townId },
+      });
+      if (!foundTown) {
+        throw new NotFoundException(`Town with ID ${updateLodgingDto.townId} not found`);
+      }
+      town = foundTown;
+    }
 
     // Extraer lat y lng del DTO y crear el Point
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -387,6 +402,7 @@ export class LodgingsService {
         categories,
         user: lodging.user, // Ensure user is preserved if not updated
         facilities,
+        town, // Update town when townId is provided
       });
     } catch (error) {
       this.logger.error(`Error saving lodging update for ID ${id}: ${error.message}`, error.stack);
