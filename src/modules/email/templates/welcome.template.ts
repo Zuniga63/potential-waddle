@@ -21,9 +21,9 @@ export const getWelcomeEmailTemplate = (username: string): EmailTemplate => {
         <table role="presentation" width="600" cellspacing="0" cellpadding="0" style="background-color: #ffffff; border-radius: 12px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);">
           <!-- Header -->
           <tr>
-            <td style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); padding: 40px 30px 0px 30px; text-align: center; border-radius: 12px 12px 0 0;">
+            <td style="background-color: #ffffff; padding: 40px 30px 20px 30px; text-align: center; border-radius: 12px 12px 0 0;">
               <img src="https://beewo.s3.amazonaws.com/uploads/survey_answer/answer_file/1603390/c4a4440b-1d6d-4bf8-ac94-ef0ead8ebe5e.png" alt="Binntu" style="max-width: 180px; height: auto; margin-bottom: 10px;" />
-              <p style="color: rgba(255, 255, 255, 0.9); margin: 10px 0 0 0; font-size: 16px;">Descubre Colombia, un pueblo a la vez</p>
+              <p style="color: #10b981; margin: 10px 0 0 0; font-size: 16px; font-weight: 500;">Descubre Colombia, un pueblo a la vez</p>
             </td>
           </tr>
 
