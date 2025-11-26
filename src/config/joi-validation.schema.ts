@@ -27,4 +27,8 @@ export const JoiValidationSchema = Joi.object({
   GOOGLE_CALLBACK_URL: Joi.string().optional(),
 
   TINYIFY_API_KEY: Joi.string().optional(),
+
+  RESEND_API_KEY: Joi.string().required(),
+  RESEND_FROM_EMAIL: Joi.string().default('Binntu <noreply@binntu.com>'),
+  FRONTEND_URL: Joi.string().default('http://localhost:3000'),
 });

@@ -108,6 +108,14 @@ export class UsersService {
       .getOne();
   }
 
+  async findOneByEmail(email: string): Promise<User | null> {
+    return this.usersRepository.findOne({ where: { email } });
+  }
+
+  async updatePassword(id: string, hashedPassword: string): Promise<void> {
+    await this.usersRepository.update(id, { password: hashedPassword });
+  }
+
   async updateProfilePhoto(id: string, file: Express.Multer.File) {
     const user = await this.findOne(id);
     if (!user) throw new NotFoundException('User not found');

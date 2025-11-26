@@ -25,6 +25,7 @@ import { PromotionsModule } from './modules/promotions/promotions.module';
 import { PublicEventsModule } from './modules/public-events/public-events.module';
 import { WhatsappClicksModule } from './modules/whatsapp-clicks/whatsapp-clicks.module';
 import { MapModule } from './modules/map/map.module';
+import { EmailModule } from './modules/email/email.module';
 
 @Module({
   imports: [
@@ -40,6 +41,7 @@ import { MapModule } from './modules/map/map.module';
     }),
 
     CommonModule,
+    EmailModule,
     AuthModule,
     UsersModule,
     RolesModule,

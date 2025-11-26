@@ -5,6 +5,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { PassportModule } from '@nestjs/passport';
 
 import { Session } from './entities';
+import { PasswordResetToken } from './entities/password-reset-token.entity';
 import { EnvironmentVariables } from 'src/config';
 import { AuthController } from './auth.controller';
 import { UsersModule } from '../users/users.module';
@@ -12,6 +13,7 @@ import { LocalStrategy, JwtStrategy, GoogleStrategy, OptionalJwtStrategy } from 
 import { ProfileController } from './profile.controller';
 
 import { AuthService, SessionService } from './services';
+import { PasswordResetService } from './services/password-reset.service';
 
 @Module({
   imports: [
@@ -27,9 +29,9 @@ import { AuthService, SessionService } from './services';
       }),
     }),
 
-    TypeOrmModule.forFeature([Session]),
+    TypeOrmModule.forFeature([Session, PasswordResetToken]),
   ],
-  providers: [AuthService, SessionService, LocalStrategy, JwtStrategy, GoogleStrategy, OptionalJwtStrategy],
+  providers: [AuthService, SessionService, PasswordResetService, LocalStrategy, JwtStrategy, GoogleStrategy, OptionalJwtStrategy],
   controllers: [AuthController, ProfileController],
   exports: [JwtModule],
 })

@@ -14,6 +14,7 @@ import {
 } from '@nestjs/swagger';
 
 import { AuthService } from './services/auth.service';
+import { PasswordResetService } from './services/password-reset.service';
 import { CreateUserDto } from '../users/dto';
 import { LocalAuthGuard } from './guards/local-auth.guard';
 import { SwaggerTags } from 'src/config';
@@ -21,6 +22,8 @@ import { AuthResponseSchema } from './schemas/swagger.schema';
 import { UserDto } from '../users/dto/user.dto';
 import { ValidationErrorDto } from '../common/dto/validation-error.dto';
 import { LoginUserDto } from './dto/login-user.dto';
+import { ForgotPasswordDto } from './dto/forgot-password.dto';
+import { ResetPasswordDto } from './dto/reset-password.dto';
 import { GetUser } from '../common/decorators/get-user.decorator';
 import { User } from '../users/entities/user.entity';
 import { GoogleOauthGuard } from './guards';
@@ -30,7 +33,10 @@ import { Auth } from './decorators';
 @ApiExtraModels(UserDto)
 @ApiTags(SwaggerTags.Auth)
 export class AuthController {
-  constructor(private readonly authService: AuthService) {}
+  constructor(
+    private readonly authService: AuthService,
+    private readonly passwordResetService: PasswordResetService,
+  ) {}
 
   // * ----------------------------------------------------------------------------------------------------------------
   // * LOGIN LOCAL USER
@@ -134,5 +140,59 @@ export class AuthController {
   @ApiBadRequestResponse({ description: 'Invalid token.' })
   async verifyToken() {
     return { ok: true };
+  }
+
+  // * ----------------------------------------------------------------------------------------------------------------
+  // * FORGOT PASSWORD
+  // * ----------------------------------------------------------------------------------------------------------------
+  @Post('forgot-password')
+  @ApiOperation({
+    summary: 'Forgot Password',
+    description: 'Request a password reset link. An email will be sent if the account exists.',
+  })
+  @ApiBody({ type: ForgotPasswordDto })
+  @ApiOkResponse({
+    description: 'Password reset email has been sent (if account exists).',
+    schema: {
+      type: 'object',
+      properties: {
+        success: { type: 'boolean' },
+        message: { type: 'string' },
+      },
+    },
+  })
+  @ApiBadRequestResponse({
+    description: 'Invalid email format',
+    type: ValidationErrorDto,
+  })
+  async forgotPassword(@Body() forgotPasswordDto: ForgotPasswordDto) {
+    return this.passwordResetService.createPasswordResetToken(forgotPasswordDto.email);
+  }
+
+  // * ----------------------------------------------------------------------------------------------------------------
+  // * RESET PASSWORD
+  // * ----------------------------------------------------------------------------------------------------------------
+  @Post('reset-password')
+  @ApiOperation({
+    summary: 'Reset Password',
+    description: 'Reset the password using a valid reset token.',
+  })
+  @ApiBody({ type: ResetPasswordDto })
+  @ApiOkResponse({
+    description: 'Password has been reset successfully.',
+    schema: {
+      type: 'object',
+      properties: {
+        success: { type: 'boolean' },
+        message: { type: 'string' },
+      },
+    },
+  })
+  @ApiBadRequestResponse({
+    description: 'Invalid or expired token, or password validation failed',
+    type: ValidationErrorDto,
+  })
+  async resetPassword(@Body() resetPasswordDto: ResetPasswordDto) {
+    return this.passwordResetService.resetPassword(resetPasswordDto.token, resetPasswordDto.newPassword);
   }
 }

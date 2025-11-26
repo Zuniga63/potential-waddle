@@ -60,6 +60,11 @@ export interface EnvironmentVariables {
   googleRoutesApi: {
     apiKey: string;
   };
+  resend: {
+    apiKey: string;
+    fromEmail: string;
+  };
+  frontendUrl: string;
 }
 
 export const appConfig = (): EnvironmentVariables => ({
@@ -127,4 +132,9 @@ export const appConfig = (): EnvironmentVariables => ({
   googleRoutesApi: {
     apiKey: process.env.GOOGLE_ROUTES_API_KEY || '',
   },
+  resend: {
+    apiKey: process.env.RESEND_API_KEY || '',
+    fromEmail: process.env.RESEND_FROM_EMAIL || 'Binntu <noreply@binntu.com>',
+  },
+  frontendUrl: process.env.FRONTEND_URL || 'http://localhost:3000',
 });

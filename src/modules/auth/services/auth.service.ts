@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 
 import { compareSync } from 'bcrypt';
@@ -18,14 +18,18 @@ import { EnvironmentVariables } from 'src/config';
 import { UpdateProfileDto } from '../dto';
 import { UserTransportDto } from 'src/modules/users/dto/user-transport.dto';
 import { Transport } from 'src/modules/transport/entities/transport.entity';
+import { ResendService } from '../../email/services/resend.service';
 
 @Injectable()
 export class AuthService {
+  private readonly logger = new Logger(AuthService.name);
+
   constructor(
     private readonly usersService: UsersService,
     private readonly jwtService: JwtService,
     private readonly sessionService: SessionService,
     private readonly configService: ConfigService<EnvironmentVariables>,
+    private readonly resendService: ResendService,
   ) {}
 
   async validateUser(username: string, pass: string): Promise<User | null> {
@@ -49,7 +53,11 @@ export class AuthService {
     createUserDto.birthDate = createUserDto.birthDate ? new Date(createUserDto.birthDate) : undefined;
     const user = await this.usersService.create(createUserDto);
 
-    console.log('user', user);
+    // Send welcome email (async, don't wait for it)
+    this.resendService.sendWelcomeEmail(user.email, user.username).catch(error => {
+      this.logger.error(`Failed to send welcome email to ${user.email}`, error);
+    });
+
     return new UserDto(user);
   }
 
