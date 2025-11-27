@@ -5,3 +5,6 @@ export * from './user-explorer-stats.dto';
 export * from './user-explorer-place.dto';
 export * from './user-explorer-location.dto';
 export * from './user-location.dto';
+export * from './admin-users-filters.dto';
+export * from './admin-user.dto';
+export * from './admin-users-list.dto';

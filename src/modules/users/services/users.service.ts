@@ -1,7 +1,7 @@
 import { BadRequestException, Injectable, Logger, NotFoundException, UnauthorizedException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 
-import { Repository } from 'typeorm';
+import { FindOptionsRelations, Repository } from 'typeorm';
 
 import { User } from '../entities/user.entity';
 import { CreateUserDto } from '../dto/create-user.dto';
@@ -18,6 +18,12 @@ import { UserGuideDto } from '../dto/user-guide.dto';
 import { UserLodgingDto } from '../dto/user-lodgings.dto';
 import { UserRestaurantDto } from '../dto/user-restaurant.dto';
 import { UserCommerceDto } from '../dto/user-commerce.dto';
+import { AdminUsersFiltersDto, AdminUsersListDto, AdminUserDto } from '../dto';
+import { generateAdminUsersQueryFilters } from '../utils';
+
+interface AdminUsersFindAllParams {
+  filters?: AdminUsersFiltersDto;
+}
 
 @Injectable()
 export class UsersService {
@@ -81,6 +87,27 @@ export class UsersService {
 
   findAll() {
     return this.usersRepository.find();
+  }
+
+  async findAllAdmin({ filters }: AdminUsersFindAllParams = {}): Promise<AdminUsersListDto> {
+    const { page = 1, limit = 25 } = filters ?? {};
+    const skip = (page - 1) * limit;
+    const { where, order } = generateAdminUsersQueryFilters(filters);
+
+    const relations: FindOptionsRelations<User> = {
+      role: true,
+      reviews: true,
+    };
+
+    const [users, count] = await this.usersRepository.findAndCount({
+      skip,
+      take: limit,
+      relations,
+      order,
+      where,
+    });
+
+    return new AdminUsersListDto({ currentPage: page, pages: Math.ceil(count / limit), count }, users);
   }
 
   async findOne(id: string): Promise<User | null> {
@@ -301,5 +328,49 @@ export class UsersService {
       ],
     });
     return user?.restaurants ? user?.restaurants.map(restaurant => new UserRestaurantDto(restaurant)) : [];
+  }
+
+  // * ----------------------------------------------------------------------------------------------------------------
+  // * ADMIN METHODS
+  // * ----------------------------------------------------------------------------------------------------------------
+
+  async findOneAdmin(id: string) {
+    const user = await this.usersRepository.findOne({
+      where: { id },
+      relations: ['role', 'reviews'],
+    });
+
+    if (!user) throw new NotFoundException('User not found');
+
+    return new AdminUserDto(user);
+  }
+
+  async toggleActive(id: string) {
+    const user = await this.usersRepository.findOne({ where: { id } });
+    if (!user) throw new NotFoundException('User not found');
+
+    user.isActive = !user.isActive;
+    await this.usersRepository.save(user);
+
+    return { id: user.id, isActive: user.isActive };
+  }
+
+  async toggleSuperUser(id: string) {
+    const user = await this.usersRepository.findOne({ where: { id } });
+    if (!user) throw new NotFoundException('User not found');
+
+    user.isSuperUser = !user.isSuperUser;
+    await this.usersRepository.save(user);
+
+    return { id: user.id, isSuperUser: user.isSuperUser };
+  }
+
+  async remove(id: string) {
+    const user = await this.usersRepository.findOne({ where: { id } });
+    if (!user) throw new NotFoundException('User not found');
+
+    await this.usersRepository.remove(user);
+
+    return { deleted: true, id };
   }
 }
