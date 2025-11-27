@@ -31,4 +31,6 @@ export const JoiValidationSchema = Joi.object({
   RESEND_API_KEY: Joi.string().required(),
   RESEND_FROM_EMAIL: Joi.string().default('Binntu <noreply@binntu.com>'),
   FRONTEND_URL: Joi.string().default('http://localhost:3000'),
+
+  TURNSTILE_SECRET_KEY: Joi.string().optional(),
 });

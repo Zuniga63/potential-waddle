@@ -49,4 +49,9 @@ export class CreateUserDto {
   @IsString()
   @IsOptional()
   city: string;
+
+  @ApiProperty({ required: false, description: 'Cloudflare Turnstile token for bot protection' })
+  @IsString()
+  @IsOptional()
+  turnstileToken?: string;
 }

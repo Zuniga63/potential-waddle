@@ -15,6 +15,7 @@ import {
 
 import { AuthService } from './services/auth.service';
 import { PasswordResetService } from './services/password-reset.service';
+import { TurnstileService } from '../turnstile/turnstile.service';
 import { CreateUserDto } from '../users/dto';
 import { LocalAuthGuard } from './guards/local-auth.guard';
 import { SwaggerTags } from 'src/config';
@@ -36,6 +37,7 @@ export class AuthController {
   constructor(
     private readonly authService: AuthService,
     private readonly passwordResetService: PasswordResetService,
+    private readonly turnstileService: TurnstileService,
   ) {}
 
   // * ----------------------------------------------------------------------------------------------------------------
@@ -84,7 +86,12 @@ export class AuthController {
     description: 'Has not passed the validation for saving in the database',
     type: ValidationErrorDto,
   })
-  localRegister(@Body() createUserDto: CreateUserDto) {
+  async localRegister(@Body() createUserDto: CreateUserDto, @Ip() ip: string) {
+    // Verify Turnstile token before registration
+    if (createUserDto.turnstileToken) {
+      await this.turnstileService.verify(createUserDto.turnstileToken, ip);
+    }
+
     return this.authService.signUp(createUserDto);
   }
 

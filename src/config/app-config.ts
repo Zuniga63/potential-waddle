@@ -64,6 +64,9 @@ export interface EnvironmentVariables {
     apiKey: string;
     fromEmail: string;
   };
+  turnstile: {
+    secretKey: string;
+  };
   frontendUrl: string;
 }
 
@@ -135,6 +138,9 @@ export const appConfig = (): EnvironmentVariables => ({
   resend: {
     apiKey: process.env.RESEND_API_KEY || '',
     fromEmail: process.env.RESEND_FROM_EMAIL || 'Binntu <noreply@binntu.com>',
+  },
+  turnstile: {
+    secretKey: process.env.TURNSTILE_SECRET_KEY || '',
   },
   frontendUrl: process.env.FRONTEND_URL || 'http://localhost:3000',
 });

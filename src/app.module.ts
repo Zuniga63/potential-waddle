@@ -26,6 +26,7 @@ import { PublicEventsModule } from './modules/public-events/public-events.module
 import { WhatsappClicksModule } from './modules/whatsapp-clicks/whatsapp-clicks.module';
 import { MapModule } from './modules/map/map.module';
 import { EmailModule } from './modules/email/email.module';
+import { TurnstileModule } from './modules/turnstile/turnstile.module';
 
 @Module({
   imports: [
@@ -42,6 +43,7 @@ import { EmailModule } from './modules/email/email.module';
 
     CommonModule,
     EmailModule,
+    TurnstileModule,
     AuthModule,
     UsersModule,
     RolesModule,
