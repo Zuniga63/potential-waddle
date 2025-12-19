@@ -2,7 +2,7 @@ import { Repository } from 'typeorm';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { FindOptionsRelations, In, Point } from 'typeorm';
-import { Commerce, CommerceImage } from './entities';
+import { Commerce, CommerceImage, CommerceProduct } from './entities';
 import { CreateCommerceDto, UpdateCommerceDto, CommerceIndexDto, CommerceFullDto } from './dto';
 import { Facility, ImageResource } from '../core/entities';
 import { Category } from '../core/entities';
@@ -33,6 +33,9 @@ export class CommerceService {
 
     @InjectRepository(User)
     private readonly userRepository: Repository<User>,
+
+    @InjectRepository(CommerceProduct)
+    private readonly commerceProductRepository: Repository<CommerceProduct>,
 
     private readonly cloudinaryService: CloudinaryService,
   ) {}
@@ -83,6 +86,11 @@ export class CommerceService {
         categories: { icon: true },
         images: { imageResource: true },
         facilities: { icon: true },
+        products: { images: { imageResource: true } },
+      },
+      order: {
+        images: { order: 'ASC' },
+        products: { order: 'ASC', images: { order: 'ASC' } },
       },
     });
 
@@ -99,12 +107,16 @@ export class CommerceService {
       facilities: { icon: true },
       town: { department: true },
       images: { imageResource: true },
+      products: { images: { imageResource: true } },
     };
 
     let commerce = await this.commerceRepository.findOne({
       where: { slug },
       relations,
-      order: { images: { order: 'ASC' } },
+      order: {
+        images: { order: 'ASC' },
+        products: { order: 'ASC', images: { order: 'ASC' } },
+      },
     });
 
     if (!commerce) commerce = await this.commerceRepository.findOne({ where: { slug }, relations });
@@ -170,7 +182,9 @@ export class CommerceService {
     const town = await this.townRepository.findOne({ where: { id: updateCommerceDto.townId } });
 
     // Extract lat and lng from DTO and create Point
-    const { latitude, longitude, ...restUpdateDto } = updateCommerceDto;
+    // Note: commerceProducts is extracted but ignored - products are now managed
+    // independently via CommerceProductsController
+    const { latitude, longitude, commerceProducts, ...restUpdateDto } = updateCommerceDto;
     const commerceLocation: Point | null =
       latitude && longitude
         ? {

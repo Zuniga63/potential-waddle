@@ -6,7 +6,7 @@ import { PlaceImage } from 'src/modules/places/entities';
 import { LodgingImage } from 'src/modules/lodgings/entities';
 import { ExperienceImage } from 'src/modules/experiences/entities';
 import { RestaurantImage } from 'src/modules/restaurants/entities';
-import { CommerceImage } from 'src/modules/commerce/entities';
+import { CommerceImage, CommerceProductImage } from 'src/modules/commerce/entities';
 import { GuideImage } from 'src/modules/guides/entities/guide-image.entity';
 import { LodgingRoomTypeImage } from 'src/modules/lodgings/entities/lodging-room-type-image.entity';
 
@@ -41,6 +41,9 @@ export class ImageResource {
 
   @OneToMany(() => LodgingRoomTypeImage, roomTypeImage => roomTypeImage.imageResource)
   roomTypeImages: LodgingRoomTypeImage[];
+
+  @OneToMany(() => CommerceProductImage, productImage => productImage.imageResource)
+  commerceProductImages: CommerceProductImage[];
 
   // * ----------------------------------------------------------------------------------------------------------------
   // * MAIN FIELDS

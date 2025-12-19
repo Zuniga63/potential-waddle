@@ -2,6 +2,7 @@ import { CommerceIndexDto } from './commerce-index.dto';
 import { Commerce } from '../entities';
 import { ApiProperty } from '@nestjs/swagger';
 import { Facility } from 'src/modules/core/entities';
+import { CommerceProductDto } from './commerce-product.dto';
 
 export class CommerceFullDto extends CommerceIndexDto {
   @ApiProperty({
@@ -51,6 +52,13 @@ export class CommerceFullDto extends CommerceIndexDto {
   })
   showGoogleMapsReviews?: boolean;
 
+  @ApiProperty({
+    description: 'Products and services of the commerce',
+    type: [CommerceProductDto],
+    required: false,
+  })
+  products?: CommerceProductDto[];
+
   constructor(commerce?: Commerce) {
     super(commerce);
 
@@ -66,5 +74,6 @@ export class CommerceFullDto extends CommerceIndexDto {
     this.googleMapsRating = commerce.googleMapsRating || undefined;
     this.googleMapsReviewsCount = commerce.googleMapsReviewsCount || undefined;
     this.showGoogleMapsReviews = commerce.showGoogleMapsReviews || undefined;
+    this.products = commerce.products?.map(product => new CommerceProductDto(product)) || [];
   }
 }

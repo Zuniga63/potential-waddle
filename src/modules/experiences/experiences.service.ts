@@ -379,7 +379,7 @@ export class ExperiencesService {
         const cloudinaryRes = await this.cloudinaryService.uploadImage({
           file,
           fileName: experience.title,
-          preset: CloudinaryPresets.LODGING_IMAGE,
+          preset: CloudinaryPresets.EXPERIENCE_IMAGE,
           folder: `${CLOUDINARY_FOLDERS.EXPERIENCE_GALLERY}/${experience.slug}`,
         });
 

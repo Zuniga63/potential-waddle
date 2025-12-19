@@ -11,7 +11,7 @@ export async function createPlacePreset() {
     name,
     folder: CLOUDINARY_FOLDERS.PLACE_GALLERY,
     resource_type: 'image',
-    allowed_formats: 'jpg, png, gif, webp, bmp, jpe, jpeg',
+    allowed_formats: 'jpg, png, gif, webp, bmp, jpe, jpeg, heic, heif, avif, tiff, tif',
     access_mode: 'public',
     unique_filename: true,
     auto_tagging: 0.7,

@@ -15,6 +15,7 @@ import {
 import { Town } from 'src/modules/towns/entities';
 import { Category, Facility } from 'src/modules/core/entities';
 import { CommerceImage } from './commerce-image.entity';
+import { CommerceProduct } from './commerce-product.entity';
 import { Review } from 'src/modules/reviews/entities';
 import { User } from 'src/modules/users/entities';
 @Entity({ name: 'commerce' })
@@ -39,6 +40,9 @@ export class Commerce {
 
   @OneToMany(() => CommerceImage, image => image.commerce)
   images: CommerceImage[];
+
+  @OneToMany(() => CommerceProduct, product => product.commerce)
+  products: CommerceProduct[];
 
   @ManyToMany(() => Facility, facility => facility.commerces)
   @JoinTable({
