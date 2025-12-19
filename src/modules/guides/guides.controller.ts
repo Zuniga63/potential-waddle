@@ -27,10 +27,12 @@ import { GuideDto } from './dto/guide.dto';
 import { GuidesFilters } from './decorators/guides-filters.decorator';
 import { GuidesFiltersDto } from './dto/guides-filters.dto';
 import { GuideListQueryDocsGroup } from './decorators/guides-list-query-docs-group.decorator';
-import { OptionalAuth } from '../auth/decorators';
+import { Auth, OptionalAuth } from '../auth/decorators';
 import { ContentTypes } from '../common/constants/content-types';
 import { ReorderImagesDto } from '../common/dto/reoder-images.dto';
 import { FilesInterceptor } from '@nestjs/platform-express';
+import { GetUser } from '../common/decorators';
+import { User } from '../users/entities';
 
 @Controller('guides')
 @ApiTags(SwaggerTags.Guides)
@@ -41,10 +43,11 @@ export class GuidesController {
   // * CREATE GUIDE
   // * ----------------------------------------------------------------------------------------------------------------
   @Post()
+  @Auth()
   @ApiOperation({ summary: 'Create a new guide' })
   @ApiOkResponse({ description: 'The guide has been successfully created.', type: GuideDto })
-  create(@Body() createGuideDto: CreateGuideDto) {
-    return this.guidesService.create(createGuideDto);
+  create(@Body() createGuideDto: CreateGuideDto, @GetUser() user: User) {
+    return this.guidesService.create(createGuideDto, user.id);
   }
 
   // * ----------------------------------------------------------------------------------------------------------------

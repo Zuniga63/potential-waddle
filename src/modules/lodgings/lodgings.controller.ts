@@ -13,7 +13,9 @@ import {
 import { ApiBadRequestResponse, ApiBody, ApiConsumes, ApiOkResponse, ApiTags } from '@nestjs/swagger';
 
 import { SwaggerTags } from 'src/config';
-import { OptionalAuth } from '../auth/decorators';
+import { Auth, OptionalAuth } from '../auth/decorators';
+import { GetUser } from '../common/decorators';
+import { User } from '../users/entities';
 
 import { LodgingsService } from './lodgings.service';
 import { LodgingFilters, LodgingListQueryParamsDocs } from './decorators';
@@ -88,10 +90,10 @@ export class LodgingsController {
   // * CREATE LODGING
   // * ----------------------------------------------------------------------------------------------------------------
   @Post()
-  @OptionalAuth()
+  @Auth()
   @ApiOkResponse({ description: 'Lodging Created', type: LodgingFullDto })
-  create(@Body() createLodgingDto: CreateLodgingDto) {
-    return this.lodgingsService.create(createLodgingDto);
+  create(@Body() createLodgingDto: CreateLodgingDto, @GetUser() user: User) {
+    return this.lodgingsService.create(createLodgingDto, user.id);
   }
 
   // * ----------------------------------------------------------------------------------------------------------------

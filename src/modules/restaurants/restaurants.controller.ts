@@ -18,10 +18,12 @@ import { ContentTypes } from '../common/constants';
 import { ReorderImagesDto } from '../common/dto/reoder-images.dto';
 
 import { RestaurantFiltersDto, CreateRestaurantDto, UpdateRestaurantDto, RestaurantDto } from './dto';
-import { OptionalAuth } from '../auth/decorators';
+import { Auth, OptionalAuth } from '../auth/decorators';
 import { RestaurantsService } from './restaurants.service';
 import { RestaurantFilters, RestaurantListApiQueries } from './decorators';
 import { RestaurantVectorDto } from './dto/restaurant-vector.dto';
+import { GetUser } from '../common/decorators';
+import { User } from '../users/entities';
 
 @Controller(SwaggerTags.Restaurants)
 @ApiTags(SwaggerTags.Restaurants)
@@ -82,10 +84,10 @@ export class RestaurantsController {
   // * CREATE RESTAURANT
   // * ----------------------------------------------------------------------------------------------------------------
   @Post()
-  @OptionalAuth()
+  @Auth()
   @ApiOkResponse({ description: 'Restaurant Created', type: RestaurantDto })
-  create(@Body() createRestaurantDto: CreateRestaurantDto) {
-    return this.restaurantsService.create(createRestaurantDto);
+  create(@Body() createRestaurantDto: CreateRestaurantDto, @GetUser() user: User) {
+    return this.restaurantsService.create(createRestaurantDto, user.id);
   }
 
   // * ----------------------------------------------------------------------------------------------------------------

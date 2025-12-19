@@ -37,15 +37,17 @@ export class GuidesService {
   // ------------------------------------------------------------------------------------------------
   // Create guide
   // ------------------------------------------------------------------------------------------------
-  async create(createGuideDto: CreateGuideDto) {
+  async create(createGuideDto: CreateGuideDto, userId: string) {
     const { categories, ...restDto } = createGuideDto;
     const categoriesEntities = categories ? await this.categoryRepo.findBy({ id: In(categories) }) : [];
-    const user = restDto.userId ? await this.userRepo.findOneBy({ id: restDto.userId }) : undefined;
+    // Usar userId del JWT, no del DTO (seguridad)
+    const user = await this.userRepo.findOneBy({ id: userId });
+    if (!user) throw new NotFoundException('User not found');
 
     const guide = this.guideRepository.create({
       ...restDto,
       categories: categoriesEntities,
-      user: user ?? undefined,
+      user,
     });
 
     return await this.guideRepository.save(guide);

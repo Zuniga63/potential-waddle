@@ -116,7 +116,7 @@ export class CommerceService {
   // ------------------------------------------------------------------------------------------------
   // Create commerce
   // ------------------------------------------------------------------------------------------------
-  async create(createCommerceDto: CreateCommerceDto) {
+  async create(createCommerceDto: CreateCommerceDto, userId: string) {
     const { latitude, longitude, ...restCreateDto } = createCommerceDto;
     const restaurantLocation: Point | null =
       latitude && longitude
@@ -133,7 +133,8 @@ export class CommerceService {
       ? await this.facilityRepository.findBy({ id: In(createCommerceDto.facilityIds) })
       : [];
     const town = await this.townRepository.findOne({ where: { id: createCommerceDto.townId } });
-    const user = await this.userRepository.findOne({ where: { id: createCommerceDto.userId } });
+    // Usar userId del JWT, no del DTO (seguridad)
+    const user = await this.userRepository.findOne({ where: { id: userId } });
     if (!user) throw new NotFoundException('User not found');
     if (!town) {
       throw new NotFoundException('Town not found');

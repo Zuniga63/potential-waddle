@@ -28,29 +28,29 @@ export class TransportService {
     private readonly userRepo: Repository<User>,
   ) {}
 
-  async create(createTransportDto: CreateTransportDto) {
+  async create(createTransportDto: CreateTransportDto, userId: string) {
     const { categoryIds, townId, ...restDto } = createTransportDto;
     const categories = categoryIds ? await this.categoryRepo.findBy({ id: In(categoryIds) }) : [];
     const town = townId ? await this.townRepo.findOneBy({ id: townId }) : undefined;
     if (!town) throw new NotFoundException('Town not found');
 
+    // Usar userId del JWT, no del DTO (seguridad)
     // Check if user already has a transport
-    if (restDto.userId) {
-      const existingTransport = await this.transportRepository.findOne({
-        where: { user: { id: restDto.userId } },
-      });
-      if (existingTransport) {
-        throw new ConflictException('User already has a transport associated. Each user can only have one transport.');
-      }
+    const existingTransport = await this.transportRepository.findOne({
+      where: { user: { id: userId } },
+    });
+    if (existingTransport) {
+      throw new ConflictException('User already has a transport associated. Each user can only have one transport.');
     }
 
-    const user = restDto.userId ? await this.userRepo.findOneBy({ id: restDto.userId }) : undefined;
+    const user = await this.userRepo.findOneBy({ id: userId });
+    if (!user) throw new NotFoundException('User not found');
 
     const transport = this.transportRepository.create({
       ...restDto,
       categories,
       town,
-      user: user ?? undefined,
+      user,
     });
 
     return await this.transportRepository.save(transport);

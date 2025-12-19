@@ -211,7 +211,7 @@ export class LodgingsService {
   // ------------------------------------------------------------------------------------------------
   // Create lodging
   // ------------------------------------------------------------------------------------------------
-  async create(createLodgingDto: CreateLodgingDto) {
+  async create(createLodgingDto: CreateLodgingDto, userId: string) {
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { latitude, longitude, lodgingRoomTypes, ...restCreateDto } = createLodgingDto;
 
@@ -230,7 +230,8 @@ export class LodgingsService {
       ? await this.facilityRepository.findBy({ id: In(createLodgingDto.facilityIds) })
       : [];
     const town = await this.townRepository.findOne({ where: { id: createLodgingDto.townId } });
-    const user = await this.userRepository.findOne({ where: { id: createLodgingDto.userId } });
+    // Usar userId del JWT, no del DTO (seguridad)
+    const user = await this.userRepository.findOne({ where: { id: userId } });
 
     const places = createLodgingDto.placeIds
       ? await this.placeRepository.findBy({ id: In(createLodgingDto.placeIds) })

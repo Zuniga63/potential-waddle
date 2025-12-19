@@ -59,8 +59,7 @@ export class UsersService {
             CloudinaryPresets.PROFILE_PHOTO,
           );
         } catch (error) {
-          console.log(error);
-          this.logger.error('No se pudo cargar la imagen desde la url');
+          this.logger.error('No se pudo cargar la imagen desde la url', error);
         }
       }
 
@@ -217,17 +216,16 @@ export class UsersService {
   }
 
   async getUserTransport(id: string) {
-    const user = await this.usersRepository.findOne({
-      where: { id },
-      relations: [
-        'transport',
-        'transport.user',
-        'transport.categories',
-        'transport.categories.icon',
-        'transport.town',
-        'transport.town.department',
-      ],
-    });
+    const user = await this.usersRepository
+      .createQueryBuilder('user')
+      .leftJoinAndSelect('user.transport', 'transport')
+      .leftJoinAndSelect('transport.user', 'transportUser')
+      .leftJoinAndSelect('transport.categories', 'categories')
+      .leftJoinAndSelect('categories.icon', 'icon')
+      .leftJoinAndSelect('transport.town', 'town')
+      .leftJoinAndSelect('town.department', 'department')
+      .where('user.id = :id', { id })
+      .getOne();
 
     return user?.transport ?? {};
   }
@@ -266,67 +264,65 @@ export class UsersService {
   } */
 
   async getUserGuide(id: string) {
-    const user = await this.usersRepository.findOne({
-      where: { id },
-      relations: [
-        'guide',
-        'guide.categories',
-        'guide.experiences',
-        'guide.experiences.categories',
-        'guide.experiences.images',
-        'guide.experiences.images.imageResource',
-        'guide.experiences.town',
-      ],
-    });
+    const user = await this.usersRepository
+      .createQueryBuilder('user')
+      .leftJoinAndSelect('user.guide', 'guide')
+      .leftJoinAndSelect('guide.categories', 'guideCategories')
+      .leftJoinAndSelect('guide.experiences', 'experiences')
+      .leftJoinAndSelect('experiences.categories', 'expCategories')
+      .leftJoinAndSelect('experiences.images', 'expImages')
+      .leftJoinAndSelect('expImages.imageResource', 'expImageResource')
+      .leftJoinAndSelect('experiences.town', 'expTown')
+      .where('user.id = :id', { id })
+      .getOne();
 
     const userGuide = user?.guide ? new UserGuideDto({ data: user?.guide, user }) : null;
-    console.log(userGuide);
     return userGuide ?? {};
   }
 
   async getUserLodgings(id: string) {
-    const user = await this.usersRepository.findOne({
-      where: { id },
-      relations: [
-        'lodgings',
-        'lodgings.categories',
-        'lodgings.images',
-        'lodgings.images.imageResource',
-        'lodgings.town',
-        'lodgings.town.department',
-      ],
-    });
+    const user = await this.usersRepository
+      .createQueryBuilder('user')
+      .leftJoinAndSelect('user.lodgings', 'lodgings')
+      .leftJoinAndSelect('lodgings.categories', 'categories')
+      .leftJoinAndSelect('lodgings.images', 'images')
+      .leftJoinAndSelect('images.imageResource', 'imageResource')
+      .leftJoinAndSelect('lodgings.town', 'town')
+      .leftJoinAndSelect('town.department', 'department')
+      .where('user.id = :id', { id })
+      .getOne();
+
     const lodgings = user?.lodgings ? user?.lodgings.map(lodging => new UserLodgingDto(lodging)) : [];
     return lodgings ?? [];
   }
 
   async getUserCommerce(id: string) {
-    const user = await this.usersRepository.findOne({
-      where: { id },
-      relations: [
-        'commerces',
-        'commerces.images',
-        'commerces.images.imageResource',
-        'commerces.categories',
-        'commerces.town',
-        'commerces.town.department',
-      ],
-    });
+    const user = await this.usersRepository
+      .createQueryBuilder('user')
+      .leftJoinAndSelect('user.commerces', 'commerces')
+      .leftJoinAndSelect('commerces.images', 'images')
+      .leftJoinAndSelect('images.imageResource', 'imageResource')
+      .leftJoinAndSelect('commerces.categories', 'categories')
+      .leftJoinAndSelect('commerces.town', 'town')
+      .leftJoinAndSelect('town.department', 'department')
+      .where('user.id = :id', { id })
+      .getOne();
+
     return user?.commerces ? user?.commerces.map(commerce => new UserCommerceDto(commerce)) : [];
   }
 
   async getUserRestaurants(id: string) {
-    const user = await this.usersRepository.findOne({
-      where: { id },
-      relations: [
-        'restaurants',
-        'restaurants.images',
-        'restaurants.images.imageResource',
-        'restaurants.categories',
-        'restaurants.town',
-        'restaurants.town.department',
-      ],
-    });
+    const user = await this.usersRepository
+      .createQueryBuilder('user')
+      .leftJoinAndSelect('user.restaurants', 'restaurants')
+      .leftJoinAndSelect('restaurants.images', 'images')
+      .leftJoinAndSelect('images.imageResource', 'imageResource')
+      .leftJoinAndSelect('restaurants.categories', 'categories')
+      .leftJoinAndSelect('restaurants.town', 'town')
+      .leftJoinAndSelect('town.department', 'department')
+      .where('user.id = :id', { id })
+      .getOne();
+
     return user?.restaurants ? user?.restaurants.map(restaurant => new UserRestaurantDto(restaurant)) : [];
   }
 

@@ -16,8 +16,10 @@ import { TransportListQueryDocsGroup } from './decorators/transport-list-query-d
 import { TransportDto } from './dto/transport.dto';
 import { CreateTransportDto } from './dto/create-transport.dto';
 import { UpdateTransportDto } from './dto/update-transport.dto';
-import { OptionalAuth } from '../auth/decorators';
+import { Auth, OptionalAuth } from '../auth/decorators';
 import { RestaurantDto } from '../restaurants/dto/restaurant.dto';
+import { GetUser } from '../common/decorators';
+import { User } from '../users/entities';
 
 @Controller('transport')
 @ApiTags(SwaggerTags.Transport)
@@ -28,13 +30,14 @@ export class TransportController {
   // * CREATE TRANSPORT
   // * ----------------------------------------------------------------------------------------------------------------
   @Post()
+  @Auth()
   @ApiOperation({ summary: 'Create a new transport' })
   @ApiOkResponse({ description: 'The transport has been successfully created.', type: TransportDto })
   @ApiConflictResponse({
     description: 'User already has a transport associated. Each user can only have one transport.',
   })
-  create(@Body() createTransportDto: CreateTransportDto) {
-    return this.transportService.create(createTransportDto);
+  create(@Body() createTransportDto: CreateTransportDto, @GetUser() user: User) {
+    return this.transportService.create(createTransportDto, user.id);
   }
 
   // * ----------------------------------------------------------------------------------------------------------------

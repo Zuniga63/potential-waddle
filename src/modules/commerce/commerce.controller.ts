@@ -18,9 +18,11 @@ import { ContentTypes } from '../common/constants';
 import { ReorderImagesDto } from '../common/dto/reoder-images.dto';
 
 import { CommerceFiltersDto, CreateCommerceDto, UpdateCommerceDto, CommerceFullDto, CommerceIndexDto } from './dto';
-import { OptionalAuth } from '../auth/decorators';
+import { Auth, OptionalAuth } from '../auth/decorators';
 import { CommerceService } from './commerce.service';
 import { CommerceFilters, CommerceListQueryParamsDocs } from './decorators';
+import { GetUser } from '../common/decorators';
+import { User } from '../users/entities';
 
 @Controller(SwaggerTags.Commerce)
 @ApiTags(SwaggerTags.Commerce)
@@ -71,10 +73,10 @@ export class CommerceController {
   // * CREATE COMMERCE
   // * ----------------------------------------------------------------------------------------------------------------
   @Post()
-  @OptionalAuth()
+  @Auth()
   @ApiOkResponse({ description: 'Commerce Created', type: CommerceFullDto })
-  create(@Body() createCommerceDto: CreateCommerceDto) {
-    return this.commerceService.create(createCommerceDto);
+  create(@Body() createCommerceDto: CreateCommerceDto, @GetUser() user: User) {
+    return this.commerceService.create(createCommerceDto, user.id);
   }
 
   // * ----------------------------------------------------------------------------------------------------------------
