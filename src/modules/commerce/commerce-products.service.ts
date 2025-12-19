@@ -118,12 +118,20 @@ export class CommerceProductsService {
   // Update product
   // ------------------------------------------------------------------------------------------------
   async update(id: string, updateDto: UpdateCommerceProductDto) {
+    this.logger.log(`Updating product ${id}`);
+    this.logger.log(`Update DTO: ${JSON.stringify(updateDto)}`);
+
     await this.findOne(id); // Just validate existence
 
     try {
-      await this.productRepository.update(id, updateDto);
+      // Remove id from updateDto if present to avoid updating primary key
+      const { id: dtoId, ...dataToUpdate } = updateDto as any;
+      this.logger.log(`Data to update (without id): ${JSON.stringify(dataToUpdate)}`);
+
+      await this.productRepository.update(id, dataToUpdate);
       return this.findOne(id);
     } catch (error) {
+      this.logger.error(`Error updating product: ${error.message}`, error.stack);
       throw new BadRequestException(`Error updating product: ${error.message}`);
     }
   }

@@ -54,6 +54,8 @@ export class CommerceProductsController {
   @ApiOkResponse({ description: 'Product updated successfully' })
   @ApiBadRequestResponse({ description: 'Bad request' })
   async update(@Param('id', ParseUUIDPipe) id: string, @Body() updateDto: UpdateCommerceProductDto) {
+    console.log('Update product controller - id:', id);
+    console.log('Update product controller - body:', JSON.stringify(updateDto));
     const product = await this.productsService.update(id, updateDto);
     return new CommerceProductDto(product);
   }
