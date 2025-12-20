@@ -11,13 +11,17 @@ import {
   Patch,
   Post,
   Query,
+  UploadedFile,
+  UseInterceptors,
 } from '@nestjs/common';
-import { ApiOperation, ApiQuery, ApiResponse, ApiTags, ApiParam } from '@nestjs/swagger';
+import { FileInterceptor } from '@nestjs/platform-express';
+import { ApiOperation, ApiQuery, ApiResponse, ApiTags, ApiParam, ApiConsumes, ApiBody } from '@nestjs/swagger';
 import { SwaggerTags } from 'src/config';
 import { CreateCategoryDto, UpdateCategoryDto } from '../dto';
 import { CategoriesService } from '../services';
 import { ModelsEnum } from '../enums';
 import { PublicCategoryDto, FullCategoryDto } from '../dto/categories';
+import { ContentTypes } from 'src/modules/common/constants';
 
 @Controller('categories')
 @ApiTags(SwaggerTags.Categories)
@@ -133,5 +137,56 @@ export class CategoriesController {
   })
   remove(@Param('id', ParseUUIDPipe) id: string) {
     return this.categoriesService.remove(id);
+  }
+
+  // * -------------------------------------------------------------------------------------------------------------
+  // * UPLOAD CATEGORY IMAGE
+  // * -------------------------------------------------------------------------------------------------------------
+  @Post(':id/upload-image')
+  @UseInterceptors(FileInterceptor('file'))
+  @ApiOperation({ summary: 'Upload an image for a category' })
+  @ApiParam({ name: 'id', description: 'Category UUID', type: 'string' })
+  @ApiConsumes(ContentTypes.MULTIPART_FORM_DATA)
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        file: {
+          type: 'string',
+          format: 'binary',
+        },
+      },
+    },
+  })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    type: FullCategoryDto,
+    description: 'Image uploaded successfully',
+  })
+  @ApiResponse({ status: HttpStatus.NOT_FOUND, description: 'Category not found' })
+  @ApiResponse({ status: HttpStatus.BAD_REQUEST, description: 'Error uploading image' })
+  uploadImage(@Param('id', ParseUUIDPipe) id: string, @UploadedFile() file: Express.Multer.File) {
+    return this.categoriesService.uploadImage(id, file);
+  }
+
+  // * -------------------------------------------------------------------------------------------------------------
+  // * DELETE CATEGORY IMAGE
+  // * -------------------------------------------------------------------------------------------------------------
+  @Delete(':id/image')
+  @ApiOperation({ summary: 'Delete category image' })
+  @ApiParam({ name: 'id', description: 'Category UUID', type: 'string' })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'Image deleted successfully',
+    schema: {
+      type: 'object',
+      properties: {
+        message: { type: 'string', example: 'Category image deleted successfully' },
+      },
+    },
+  })
+  @ApiResponse({ status: HttpStatus.NOT_FOUND, description: 'Category or image not found' })
+  deleteImage(@Param('id', ParseUUIDPipe) id: string) {
+    return this.categoriesService.deleteImage(id);
   }
 }

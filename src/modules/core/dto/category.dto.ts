@@ -37,6 +37,13 @@ export class CategoryDto {
   icon?: AppIconDto;
 
   @ApiProperty({
+    example: 'https://res.cloudinary.com/.../category-image.jpg',
+    description: 'The image URL of the category',
+    required: false,
+  })
+  imageUrl?: string;
+
+  @ApiProperty({
     format: 'date-time',
     example: '2021-09-03T00:00:00.000Z',
   })
@@ -56,6 +63,7 @@ export class CategoryDto {
     this.slug = category.slug;
     this.description = category.description;
     this.icon = category.icon ? new AppIconDto(category.icon) : undefined;
+    this.imageUrl = category.imageResource?.url;
     this.updatedAt = category.updatedAt;
     this.createdAt = category.createdAt;
   }

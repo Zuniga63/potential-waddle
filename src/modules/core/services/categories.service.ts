@@ -1,6 +1,6 @@
-import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
+import { Injectable, NotFoundException, ConflictException, BadRequestException, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Category, Model, AppIcon } from '../entities';
+import { Category, Model, AppIcon, ImageResource } from '../entities';
 import {
   FindOptionsOrder,
   FindOptionsRelations,
@@ -13,9 +13,14 @@ import {
 } from 'typeorm';
 import { CreateCategoryDto, UpdateCategoryDto } from '../dto';
 import { ModelsEnum } from '../enums';
+import { CloudinaryService } from 'src/modules/cloudinary/cloudinary.service';
+import { CloudinaryPresets, ResourceProvider } from 'src/config';
+import { CLOUDINARY_FOLDERS } from 'src/config/cloudinary-folders';
 
 @Injectable()
 export class CategoriesService {
+  private readonly logger = new Logger(CategoriesService.name);
+
   constructor(
     @InjectRepository(Category)
     private readonly categoriesRepository: Repository<Category>,
@@ -23,6 +28,9 @@ export class CategoriesService {
     private readonly modelsRepository: Repository<Model>,
     @InjectRepository(AppIcon)
     private readonly appIconsRepository: Repository<AppIcon>,
+    @InjectRepository(ImageResource)
+    private readonly imageResourceRepository: Repository<ImageResource>,
+    private readonly cloudinaryService: CloudinaryService,
   ) {}
 
   // * -------------------------------------------------------------------------------------------------------------
@@ -58,7 +66,7 @@ export class CategoriesService {
 
     const order: FindOptionsOrder<Category> = { name: 'ASC' };
 
-    const relations: FindOptionsRelations<Category> = { icon: true, models: true };
+    const relations: FindOptionsRelations<Category> = { icon: true, models: true, imageResource: true };
     const select: FindOptionsSelect<Category> = { models: { id: true, name: true } };
 
     if (!model) {
@@ -120,6 +128,7 @@ export class CategoriesService {
     const order: FindOptionsOrder<Category> = { name: 'ASC' };
     const relations: FindOptionsRelations<Category> = {
       icon: true,
+      imageResource: true,
       models: true,
       places: true,
       restaurants: true,
@@ -153,7 +162,7 @@ export class CategoriesService {
   async findOne(id: string) {
     const category = await this.categoriesRepository.findOne({
       where: { id },
-      relations: { icon: true, models: true },
+      relations: { icon: true, models: true, imageResource: true },
       select: { models: { id: true, name: true, slug: true } },
     });
 
@@ -173,7 +182,7 @@ export class CategoriesService {
     // Verificar que la categoría existe
     const existingCategory = await this.categoriesRepository.findOne({
       where: { id },
-      relations: { models: true, icon: true },
+      relations: { models: true, icon: true, imageResource: true },
     });
 
     if (!existingCategory) {
@@ -213,7 +222,7 @@ export class CategoriesService {
     // Retornar la categoría actualizada con sus relaciones
     return this.categoriesRepository.findOne({
       where: { id: updatedCategory.id },
-      relations: { icon: true, models: true },
+      relations: { icon: true, models: true, imageResource: true },
       select: { models: { id: true, name: true, slug: true } },
     });
   }
@@ -260,5 +269,101 @@ export class CategoriesService {
     await this.categoriesRepository.remove(category);
 
     return { message: `Category "${category.name}" has been successfully deleted` };
+  }
+
+  // * -------------------------------------------------------------------------------------------------------------
+  // * UPLOAD CATEGORY IMAGE
+  // * -------------------------------------------------------------------------------------------------------------
+  async uploadImage(id: string, file: Express.Multer.File) {
+    const category = await this.categoriesRepository.findOne({
+      where: { id },
+      relations: { imageResource: true },
+    });
+
+    if (!category) {
+      throw new NotFoundException('Category not found');
+    }
+
+    // Delete old image from Cloudinary if exists
+    if (category.imageResource?.publicId) {
+      await this.cloudinaryService.destroyFile(category.imageResource.publicId);
+    }
+
+    // Upload new image to Cloudinary
+    const cloudinaryRes = await this.cloudinaryService.uploadImage({
+      file,
+      fileName: `category-${category.slug}`,
+      preset: CloudinaryPresets.DEFAULT,
+      folder: CLOUDINARY_FOLDERS.CATEGORY_IMAGES,
+    });
+
+    if (!cloudinaryRes) {
+      throw new BadRequestException('Error uploading image to Cloudinary');
+    }
+
+    // Create or update image resource
+    let imageResource: ImageResource;
+    if (category.imageResource) {
+      // Update existing image resource
+      category.imageResource.url = cloudinaryRes.url;
+      category.imageResource.publicId = cloudinaryRes.publicId;
+      category.imageResource.width = cloudinaryRes.width;
+      category.imageResource.height = cloudinaryRes.height;
+      category.imageResource.format = cloudinaryRes.format;
+      category.imageResource.resourceType = cloudinaryRes.type;
+      imageResource = await this.imageResourceRepository.save(category.imageResource);
+    } else {
+      // Create new image resource
+      imageResource = this.imageResourceRepository.create({
+        url: cloudinaryRes.url,
+        publicId: cloudinaryRes.publicId,
+        fileName: `category-${category.slug}`,
+        width: cloudinaryRes.width,
+        height: cloudinaryRes.height,
+        format: cloudinaryRes.format,
+        resourceType: cloudinaryRes.type,
+        provider: ResourceProvider.Cloudinary,
+      });
+      imageResource = await this.imageResourceRepository.save(imageResource);
+    }
+
+    // Update category with new image resource
+    category.imageResource = imageResource;
+    await this.categoriesRepository.save(category);
+
+    return this.findOne(id);
+  }
+
+  // * -------------------------------------------------------------------------------------------------------------
+  // * DELETE CATEGORY IMAGE
+  // * -------------------------------------------------------------------------------------------------------------
+  async deleteImage(id: string) {
+    const category = await this.categoriesRepository.findOne({
+      where: { id },
+      relations: { imageResource: true },
+    });
+
+    if (!category) {
+      throw new NotFoundException('Category not found');
+    }
+
+    if (!category.imageResource) {
+      throw new NotFoundException('Category does not have an image');
+    }
+
+    // Delete from Cloudinary
+    if (category.imageResource.publicId) {
+      await this.cloudinaryService.destroyFile(category.imageResource.publicId);
+    }
+
+    // Remove image resource reference from category
+    const imageResourceId = category.imageResource.id;
+    category.imageResource = undefined as any;
+    await this.categoriesRepository.save(category);
+
+    // Delete image resource
+    await this.imageResourceRepository.delete(imageResourceId);
+
+    return { message: 'Category image deleted successfully' };
   }
 }

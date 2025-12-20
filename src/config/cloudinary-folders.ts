@@ -10,6 +10,7 @@ export const CLOUDINARY_FOLDERS = {
   COMMERCE_GALLERY: 'commerce_gallery',
   GUIDE_GALLERY: 'guide_gallery',
   PUBLIC_EVENT_GALLERY: 'public_event_gallery',
+  CATEGORY_IMAGES: 'category_images',
   IMAGE_REPOSITORY,
   PLACE_IMAGE_REPOSITORY: `${IMAGE_REPOSITORY}/lugares`,
   EXPERIENCE_IMAGE_REPOSITORY: `${IMAGE_REPOSITORY}/experiencias`,

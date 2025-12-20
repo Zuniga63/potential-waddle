@@ -1,7 +1,17 @@
-import { Column, CreateDateColumn, Entity, JoinColumn, ManyToMany, ManyToOne, PrimaryGeneratedColumn } from 'typeorm';
+import {
+  AfterLoad,
+  Column,
+  CreateDateColumn,
+  Entity,
+  JoinColumn,
+  ManyToMany,
+  ManyToOne,
+  PrimaryGeneratedColumn,
+} from 'typeorm';
 
 import { Model } from './model.entity';
 import { AppIcon } from './app-icon.entity';
+import { ImageResource } from './image-resource.entity';
 import { Place } from 'src/modules/places/entities';
 import { Lodging } from 'src/modules/lodgings/entities';
 import { Experience } from 'src/modules/experiences/entities';
@@ -24,6 +34,10 @@ export class Category {
   @ManyToOne(() => AppIcon, icon => icon.categories, { nullable: true, onDelete: 'SET NULL' })
   @JoinColumn({ name: 'icon_id' })
   icon?: AppIcon;
+
+  @ManyToOne(() => ImageResource, { nullable: true, onDelete: 'SET NULL', eager: false })
+  @JoinColumn({ name: 'image_resource_id' })
+  imageResource?: ImageResource;
 
   @ManyToMany(() => Place, place => place.categories)
   places: Place[];
@@ -66,4 +80,14 @@ export class Category {
 
   @CreateDateColumn({ name: 'updated_at', default: () => 'CURRENT_TIMESTAMP', onUpdate: 'CURRENT_TIMESTAMP' })
   updatedAt: Date;
+
+  // * ----------------------------------------------------------------------------------------------------------------
+  // * VIRTUAL FIELDS
+  // * ----------------------------------------------------------------------------------------------------------------
+  imageUrl?: string;
+
+  @AfterLoad()
+  setImageUrl() {
+    this.imageUrl = this.imageResource?.url;
+  }
 }
