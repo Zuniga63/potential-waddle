@@ -10,7 +10,7 @@ export class GoogleReviewSummary {
   entityId: string;
 
   @Column({ name: 'entity_type' })
-  entityType: 'lodging' | 'restaurant';
+  entityType: 'lodging' | 'restaurant' | 'commerce';
 
   @Column({ name: 'question' })
   question: string;

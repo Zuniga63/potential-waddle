@@ -84,7 +84,7 @@ export class PineconeService {
   // ------------------------------------------------------------------------------------------------
   // Delete All Vectors By Entity Id
   // ------------------------------------------------------------------------------------------------
-  async deleteAllVectorsByEntityId(entityId: string, entityType: 'lodging' | 'restaurant') {
+  async deleteAllVectorsByEntityId(entityId: string, entityType: 'lodging' | 'restaurant' | 'commerce') {
     console.log('🔄 Iniciando proceso de eliminación de vectores...');
 
     // Obtener las reseñas
@@ -127,7 +127,7 @@ export class PineconeService {
   // ------------------------------------------------------------------------------------------------
   // Search Documents
   // ------------------------------------------------------------------------------------------------
-  async searchDocuments(query: string, entityId: string, entityType: 'lodging' | 'restaurant') {
+  async searchDocuments(query: string, entityId: string, entityType: 'lodging' | 'restaurant' | 'commerce') {
     try {
       const index = await this.getPineconeIndex();
 

@@ -59,6 +59,39 @@ export class GooglePlacesService {
     });
   }
 
+  // 🔹 Extract Place ID from Google Maps URL
+  async findPlaceIdFromUrl(googleMapsUrl: string): Promise<string | null> {
+    try {
+      // Usar la API de Places para buscar con la URL directamente
+      const url = `https://places.googleapis.com/v1/places:searchText`;
+
+      const response = await lastValueFrom(
+        this.httpService.post(
+          url,
+          { textQuery: googleMapsUrl },
+          {
+            headers: {
+              'Content-Type': 'application/json',
+              'X-Goog-Api-Key': this.apiKey,
+              'X-Goog-FieldMask': 'places.id',
+            },
+          },
+        ),
+      );
+
+      if (response.data.places && response.data.places.length > 0) {
+        this.logger.log(`Place ID encontrado desde URL: ${response.data.places[0].id}`);
+        return response.data.places[0].id;
+      }
+
+      this.logger.warn(`No se encontró Place ID para la URL: ${googleMapsUrl}`);
+      return null;
+    } catch (error) {
+      this.logger.error(`Error al extraer Place ID de URL: ${error.message}`);
+      return null;
+    }
+  }
+
   // 🔹 Find Place ID by Name
   async findPlaceIdByName(name: string, address?: string): Promise<string | null> {
     try {
@@ -128,10 +161,24 @@ export class GooglePlacesService {
       }
 
       if (!lodging.googleMapsId) {
-        const googlePlaceId = await this.findPlaceIdByName(lodging.name, lodging.address || undefined);
+        let googlePlaceId: string | null = null;
+
+        // 1. Primero intentar extraer de la URL de Google Maps si existe
+        if (lodging.googleMapsUrl) {
+          this.logger.log(`Intentando extraer Place ID desde URL para: ${lodging.name}`);
+          googlePlaceId = await this.findPlaceIdFromUrl(lodging.googleMapsUrl);
+        }
+
+        // 2. Si no se pudo extraer de la URL, buscar por nombre
+        if (!googlePlaceId) {
+          this.logger.log(`Buscando Place ID por nombre para: ${lodging.name}`);
+          googlePlaceId = await this.findPlaceIdByName(lodging.name, lodging.address || undefined);
+        }
+
         if (googlePlaceId) {
           lodging.googleMapsId = googlePlaceId;
           await this.lodgingRepository.save(lodging);
+          this.logger.log(`Place ID guardado para ${lodging.name}: ${googlePlaceId}`);
         }
       }
     } catch (error) {
@@ -204,10 +251,24 @@ export class GooglePlacesService {
       }
 
       if (!restaurant.googleMapsId) {
-        const googlePlaceId = await this.findPlaceIdByName(restaurant.name, restaurant.address || undefined);
+        let googlePlaceId: string | null = null;
+
+        // 1. Primero intentar extraer de la URL de Google Maps si existe
+        if (restaurant.googleMapsUrl) {
+          this.logger.log(`Intentando extraer Place ID desde URL para: ${restaurant.name}`);
+          googlePlaceId = await this.findPlaceIdFromUrl(restaurant.googleMapsUrl);
+        }
+
+        // 2. Si no se pudo extraer de la URL, buscar por nombre
+        if (!googlePlaceId) {
+          this.logger.log(`Buscando Place ID por nombre para: ${restaurant.name}`);
+          googlePlaceId = await this.findPlaceIdByName(restaurant.name, restaurant.address || undefined);
+        }
+
         if (googlePlaceId) {
           restaurant.googleMapsId = googlePlaceId;
           await this.restaurantRepository.save(restaurant);
+          this.logger.log(`Place ID guardado para ${restaurant.name}: ${googlePlaceId}`);
         }
       }
     } catch (error) {
@@ -280,10 +341,24 @@ export class GooglePlacesService {
       }
 
       if (!commerce.googleMapsId) {
-        const googlePlaceId = await this.findPlaceIdByName(commerce.name, commerce.address || undefined);
+        let googlePlaceId: string | null = null;
+
+        // 1. Primero intentar extraer de la URL de Google Maps si existe
+        if (commerce.googleMapsUrl) {
+          this.logger.log(`Intentando extraer Place ID desde URL para: ${commerce.name}`);
+          googlePlaceId = await this.findPlaceIdFromUrl(commerce.googleMapsUrl);
+        }
+
+        // 2. Si no se pudo extraer de la URL, buscar por nombre
+        if (!googlePlaceId) {
+          this.logger.log(`Buscando Place ID por nombre para: ${commerce.name}`);
+          googlePlaceId = await this.findPlaceIdByName(commerce.name, commerce.address || undefined);
+        }
+
         if (googlePlaceId) {
           commerce.googleMapsId = googlePlaceId;
           await this.commerceRepository.save(commerce);
+          this.logger.log(`Place ID guardado para ${commerce.name}: ${googlePlaceId}`);
         }
       }
     } catch (error) {
@@ -401,6 +476,15 @@ export class GooglePlacesService {
       if (!placeUrl) {
         throw new HttpException(
           'Tu restaurante no tiene una URL de Google Maps configurada. Por favor, contacta al administrador del sistema.',
+          404,
+        );
+      }
+    } else if (entityType === 'commerce') {
+      const commerce = await this.commerceRepository.findOne({ where: { id: entityId } });
+      placeUrl = commerce?.googleMapsUrl || '';
+      if (!placeUrl) {
+        throw new HttpException(
+          'Tu comercio no tiene una URL de Google Maps configurada. Por favor, contacta al administrador del sistema.',
           404,
         );
       }
@@ -533,6 +617,10 @@ export class GooglePlacesService {
       await this.pineconeService.deleteAllVectorsByEntityId(entityId, entityType);
       await this.googleReviewRepository.delete({ entityId, entityType: 'restaurant' });
       await this.googleReviewSummaryRepository.delete({ entityId, entityType: 'restaurant' });
+    } else if (entityType === 'commerce') {
+      await this.pineconeService.deleteAllVectorsByEntityId(entityId, entityType);
+      await this.googleReviewRepository.delete({ entityId, entityType: 'commerce' });
+      await this.googleReviewSummaryRepository.delete({ entityId, entityType: 'commerce' });
     }
   }
 
@@ -552,7 +640,7 @@ export class GooglePlacesService {
   async reviewSummary(
     message: string,
     entityId: string,
-    entityType: 'lodging' | 'restaurant',
+    entityType: 'lodging' | 'restaurant' | 'commerce',
     type: 'general' | 'specific',
   ) {
     try {
@@ -574,35 +662,20 @@ export class GooglePlacesService {
       Remember to respond using the appropriate format when recommending specific lodging.
       `;
       } else {
-        if (entityType === 'lodging') {
-          const lodgings = await this.googleReviewRepository.find({
-            where: { entityType: 'lodging', entityId: entityId },
-          });
-          const lodgingsToSave = lodgings.map(lodging => {
-            return {
-              authorName: lodging.authorName,
-              rating: lodging.rating,
-              text: lodging.text,
-              reviewDate: lodging.reviewDate,
-            };
-          });
-          console.log(lodgings.length, 'londgings-length');
-          contextMessage = JSON.stringify(lodgingsToSave);
-        } else {
-          const restaurants = await this.googleReviewRepository.find({
-            where: { entityType: 'restaurant', entityId: entityId },
-          });
-          const restaurantsToSave = restaurants.map(restaurant => {
-            return {
-              authorName: restaurant.authorName,
-              rating: restaurant.rating,
-              text: restaurant.text,
-              reviewDate: restaurant.reviewDate,
-            };
-          });
-          console.log(restaurants.length, 'restaurants-length');
-          contextMessage = JSON.stringify(restaurantsToSave);
-        }
+        // Obtener reviews según el tipo de entidad
+        const reviews = await this.googleReviewRepository.find({
+          where: { entityType: entityType, entityId: entityId },
+        });
+        const reviewsToSave = reviews.map(review => {
+          return {
+            authorName: review.authorName,
+            rating: review.rating,
+            text: review.text,
+            reviewDate: review.reviewDate,
+          };
+        });
+        console.log(reviews.length, `${entityType}-reviews-length`);
+        contextMessage = JSON.stringify(reviewsToSave);
       }
       console.log(contextMessage, 'contextMessage');
       // Send the query to Claude with relevant context
@@ -647,7 +720,7 @@ export class GooglePlacesService {
     return reviews;
   }
 
-  async getReviewsCountByRating(entityId: string, entityType: 'lodging' | 'restaurant') {
+  async getReviewsCountByRating(entityId: string, entityType: 'lodging' | 'restaurant' | 'commerce') {
     const reviews = await this.googleReviewRepository.find({
       where: { entityId, entityType },
     });
@@ -673,7 +746,7 @@ export class GooglePlacesService {
     return result;
   }
 
-  async getReviewsCountByYear(entityId: string, entityType: 'lodging' | 'restaurant') {
+  async getReviewsCountByYear(entityId: string, entityType: 'lodging' | 'restaurant' | 'commerce') {
     const reviews = await this.googleReviewRepository.find({
       where: { entityId, entityType },
     });

@@ -99,7 +99,7 @@ export class GooglePlacesController {
     return this.googlePlacesService.reviewSummary(
       body.message,
       body.entityId,
-      body.entityType as 'lodging' | 'restaurant',
+      body.entityType as 'lodging' | 'restaurant' | 'commerce',
       body.type as 'general' | 'specific',
     );
   }
