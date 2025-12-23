@@ -123,6 +123,7 @@ export class ExplorersService {
 
   async findPlacesVisitedByExplorer(userId: string): Promise<UserExplorerPlaceDto[]> {
     const places = await this.placeRepository.find({
+      where: { isPublic: true },
       relations: { reviews: { user: true }, images: { imageResource: true } },
       select: {
         id: true,
@@ -155,6 +156,7 @@ export class ExplorersService {
 
   async findRestaurantsVisitedByExplorer(userId: string): Promise<UserExplorerEntityDto[]> {
     const restaurants = await this.restaurantRepository.find({
+      where: { isPublic: true },
       relations: { reviews: { user: true }, images: { imageResource: true } },
       select: {
         id: true,
@@ -187,6 +189,7 @@ export class ExplorersService {
 
   async findLodgingsVisitedByExplorer(userId: string): Promise<UserExplorerEntityDto[]> {
     const lodgings = await this.lodgingRepository.find({
+      where: { isPublic: true },
       relations: { reviews: { user: true }, images: { imageResource: true } },
       select: {
         id: true,
@@ -219,6 +222,7 @@ export class ExplorersService {
 
   async findExperiencesVisitedByExplorer(userId: string): Promise<UserExplorerEntityDto[]> {
     const experiences = await this.experienceRepository.find({
+      where: { isPublic: true },
       relations: { reviews: { user: true }, images: { imageResource: true } },
       select: {
         id: true,
