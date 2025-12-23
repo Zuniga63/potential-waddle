@@ -2,7 +2,7 @@ import { Controller, Get, Param, ParseUUIDPipe, Query } from '@nestjs/common';
 import { SwaggerTags } from 'src/config';
 import { ApiOperation, ApiOkResponse, ApiTags, ApiQuery, ApiParam } from '@nestjs/swagger';
 import { ExplorersService } from '../services/explorers.service';
-import { UserExplorerDto, UserExplorerPlaceDto } from '../dto';
+import { UserExplorerDto, UserExplorerEntityDto, UserExplorerPlaceDto } from '../dto';
 
 @Controller(`users/explorers`)
 @ApiTags(SwaggerTags.Users)
@@ -34,5 +34,29 @@ export class ExplorersController {
   @ApiParam({ name: 'id', type: String, description: 'Explorer UUID' })
   findPlaces(@Param('id', ParseUUIDPipe) id: string) {
     return this.explorersService.findPlacesVisitedByExplorer(id);
+  }
+
+  @Get(':id/restaurants')
+  @ApiOperation({ summary: 'Get all restaurants visited by an explorer' })
+  @ApiOkResponse({ description: 'Return all restaurants visited by an explorer', type: [UserExplorerEntityDto] })
+  @ApiParam({ name: 'id', type: String, description: 'Explorer UUID' })
+  findRestaurants(@Param('id', ParseUUIDPipe) id: string) {
+    return this.explorersService.findRestaurantsVisitedByExplorer(id);
+  }
+
+  @Get(':id/lodgings')
+  @ApiOperation({ summary: 'Get all lodgings visited by an explorer' })
+  @ApiOkResponse({ description: 'Return all lodgings visited by an explorer', type: [UserExplorerEntityDto] })
+  @ApiParam({ name: 'id', type: String, description: 'Explorer UUID' })
+  findLodgings(@Param('id', ParseUUIDPipe) id: string) {
+    return this.explorersService.findLodgingsVisitedByExplorer(id);
+  }
+
+  @Get(':id/experiences')
+  @ApiOperation({ summary: 'Get all experiences visited by an explorer' })
+  @ApiOkResponse({ description: 'Return all experiences visited by an explorer', type: [UserExplorerEntityDto] })
+  @ApiParam({ name: 'id', type: String, description: 'Explorer UUID' })
+  findExperiences(@Param('id', ParseUUIDPipe) id: string) {
+    return this.explorersService.findExperiencesVisitedByExplorer(id);
   }
 }

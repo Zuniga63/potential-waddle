@@ -2,9 +2,12 @@ import { Injectable, InternalServerErrorException, NotFoundException } from '@ne
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { UserPoint } from '../entities/user-point.entity';
-import { UserExplorerDto, UserExplorerLocationDto, UserExplorerPlaceDto } from '../dto';
+import { UserExplorerDto, UserExplorerEntityDto, UserExplorerLocationDto, UserExplorerPlaceDto } from '../dto';
 import { ExplorerDBResult } from '../interfaces';
 import { Place } from 'src/modules/places/entities';
+import { Restaurant } from 'src/modules/restaurants/entities';
+import { Lodging } from 'src/modules/lodgings/entities';
+import { Experience } from 'src/modules/experiences/entities';
 import { calculateAge } from 'src/utils';
 import { ReviewStatusEnum } from 'src/modules/reviews/enums';
 import { User } from '../entities';
@@ -17,6 +20,15 @@ export class ExplorersService {
 
     @InjectRepository(Place)
     private readonly placeRepository: Repository<Place>,
+
+    @InjectRepository(Restaurant)
+    private readonly restaurantRepository: Repository<Restaurant>,
+
+    @InjectRepository(Lodging)
+    private readonly lodgingRepository: Repository<Lodging>,
+
+    @InjectRepository(Experience)
+    private readonly experienceRepository: Repository<Experience>,
 
     @InjectRepository(User)
     private readonly userRepository: Repository<User>,
@@ -134,6 +146,102 @@ export class ExplorersService {
         slug: place.slug,
         image,
         description: place.description,
+        isVisited: Boolean(userReview),
+        rating: userReview?.rating,
+        status: userReview?.status ?? ReviewStatusEnum.PENDING,
+      };
+    });
+  }
+
+  async findRestaurantsVisitedByExplorer(userId: string): Promise<UserExplorerEntityDto[]> {
+    const restaurants = await this.restaurantRepository.find({
+      relations: { reviews: { user: true }, images: { imageResource: true } },
+      select: {
+        id: true,
+        name: true,
+        slug: true,
+        description: true,
+        images: { id: true, imageResource: { url: true } },
+        reviews: { user: { id: true }, rating: true, status: true },
+      },
+      order: { name: 'ASC', images: { order: 'ASC' } },
+    });
+
+    return restaurants.map(restaurant => {
+      const { images, reviews } = restaurant;
+      const userReview = reviews?.find(review => review.user?.id === userId);
+      const image = images?.[0]?.imageResource?.url ?? '';
+
+      return {
+        id: restaurant.id,
+        name: restaurant.name,
+        slug: restaurant.slug,
+        image,
+        description: restaurant.description ?? undefined,
+        isVisited: Boolean(userReview),
+        rating: userReview?.rating,
+        status: userReview?.status ?? ReviewStatusEnum.PENDING,
+      };
+    });
+  }
+
+  async findLodgingsVisitedByExplorer(userId: string): Promise<UserExplorerEntityDto[]> {
+    const lodgings = await this.lodgingRepository.find({
+      relations: { reviews: { user: true }, images: { imageResource: true } },
+      select: {
+        id: true,
+        name: true,
+        slug: true,
+        description: true,
+        images: { id: true, imageResource: { url: true } },
+        reviews: { user: { id: true }, rating: true, status: true },
+      },
+      order: { name: 'ASC', images: { order: 'ASC' } },
+    });
+
+    return lodgings.map(lodging => {
+      const { images, reviews } = lodging;
+      const userReview = reviews?.find(review => review.user?.id === userId);
+      const image = images?.[0]?.imageResource?.url ?? '';
+
+      return {
+        id: lodging.id,
+        name: lodging.name,
+        slug: lodging.slug,
+        image,
+        description: lodging.description ?? undefined,
+        isVisited: Boolean(userReview),
+        rating: userReview?.rating,
+        status: userReview?.status ?? ReviewStatusEnum.PENDING,
+      };
+    });
+  }
+
+  async findExperiencesVisitedByExplorer(userId: string): Promise<UserExplorerEntityDto[]> {
+    const experiences = await this.experienceRepository.find({
+      relations: { reviews: { user: true }, images: { imageResource: true } },
+      select: {
+        id: true,
+        title: true,
+        slug: true,
+        description: true,
+        images: { id: true, imageResource: { url: true } },
+        reviews: { user: { id: true }, rating: true, status: true },
+      },
+      order: { title: 'ASC', images: { order: 'ASC' } },
+    });
+
+    return experiences.map(experience => {
+      const { images, reviews } = experience;
+      const userReview = reviews?.find(review => review.user?.id === userId);
+      const image = images?.[0]?.imageResource?.url ?? '';
+
+      return {
+        id: experience.id,
+        name: experience.title, // Experience uses 'title' instead of 'name'
+        slug: experience.slug,
+        image,
+        description: experience.description,
         isVisited: Boolean(userReview),
         rating: userReview?.rating,
         status: userReview?.status ?? ReviewStatusEnum.PENDING,

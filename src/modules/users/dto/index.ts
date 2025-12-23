@@ -8,3 +8,4 @@ export * from './user-location.dto';
 export * from './admin-users-filters.dto';
 export * from './admin-user.dto';
 export * from './admin-users-list.dto';
+export * from './user-explorer-entity.dto';
