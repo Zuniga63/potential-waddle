@@ -215,6 +215,13 @@ export class CommerceIndexDto {
   })
   showGoogleMapsReviews?: boolean;
 
+  @ApiProperty({
+    example: true,
+    description: 'Whether to show Binntu reviews',
+    required: false,
+  })
+  showBinntuReviews?: boolean;
+
   constructor(commerce?: Commerce, userReview?: string) {
     if (!commerce) return;
     this.id = commerce.id;
@@ -245,5 +252,6 @@ export class CommerceIndexDto {
     this.googleMapsRating = commerce.googleMapsRating || undefined;
     this.googleMapsReviewsCount = commerce.googleMapsReviewsCount || undefined;
     this.showGoogleMapsReviews = commerce.showGoogleMapsReviews || undefined;
+    this.showBinntuReviews = commerce.showBinntuReviews ?? undefined;
   }
 }

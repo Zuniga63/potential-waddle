@@ -30,6 +30,24 @@ export class TransportDto {
   createdAt?: Date;
   updatedAt?: Date;
 
+  @ApiProperty({
+    example: 4.5,
+    description: 'Average rating of the transport',
+  })
+  rating?: number;
+
+  @ApiProperty({
+    example: 10,
+    description: 'Number of reviews',
+  })
+  reviewCount?: number;
+
+  @ApiProperty({
+    example: true,
+    description: 'Whether to show Binntu reviews',
+  })
+  showBinntuReviews?: boolean;
+
   // Relationships
   town?: TownDto;
   user?: UserDto;
@@ -62,6 +80,9 @@ export class TransportDto {
     this.categories = data.categories?.map(category => new CategoryDto(category));
     this.paymentMethods = data.paymentMethods || [];
     this.isPublic = data.isPublic;
+    this.rating = data.rating ?? 0;
+    this.reviewCount = data.reviewCount ?? 0;
+    this.showBinntuReviews = data.showBinntuReviews ?? undefined;
     this.userReview = userReview;
   }
 }

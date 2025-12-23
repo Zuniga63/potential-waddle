@@ -142,6 +142,24 @@ export class GuideDto {
   })
   updatedAt?: Date;
 
+  @ApiProperty({
+    example: 4.5,
+    description: 'Average rating of the guide',
+  })
+  rating?: number;
+
+  @ApiProperty({
+    example: 10,
+    description: 'Number of reviews',
+  })
+  reviewCount?: number;
+
+  @ApiProperty({
+    example: true,
+    description: 'Whether to show Binntu reviews',
+  })
+  showBinntuReviews?: boolean;
+
   // Relationships
   town?: TownDto;
   user?: UserDto;
@@ -178,6 +196,9 @@ export class GuideDto {
     this.categories = data.categories?.map(category => new CategoryDto(category));
     this.experiences = data.experiences?.map(experience => new GuideExperienceDto({ data: experience })) || [];
     this.isPublic = data.isPublic;
+    this.rating = data.rating ?? 0;
+    this.reviewCount = data.reviewCount ?? 0;
+    this.showBinntuReviews = data.showBinntuReviews ?? undefined;
     this.userReview = userReview;
   }
 }

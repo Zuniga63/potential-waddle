@@ -71,6 +71,8 @@ export class ExperienceDto {
 
   isPublic: boolean;
 
+  showBinntuReviews?: boolean;
+
   userReview?: string;
 
   constructor({ data, userReview }: { data: Experience; userReview?: string }) {
@@ -97,7 +99,7 @@ export class ExperienceDto {
     this.totalDistance = data.totalDistance || 0;
     this.rating = data.rating;
     this.points = data.points;
-    this.reviews = data.reviews?.length || 0;
+    this.reviews = data.reviewsCount || 0;
     this.minAge = data.minAge || undefined;
     this.maxAge = data.maxAge || undefined;
     this.minParticipants = data.minParticipants || undefined;
@@ -113,6 +115,7 @@ export class ExperienceDto {
     this.town = new TownDto(data.town);
     this.isPublic = data.isPublic;
     this.paymentMethods = data.paymentMethods || [];
+    this.showBinntuReviews = data.showBinntuReviews ?? undefined;
     this.userReview = userReview;
   }
 }

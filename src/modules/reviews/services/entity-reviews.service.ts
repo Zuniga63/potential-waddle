@@ -24,6 +24,9 @@ const AUTO_APPROVED_ENTITIES = [
   ReviewDomainsEnum.LODGINGS,
   ReviewDomainsEnum.RESTAURANTS,
   ReviewDomainsEnum.COMMERCE,
+  ReviewDomainsEnum.EXPERIENCES,
+  ReviewDomainsEnum.TRANSPORT,
+  ReviewDomainsEnum.GUIDES,
 ];
 
 // Tipo para entidades que pueden tener reviews

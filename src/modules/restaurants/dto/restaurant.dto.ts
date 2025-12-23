@@ -74,6 +74,8 @@ export class RestaurantDto {
 
   showGoogleMapsReviews?: boolean;
 
+  showBinntuReviews?: boolean;
+
   hasPromotions?: boolean;
 
   latestPromotionValue?: number;
@@ -121,5 +123,6 @@ export class RestaurantDto {
     this.googleMapsRating = data.googleMapsRating ?? undefined;
     this.googleMapsReviewsCount = data.googleMapsReviewsCount ?? undefined;
     this.showGoogleMapsReviews = data.showGoogleMapsReviews ?? undefined;
+    this.showBinntuReviews = data.showBinntuReviews ?? undefined;
   }
 }

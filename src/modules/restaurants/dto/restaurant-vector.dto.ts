@@ -72,6 +72,10 @@ export class RestaurantVectorDto {
 
   googleMapsReviewsCount?: number;
 
+  showGoogleMapsReviews?: boolean;
+
+  showBinntuReviews?: boolean;
+
   constructor({ data }: { data?: Restaurant | null }) {
     if (!data) return;
 
@@ -108,5 +112,7 @@ export class RestaurantVectorDto {
     this.paymentMethods = data.paymentMethods ?? [];
     this.googleMapsRating = data.googleMapsRating ?? undefined;
     this.googleMapsReviewsCount = data.googleMapsReviewsCount ?? undefined;
+    this.showGoogleMapsReviews = data.showGoogleMapsReviews ?? undefined;
+    this.showBinntuReviews = data.showBinntuReviews ?? undefined;
   }
 }
