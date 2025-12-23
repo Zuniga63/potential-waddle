@@ -7,6 +7,9 @@ import { ReviewStatusEnum } from '../enums';
 import { ReviewImage } from './review-image.entity';
 import { ReviewStatusHistory } from './review-status-history.entity';
 import { Commerce } from 'src/modules/commerce/entities';
+import { Restaurant } from 'src/modules/restaurants/entities';
+import { Transport } from 'src/modules/transport/entities';
+import { Guide } from 'src/modules/guides/entities';
 
 @Entity({ name: 'review' })
 export class Review {
@@ -42,6 +45,18 @@ export class Review {
   @ManyToOne(() => Commerce, commerce => commerce.reviews, { onDelete: 'CASCADE', nullable: true })
   @JoinColumn({ name: 'commerce_id' })
   commerce?: Commerce | null;
+
+  @ManyToOne(() => Restaurant, restaurant => restaurant.reviews, { onDelete: 'CASCADE', nullable: true })
+  @JoinColumn({ name: 'restaurant_id' })
+  restaurant?: Restaurant | null;
+
+  @ManyToOne(() => Transport, transport => transport.reviews, { onDelete: 'CASCADE', nullable: true })
+  @JoinColumn({ name: 'transport_id' })
+  transport?: Transport | null;
+
+  @ManyToOne(() => Guide, guide => guide.reviews, { onDelete: 'CASCADE', nullable: true })
+  @JoinColumn({ name: 'guide_id' })
+  guide?: Guide | null;
 
   @OneToMany(() => ReviewStatusHistory, statusHistory => statusHistory.review, { cascade: true, onDelete: 'CASCADE' })
   statusHistory: ReviewStatusHistory[];

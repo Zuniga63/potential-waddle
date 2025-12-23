@@ -7,12 +7,15 @@ import {
   JoinColumn,
   JoinTable,
   ManyToMany,
+  ManyToOne,
   OneToMany,
   OneToOne,
   PrimaryGeneratedColumn,
 } from 'typeorm';
 import { GuideImage } from './guide-image.entity';
 import { Experience } from 'src/modules/experiences/entities/experience.entity';
+import { Town } from 'src/modules/towns/entities/town.entity';
+import { Review } from 'src/modules/reviews/entities';
 
 @Entity({ name: 'guide' })
 export class Guide {
@@ -41,9 +44,25 @@ export class Guide {
   @OneToMany(() => Experience, experience => experience.guide)
   experiences?: Experience[];
 
+  @ManyToOne(() => Town, { nullable: true })
+  @JoinColumn({ name: 'town_id' })
+  town?: Town;
+
+  @OneToMany(() => Review, review => review.guide)
+  reviews?: Review[];
+
   // * ----------------------------------------------------------------------------------------------------------------
   // * MAIN FIELDS
   // * ----------------------------------------------------------------------------------------------------------------
+
+  @Column('smallint', { default: 0 })
+  points: number;
+
+  @Column('float', { default: 0 })
+  rating: number;
+
+  @Column('integer', { name: 'review_count', default: 0 })
+  reviewCount: number;
 
   @Column('text', { unique: true })
   slug: string;

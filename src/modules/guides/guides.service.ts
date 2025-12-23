@@ -18,6 +18,9 @@ import { ResourceProvider } from 'src/config/resource-provider.enum';
 import { CloudinaryPresets } from 'src/config';
 import { CLOUDINARY_FOLDERS } from 'src/config/cloudinary-folders';
 import { GuideVectorDto } from './dto/guide-vector.dto';
+import { EntityReviewsService } from '../reviews/services/entity-reviews.service';
+import { ReviewDomainsEnum } from '../reviews/enums';
+import { Review } from '../reviews/entities';
 
 @Injectable()
 export class GuidesService {
@@ -32,6 +35,7 @@ export class GuidesService {
     private readonly userRepo: Repository<User>,
 
     private readonly cloudinaryService: CloudinaryService,
+    private readonly entityReviewsService: EntityReviewsService,
   ) {}
 
   // ------------------------------------------------------------------------------------------------
@@ -75,8 +79,7 @@ export class GuidesService {
     return new GuidesListDto({ currentPage: page, pages: Math.ceil(count / limit), count }, guides);
   }
 
-  async findPublicGuides({ filters }: GuideFindAllParams = {}): Promise<GuidesListDto> {
-    console.log(filters, 'filters');
+  async findPublicGuides({ filters, user }: GuideFindAllParams = {}) {
     const shouldRandomize = filters?.sortBy === 'random';
     const { page = 1, limit = 25 } = filters ?? {};
     const skip = (page - 1) * limit;
@@ -88,17 +91,28 @@ export class GuidesService {
       user: true,
     };
 
-    const [_guides, count] = await this.guideRepository.findAndCount({
-      skip,
-      take: limit,
-      relations,
-      order,
-      where: {
-        ...where,
-        isPublic: true,
-      },
-    });
-    const guides = _guides;
+    // Obtener guides y reviews del usuario en paralelo
+    const [result, userReviews] = await Promise.all([
+      this.guideRepository.findAndCount({
+        skip,
+        take: limit,
+        relations,
+        order,
+        where: {
+          ...where,
+          isPublic: true,
+        },
+      }),
+      user
+        ? this.entityReviewsService.getUserReviews({
+            entityType: ReviewDomainsEnum.GUIDES,
+            userId: user.id,
+          })
+        : Promise.resolve<Review[]>([]),
+    ]);
+
+    const [_guides, count] = result;
+    let guides = _guides;
 
     if (shouldRandomize) {
       // Fisher-Yates shuffle algorithm for better randomization
@@ -108,7 +122,15 @@ export class GuidesService {
       }
     }
 
-    return new GuidesListDto({ currentPage: page, pages: Math.ceil(count / limit), count }, guides);
+    return {
+      currentPage: page,
+      pages: Math.ceil(count / limit),
+      count,
+      data: guides.map(guide => {
+        const userReview = userReviews.find(r => r.guide?.id === guide.id);
+        return new GuideDto({ data: guide, userReview: userReview?.id });
+      }),
+    };
   }
 
   async findPublicFullInfoGuides(): Promise<GuideVectorDto[]> {
@@ -139,7 +161,7 @@ export class GuidesService {
   // ------------------------------------------------------------------------------------------------
   // Find one guide
   // ------------------------------------------------------------------------------------------------
-  async findOne({ identifier }: { identifier: string }) {
+  async findOne({ identifier, user }: { identifier: string; user?: User }) {
     const relations: FindOptionsRelations<Guide> = {
       categories: { icon: true },
       user: true,
@@ -158,10 +180,20 @@ export class GuidesService {
       relations,
     });
     if (!guide) throw new NotFoundException('Guide not found');
-    return new GuideDto({ data: guide });
+
+    // Obtener review del usuario
+    const userReview = user
+      ? await this.entityReviewsService.findUserReview({
+          entityType: ReviewDomainsEnum.GUIDES,
+          entityId: guide.id,
+          userId: user.id,
+        })
+      : null;
+
+    return new GuideDto({ data: guide, userReview: userReview?.id });
   }
 
-  async findOneById(id: string) {
+  async findOneById(id: string, user?: User) {
     const relations: FindOptionsRelations<Guide> = {
       categories: { icon: true },
       user: true,
@@ -180,7 +212,17 @@ export class GuidesService {
       relations,
     });
     if (!guide) throw new NotFoundException('Guide not found');
-    return new GuideDto({ data: guide });
+
+    // Obtener review del usuario
+    const userReview = user
+      ? await this.entityReviewsService.findUserReview({
+          entityType: ReviewDomainsEnum.GUIDES,
+          entityId: guide.id,
+          userId: user.id,
+        })
+      : null;
+
+    return new GuideDto({ data: guide, userReview: userReview?.id });
   }
 
   // ------------------------------------------------------------------------------------------------

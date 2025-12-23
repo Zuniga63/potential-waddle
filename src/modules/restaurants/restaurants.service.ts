@@ -19,6 +19,9 @@ import { User } from '../users/entities';
 import { RestaurantIndexDto } from './dto/restaurant-index.dto';
 import { RestaurantVectorDto } from './dto/restaurant-vector.dto';
 import { PromotionsService } from '../promotions/promotions.service';
+import { EntityReviewsService } from '../reviews/services';
+import { ReviewDomainsEnum } from '../reviews/enums';
+import { Review } from '../reviews/entities';
 
 @Injectable()
 export class RestaurantsService {
@@ -40,6 +43,7 @@ export class RestaurantsService {
 
     private readonly cloudinaryService: CloudinaryService,
     private readonly promotionsService: PromotionsService,
+    private readonly entityReviewsService: EntityReviewsService,
   ) {}
 
   async findAll({ filters }: RestaurantFindAllParams = {}) {
@@ -56,33 +60,45 @@ export class RestaurantsService {
   // ------------------------------------------------------------------------------------------------
   // Find all public restaurants
   // ------------------------------------------------------------------------------------------------
-  async findPublicRestaurants({ filters }: RestaurantFindAllParams = {}) {
+  async findPublicRestaurants({ filters, user }: RestaurantFindAllParams = {}) {
     const shouldRandomize = filters?.sortBy === 'random';
     const { where, order } = generateRestaurantQueryFiltersAndSort(filters);
-    let restaurants = await this.restaurantRepository.find({
-      relations: { town: { department: true }, categories: { icon: true }, images: { imageResource: true } },
-      order,
-      where: {
-        ...where,
-        isPublic: true,
-      },
-    });
 
+    // Obtener restaurants y reviews del usuario en paralelo
+    const [restaurants, userReviews] = await Promise.all([
+      this.restaurantRepository.find({
+        relations: { town: { department: true }, categories: { icon: true }, images: { imageResource: true } },
+        order,
+        where: {
+          ...where,
+          isPublic: true,
+        },
+      }),
+      user
+        ? this.entityReviewsService.getUserReviews({
+            entityType: ReviewDomainsEnum.RESTAURANTS,
+            userId: user.id,
+          })
+        : Promise.resolve<Review[]>([]),
+    ]);
+
+    let sortedRestaurants = restaurants;
     if (shouldRandomize) {
-      restaurants = restaurants.sort(() => Math.random() - 0.5);
+      sortedRestaurants = restaurants.sort(() => Math.random() - 0.5);
     }
 
     // Check for active promotions for each restaurant
     const restaurantsWithPromotions = await Promise.all(
-      restaurants.map(async restaurant => {
+      sortedRestaurants.map(async restaurant => {
         const hasPromotions = await this.promotionsService.hasActivePromotions(restaurant.id, 'restaurant');
         const latestPromotion = await this.promotionsService.getLatestActivePromotion(restaurant.id, 'restaurant');
-        return { restaurant, hasPromotions, latestPromotion };
+        const userReview = userReviews.find(r => r.restaurant?.id === restaurant.id);
+        return { restaurant, hasPromotions, latestPromotion, userReview };
       }),
     );
 
-    return restaurantsWithPromotions.map(({ restaurant, hasPromotions, latestPromotion }) => {
-      const dto = new RestaurantIndexDto({ data: restaurant });
+    return restaurantsWithPromotions.map(({ restaurant, hasPromotions, latestPromotion, userReview }) => {
+      const dto = new RestaurantIndexDto({ data: restaurant, userReview: userReview?.id });
       (dto as any).hasPromotions = hasPromotions;
       (dto as any).latestPromotionValue = latestPromotion?.value;
       return dto;
@@ -136,7 +152,7 @@ export class RestaurantsService {
   // ------------------------------------------------------------------------------------------------
   // Find one restaurant by slug
   // ------------------------------------------------------------------------------------------------
-  async findOneBySlug({ slug }: { slug: string }) {
+  async findOneBySlug({ slug, user }: { slug: string; user?: User }) {
     const relations: FindOptionsRelations<Restaurant> = {
       categories: { icon: true },
       facilities: { icon: true },
@@ -153,12 +169,21 @@ export class RestaurantsService {
     if (!restaurant) restaurant = await this.restaurantRepository.findOne({ where: { slug }, relations });
     if (!restaurant) throw new NotFoundException('Restaurant not found');
 
-    // Check for active promotions
-    const hasPromotions = await this.promotionsService.hasActivePromotions(restaurant.id, 'restaurant');
-    const latestPromotion = await this.promotionsService.getLatestActivePromotion(restaurant.id, 'restaurant');
-    const activePromotions = await this.promotionsService.getActivePromotions(restaurant.id, 'restaurant');
+    // Check for active promotions and user review in parallel
+    const [hasPromotions, latestPromotion, activePromotions, userReview] = await Promise.all([
+      this.promotionsService.hasActivePromotions(restaurant.id, 'restaurant'),
+      this.promotionsService.getLatestActivePromotion(restaurant.id, 'restaurant'),
+      this.promotionsService.getActivePromotions(restaurant.id, 'restaurant'),
+      user
+        ? this.entityReviewsService.findUserReview({
+            entityType: ReviewDomainsEnum.RESTAURANTS,
+            entityId: restaurant.id,
+            userId: user.id,
+          })
+        : Promise.resolve(null),
+    ]);
 
-    const dto = new RestaurantDto({ data: restaurant });
+    const dto = new RestaurantDto({ data: restaurant, userReview: userReview?.id });
     (dto as any).hasPromotions = hasPromotions;
     (dto as any).latestPromotionValue = latestPromotion?.value;
     (dto as any).activePromotions = activePromotions;

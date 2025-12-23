@@ -11,6 +11,9 @@ import { Town } from '../towns/entities';
 import { User } from '../users/entities';
 import { UpdateTransportDto } from './dto/update-transport.dto';
 import { TransportListDto } from './dto/transport-list.dto';
+import { EntityReviewsService } from '../reviews/services/entity-reviews.service';
+import { ReviewDomainsEnum } from '../reviews/enums';
+import { Review } from '../reviews/entities';
 
 @Injectable()
 export class TransportService {
@@ -26,6 +29,8 @@ export class TransportService {
 
     @InjectRepository(User)
     private readonly userRepo: Repository<User>,
+
+    private readonly entityReviewsService: EntityReviewsService,
   ) {}
 
   async create(createTransportDto: CreateTransportDto, userId: string) {
@@ -71,38 +76,51 @@ export class TransportService {
     return new TransportListDto({ currentPage: page, pages: Math.ceil(count / limit), count }, transports);
   }
 
-  async findPublicTransports({ filters }: TransportFindAllParams = {}): Promise<TransportListDto> {
+  async findPublicTransports({ filters, user }: TransportFindAllParams = {}) {
     const shouldRandomize = filters?.sortBy === 'random';
     const { page = 1, limit = 25 } = filters ?? {};
     const skip = (page - 1) * limit;
     const { where, order } = generateTransportQueryFiltersAndSort(filters);
 
-    let transports;
-    const [_transports, count] = await this.transportRepository.findAndCount({
-      skip,
-      take: limit,
-      relations: { categories: { icon: true }, town: { department: true }, user: true },
-      order,
-      where: {
-        ...where,
-        isPublic: true,
-      },
-    });
+    // Obtener transports y reviews del usuario en paralelo
+    const [result, userReviews] = await Promise.all([
+      this.transportRepository.findAndCount({
+        skip,
+        take: limit,
+        relations: { categories: { icon: true }, town: { department: true }, user: true },
+        order,
+        where: {
+          ...where,
+          isPublic: true,
+        },
+      }),
+      user
+        ? this.entityReviewsService.getUserReviews({
+            entityType: ReviewDomainsEnum.TRANSPORT,
+            userId: user.id,
+          })
+        : Promise.resolve<Review[]>([]),
+    ]);
 
-    transports = _transports;
+    const [_transports, count] = result;
+    let transports = _transports;
+
     if (shouldRandomize) {
-      console.log('randomize');
       transports = transports.sort(() => Math.random() - 0.5);
     }
-    console.log(
-      transports.map(t => t.id),
-      'transports',
-    );
 
-    return new TransportListDto({ currentPage: page, pages: Math.ceil(count / limit), count }, transports);
+    return {
+      currentPage: page,
+      pages: Math.ceil(count / limit),
+      count,
+      data: transports.map(transport => {
+        const userReview = userReviews.find(r => r.transport?.id === transport.id);
+        return new TransportDto({ data: transport, userReview: userReview?.id });
+      }),
+    };
   }
 
-  async findOne(identifier: string) {
+  async findOne(identifier: string, user?: User) {
     const relations: FindOptionsRelations<Transport> = {
       categories: { icon: true },
       town: { department: true },
@@ -111,7 +129,17 @@ export class TransportService {
 
     const transport = await this.transportRepository.findOne({ where: { id: identifier }, relations });
     if (!transport) throw new NotFoundException('Transport not found');
-    return new TransportDto({ data: transport });
+
+    // Obtener review del usuario
+    const userReview = user
+      ? await this.entityReviewsService.findUserReview({
+          entityType: ReviewDomainsEnum.TRANSPORT,
+          entityId: transport.id,
+          userId: user.id,
+        })
+      : null;
+
+    return new TransportDto({ data: transport, userReview: userReview?.id });
   }
 
   async update(id: string, updateTransportDto: UpdateTransportDto) {

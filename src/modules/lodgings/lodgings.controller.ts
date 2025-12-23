@@ -52,9 +52,10 @@ export class LodgingsController {
   // * GET ALL PUBLIC LODGINGS
   // * ----------------------------------------------------------------------------------------------------------------
   @Get('public')
+  @OptionalAuth()
   @ApiOkResponse({ description: 'Lodging List', type: [LodgingIndexDto] })
-  findPublicLodgings(@LodgingFilters() filters: LodgingFiltersDto) {
-    return this.lodgingsService.findPublicLodgings({ filters });
+  findPublicLodgings(@LodgingFilters() filters: LodgingFiltersDto, @GetUser() user?: User) {
+    return this.lodgingsService.findPublicLodgings({ filters, user });
   }
 
   // * ----------------------------------------------------------------------------------------------------------------
@@ -82,8 +83,8 @@ export class LodgingsController {
   @Get('slug/:slug')
   @OptionalAuth()
   @ApiOkResponse({ description: 'Lodging Detail', type: LodgingFullDto })
-  findOneBySlug(@Param('slug') slug: string) {
-    return this.lodgingsService.findOneBySlug({ slug });
+  findOneBySlug(@Param('slug') slug: string, @GetUser() user?: User) {
+    return this.lodgingsService.findOneBySlug({ slug, user });
   }
 
   // * ----------------------------------------------------------------------------------------------------------------

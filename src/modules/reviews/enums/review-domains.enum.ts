@@ -3,4 +3,7 @@ export enum ReviewDomainsEnum {
   LODGINGS = 'lodgings',
   EXPERIENCES = 'experiences',
   RESTAURANTS = 'restaurants',
+  COMMERCE = 'commerce',
+  TRANSPORT = 'transport',
+  GUIDES = 'guides',
 }

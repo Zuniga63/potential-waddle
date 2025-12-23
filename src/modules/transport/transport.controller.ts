@@ -50,19 +50,21 @@ export class TransportController {
   }
 
   @Get('public')
+  @OptionalAuth()
   @TransportListQueryDocsGroup()
-  findPublicTransports(@TransportFilters() filters: TransportFiltersDto) {
-    return this.transportService.findPublicTransports({ filters });
+  findPublicTransports(@TransportFilters() filters: TransportFiltersDto, @GetUser() user?: User) {
+    return this.transportService.findPublicTransports({ filters, user });
   }
 
   // * ----------------------------------------------------------------------------------------------------------------
   // * GET TRANSPORT BY ID
   // * ----------------------------------------------------------------------------------------------------------------
   @Get(':id')
+  @OptionalAuth()
   @ApiParam({ name: 'id', type: 'string', description: 'The UUID of the transport' })
   @ApiOkResponse({ description: 'The transport has been successfully retrieved.', type: TransportDto })
-  findOne(@Param('id') id: string) {
-    return this.transportService.findOne(id);
+  findOne(@Param('id') id: string, @GetUser() user?: User) {
+    return this.transportService.findOne(id, user);
   }
 
   // * ----------------------------------------------------------------------------------------------------------------

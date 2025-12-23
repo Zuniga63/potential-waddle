@@ -63,9 +63,10 @@ export class GuidesController {
   // * GET ALL PUBLIC GUIDES
   // * ----------------------------------------------------------------------------------------------------------------
   @Get('public')
+  @OptionalAuth()
   @GuideListQueryDocsGroup()
-  findPublicGuides(@GuidesFilters() filters: GuidesFiltersDto) {
-    return this.guidesService.findPublicGuides({ filters });
+  findPublicGuides(@GuidesFilters() filters: GuidesFiltersDto, @GetUser() user?: User) {
+    return this.guidesService.findPublicGuides({ filters, user });
   }
 
   // * ----------------------------------------------------------------------------------------------------------------
@@ -82,8 +83,8 @@ export class GuidesController {
   @Get(':identifier')
   @OptionalAuth()
   @ApiOkResponse({ description: 'Guide Detail', type: GuideDto })
-  findOne(@Param('identifier') identifier: string) {
-    return this.guidesService.findOne({ identifier });
+  findOne(@Param('identifier') identifier: string, @GetUser() user?: User) {
+    return this.guidesService.findOne({ identifier, user });
   }
 
   // * ----------------------------------------------------------------------------------------------------------------
@@ -92,8 +93,8 @@ export class GuidesController {
   @Get('public/:id')
   @OptionalAuth()
   @ApiOkResponse({ description: 'Guide Detail', type: GuideDto })
-  findOneById(@Param('id') id: string) {
-    return this.guidesService.findOneById(id);
+  findOneById(@Param('id') id: string, @GetUser() user?: User) {
+    return this.guidesService.findOneById(id, user);
   }
 
   // * ----------------------------------------------------------------------------------------------------------------

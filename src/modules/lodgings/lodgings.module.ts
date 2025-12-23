@@ -13,6 +13,7 @@ import { Town } from '../towns/entities';
 import { Place } from '../places/entities';
 import { GooglePlacesModule } from '../google-places/google-places.module';
 import { PromotionsModule } from '../promotions/promotions.module';
+import { ReviewsModule } from '../reviews/reviews.module';
 
 @Module({
   controllers: [LodgingsController, LodgingRoomTypesController],
@@ -33,6 +34,7 @@ import { PromotionsModule } from '../promotions/promotions.module';
     CloudinaryModule,
     GooglePlacesModule,
     PromotionsModule,
+    ReviewsModule,
   ],
   exports: [LodgingRoomTypesService],
 })

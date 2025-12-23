@@ -78,10 +78,13 @@ export class RestaurantIndexDto {
 
   latestPromotionValue?: number;
 
-  constructor({ data }: { data?: Restaurant | null }) {
+  userReview?: string;
+
+  constructor({ data, userReview }: { data?: Restaurant | null; userReview?: string }) {
     if (!data) return;
 
     this.id = data.id;
+    this.userReview = userReview;
     this.name = data.name;
     this.slug = data.slug;
     this.description = data.description ?? undefined;

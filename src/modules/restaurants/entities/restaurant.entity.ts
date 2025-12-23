@@ -17,6 +17,7 @@ import { Place } from 'src/modules/places/entities';
 import { Category, Facility } from 'src/modules/core/entities';
 import { RestaurantImage } from './restaurant-image.entity';
 import { User } from 'src/modules/users/entities';
+import { Review } from 'src/modules/reviews/entities';
 
 @Entity({ name: 'restaurant' })
 export class Restaurant {
@@ -52,6 +53,9 @@ export class Restaurant {
 
   @OneToMany(() => RestaurantImage, image => image.restaurant)
   images?: RestaurantImage[];
+
+  @OneToMany(() => Review, review => review.restaurant)
+  reviews?: Review[];
 
   @ManyToOne(() => User, user => user.restaurants, { nullable: true, onDelete: 'SET NULL' })
   @JoinColumn({ name: 'user_id' })

@@ -74,7 +74,10 @@ export class ExperienceIndexDto {
   hasPromotions?: boolean;
 
   latestPromotionValue?: number;
-  constructor({ data }: { data: Experience }) {
+
+  userReview?: string;
+
+  constructor({ data, userReview }: { data: Experience; userReview?: string }) {
     if (!data) return;
 
     this.id = data.id;
@@ -114,5 +117,6 @@ export class ExperienceIndexDto {
     this.town = new TownDto(data.town);
     this.isPublic = data.isPublic;
     this.paymentMethods = data.paymentMethods || [];
+    this.userReview = userReview;
   }
 }

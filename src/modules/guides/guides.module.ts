@@ -9,9 +9,15 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { GuideImage } from './entities/guide-image.entity';
 import { ImageResource } from '../core/entities';
 import { CloudinaryModule } from '../cloudinary/cloudinary.module';
+import { ReviewsModule } from '../reviews/reviews.module';
+
 @Module({
   controllers: [GuidesController],
   providers: [GuidesService],
-  imports: [TypeOrmModule.forFeature([Guide, Category, Town, User, ImageResource, GuideImage]), CloudinaryModule],
+  imports: [
+    TypeOrmModule.forFeature([Guide, Category, Town, User, ImageResource, GuideImage]),
+    CloudinaryModule,
+    ReviewsModule,
+  ],
 })
 export class GuidesModule {}

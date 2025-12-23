@@ -18,6 +18,10 @@ import { ResourceProvider } from 'src/config/resource-provider.enum';
 import { ExperienceIndexDto } from './dto/experience-index.dto';
 import { ExperienceVectorDto } from './dto/experience-vector.dto';
 import { PromotionsService } from '../promotions/promotions.service';
+import { EntityReviewsService } from '../reviews/services';
+import { ReviewDomainsEnum } from '../reviews/enums';
+import { Review } from '../reviews/entities';
+import { User } from '../users/entities';
 
 @Injectable()
 export class ExperiencesService {
@@ -39,6 +43,7 @@ export class ExperiencesService {
 
     private readonly cloudinaryService: CloudinaryService,
     private readonly promotionsService: PromotionsService,
+    private readonly entityReviewsService: EntityReviewsService,
   ) {}
 
   // ------------------------------------------------------------------------------------------------
@@ -63,30 +68,41 @@ export class ExperiencesService {
   // ------------------------------------------------------------------------------------------------
   // Find public experiences
   // ------------------------------------------------------------------------------------------------
-  async findPublicExperiences({ filters }: ExperienceFindAllParams = {}): Promise<ExperienceDto[]> {
+  async findPublicExperiences({ filters, user }: ExperienceFindAllParams = {}): Promise<ExperienceDto[]> {
     const shouldRandomize = filters?.sortBy === 'random';
     const { where, order } = generateExperienceQueryFiltersAndSort(filters);
-    let experiences = await this.experienceRepository.find({
-      relations: {
-        categories: { icon: true },
-        images: { imageResource: true },
-        town: { department: true },
-        guide: true,
-      },
-      order,
-      where: {
-        ...where,
-        isPublic: true,
-      },
-    });
 
+    // Fetch experiences and user reviews in parallel
+    const [experiences, userReviews] = await Promise.all([
+      this.experienceRepository.find({
+        relations: {
+          categories: { icon: true },
+          images: { imageResource: true },
+          town: { department: true },
+          guide: true,
+        },
+        order,
+        where: {
+          ...where,
+          isPublic: true,
+        },
+      }),
+      user
+        ? this.entityReviewsService.getUserReviews({
+            entityType: ReviewDomainsEnum.EXPERIENCES,
+            userId: user.id,
+          })
+        : Promise.resolve<Review[]>([]),
+    ]);
+
+    let sortedExperiences = experiences;
     if (shouldRandomize) {
-      experiences = experiences.sort(() => Math.random() - 0.5);
+      sortedExperiences = experiences.sort(() => Math.random() - 0.5);
     }
 
     // Check for active promotions for each experience
     const experiencesWithPromotions = await Promise.all(
-      experiences.map(async experience => {
+      sortedExperiences.map(async experience => {
         const hasPromotions = await this.promotionsService.hasActivePromotions(experience.id, 'experience');
         const latestPromotion = await this.promotionsService.getLatestActivePromotion(experience.id, 'experience');
         return { experience, hasPromotions, latestPromotion };
@@ -94,7 +110,8 @@ export class ExperiencesService {
     );
 
     return experiencesWithPromotions.map(({ experience, hasPromotions, latestPromotion }) => {
-      const dto = new ExperienceIndexDto({ data: experience });
+      const userReview = userReviews.find(r => r.experience?.id === experience.id);
+      const dto = new ExperienceIndexDto({ data: experience, userReview: userReview?.id });
       (dto as any).hasPromotions = hasPromotions;
       (dto as any).latestPromotionValue = latestPromotion?.value;
       return dto;
@@ -150,7 +167,7 @@ export class ExperiencesService {
   // ------------------------------------------------------------------------------------------------
   // Find one lodging by slug
   // ------------------------------------------------------------------------------------------------
-  async findOneBySlug({ slug }: { slug: string }) {
+  async findOneBySlug({ slug, user }: { slug: string; user?: User }) {
     const relations: FindOptionsRelations<Experience> = {
       categories: { icon: true },
       facilities: { icon: true },
@@ -168,12 +185,21 @@ export class ExperiencesService {
     if (!experience) experience = await this.experienceRepository.findOne({ where: { slug }, relations });
     if (!experience) throw new NotFoundException('Experience not found');
 
+    // Get user review
+    const userReview = user
+      ? await this.entityReviewsService.findUserReview({
+          entityType: ReviewDomainsEnum.EXPERIENCES,
+          entityId: experience.id,
+          userId: user.id,
+        })
+      : null;
+
     // Check for active promotions
     const hasPromotions = await this.promotionsService.hasActivePromotions(experience.id, 'experience');
     const latestPromotion = await this.promotionsService.getLatestActivePromotion(experience.id, 'experience');
     const activePromotions = await this.promotionsService.getActivePromotions(experience.id, 'experience');
 
-    const dto = new ExperienceDto({ data: experience });
+    const dto = new ExperienceDto({ data: experience, userReview: userReview?.id });
     (dto as any).hasPromotions = hasPromotions;
     (dto as any).latestPromotionValue = latestPromotion?.value;
     (dto as any).activePromotions = activePromotions;

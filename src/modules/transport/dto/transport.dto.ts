@@ -36,7 +36,9 @@ export class TransportDto {
   categories?: CategoryDto[];
   paymentMethods?: string[];
   isPublic?: boolean;
-  constructor({ data }: { data: Transport }) {
+  userReview?: string;
+
+  constructor({ data, userReview }: { data: Transport; userReview?: string }) {
     if (!data) return;
 
     this.id = data.id;
@@ -60,5 +62,6 @@ export class TransportDto {
     this.categories = data.categories?.map(category => new CategoryDto(category));
     this.paymentMethods = data.paymentMethods || [];
     this.isPublic = data.isPublic;
+    this.userReview = userReview;
   }
 }

@@ -23,6 +23,9 @@ import { LodgingVectorDto } from './dto/lodging-vector.dto';
 import { GooglePlacesService } from '../google-places/google-places.service';
 import { Place } from '../places/entities';
 import { PromotionsService } from '../promotions/promotions.service';
+import { EntityReviewsService } from '../reviews/services/entity-reviews.service';
+import { ReviewDomainsEnum } from '../reviews/enums';
+import { Review } from '../reviews/entities';
 @Injectable()
 export class LodgingsService {
   private readonly logger = new Logger(LodgingsService.name);
@@ -48,6 +51,7 @@ export class LodgingsService {
     @InjectRepository(LodgingRoomType)
     private readonly lodgingRoomTypeRepository: Repository<LodgingRoomType>,
     private readonly promotionsService: PromotionsService,
+    private readonly entityReviewsService: EntityReviewsService,
   ) {}
 
   // ------------------------------------------------------------------------------------------------
@@ -72,38 +76,50 @@ export class LodgingsService {
   // ------------------------------------------------------------------------------------------------
   // Find all public lodgings
   // ------------------------------------------------------------------------------------------------
-  async findPublicLodgings({ filters }: LodgingFindAllParams = {}) {
+  async findPublicLodgings({ filters, user }: LodgingFindAllParams = {}) {
     const shouldRandomize = filters?.sortBy === 'random';
     const { where, order } = generateLodgingQueryFilters(filters);
-    let lodgings = await this.lodgingRespository.find({
-      relations: {
-        town: { department: true },
-        categories: { icon: true },
-        images: { imageResource: true },
-      },
-      order,
-      where: {
-        ...where,
-        isPublic: true,
-      },
-    });
+
+    // Obtener lodgings y reviews del usuario en paralelo
+    const [lodgings, userReviews] = await Promise.all([
+      this.lodgingRespository.find({
+        relations: {
+          town: { department: true },
+          categories: { icon: true },
+          images: { imageResource: true },
+        },
+        order,
+        where: {
+          ...where,
+          isPublic: true,
+        },
+      }),
+      user
+        ? this.entityReviewsService.getUserReviews({
+            entityType: ReviewDomainsEnum.LODGINGS,
+            userId: user.id,
+          })
+        : Promise.resolve<Review[]>([]),
+    ]);
 
     // Only randomize if no specific order was requested
+    let sortedLodgings = lodgings;
     if (shouldRandomize) {
-      lodgings = lodgings.sort(() => Math.random() - 0.5);
+      sortedLodgings = lodgings.sort(() => Math.random() - 0.5);
     }
 
     // Check for active promotions for each lodging
     const lodgingsWithPromotions = await Promise.all(
-      lodgings.map(async lodging => {
+      sortedLodgings.map(async lodging => {
         const hasPromotions = await this.promotionsService.hasActivePromotions(lodging.id, 'lodging');
         const latestPromotion = await this.promotionsService.getLatestActivePromotion(lodging.id, 'lodging');
-        return { lodging, hasPromotions, latestPromotion };
+        const userReview = userReviews.find(r => r.lodging?.id === lodging.id);
+        return { lodging, hasPromotions, latestPromotion, userReview };
       }),
     );
 
-    return lodgingsWithPromotions.map(({ lodging, hasPromotions, latestPromotion }) => {
-      const dto = new LodgingIndexDto(lodging);
+    return lodgingsWithPromotions.map(({ lodging, hasPromotions, latestPromotion, userReview }) => {
+      const dto = new LodgingIndexDto(lodging, userReview?.id);
       dto.hasPromotions = hasPromotions;
       dto.latestPromotionValue = latestPromotion?.value;
       return dto;
@@ -166,7 +182,7 @@ export class LodgingsService {
   // ------------------------------------------------------------------------------------------------
   // Find one lodging by slug
   // ------------------------------------------------------------------------------------------------
-  async findOneBySlug({ slug }: { slug: string }) {
+  async findOneBySlug({ slug, user }: { slug: string; user?: User }) {
     const relations: FindOptionsRelations<Lodging> = {
       categories: { icon: true },
       facilities: { icon: true },
@@ -195,12 +211,21 @@ export class LodgingsService {
     if (!lodging) lodging = await this.lodgingRespository.findOne({ where: { slug }, relations });
     if (!lodging) throw new NotFoundException('Lodging not found');
 
-    // Check for active promotions
-    const hasPromotions = await this.promotionsService.hasActivePromotions(lodging.id, 'lodging');
-    const latestPromotion = await this.promotionsService.getLatestActivePromotion(lodging.id, 'lodging');
-    const activePromotions = await this.promotionsService.getActivePromotions(lodging.id, 'lodging');
+    // Check for active promotions and user review
+    const [hasPromotions, latestPromotion, activePromotions, userReview] = await Promise.all([
+      this.promotionsService.hasActivePromotions(lodging.id, 'lodging'),
+      this.promotionsService.getLatestActivePromotion(lodging.id, 'lodging'),
+      this.promotionsService.getActivePromotions(lodging.id, 'lodging'),
+      user
+        ? this.entityReviewsService.findUserReview({
+            entityType: ReviewDomainsEnum.LODGINGS,
+            entityId: lodging.id,
+            userId: user.id,
+          })
+        : Promise.resolve(null),
+    ]);
 
-    const dto = new LodgingFullDto(lodging);
+    const dto = new LodgingFullDto(lodging, userReview?.id);
     (dto as any).hasPromotions = hasPromotions;
     (dto as any).latestPromotionValue = latestPromotion?.value;
     (dto as any).activePromotions = activePromotions;

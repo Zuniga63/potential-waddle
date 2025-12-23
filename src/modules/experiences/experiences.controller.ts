@@ -14,6 +14,8 @@ import {
 
 import { SwaggerTags } from 'src/config';
 import { OptionalAuth } from '../auth/decorators';
+import { GetUser } from '../common/decorators';
+import { User } from '../users/entities';
 
 import { ExperiencesService } from './experiences.service';
 import { CreateExperienceDto, ExperienceDto, ExperienceFiltersDto, UpdateExperienceDto } from './dto';
@@ -45,8 +47,8 @@ export class ExperiencesController {
   @Get('public')
   @OptionalAuth()
   @ApiOkResponse({ description: 'Experience List', type: [CreateExperienceDto] })
-  findPublicExperiences(@ExperienceFilters() filters: ExperienceFiltersDto) {
-    return this.experiencesService.findPublicExperiences({ filters });
+  findPublicExperiences(@ExperienceFilters() filters: ExperienceFiltersDto, @GetUser() user?: User) {
+    return this.experiencesService.findPublicExperiences({ filters, user });
   }
 
   // * ----------------------------------------------------------------------------------------------------------------
@@ -73,8 +75,8 @@ export class ExperiencesController {
   @Get('slug/:slug')
   @OptionalAuth()
   @ApiOkResponse({ description: 'Experience Detail', type: CreateExperienceDto })
-  findOneBySlug(@Param('slug') slug: string) {
-    return this.experiencesService.findOneBySlug({ slug });
+  findOneBySlug(@Param('slug') slug: string, @GetUser() user?: User) {
+    return this.experiencesService.findOneBySlug({ slug, user });
   }
 
   // * ----------------------------------------------------------------------------------------------------------------

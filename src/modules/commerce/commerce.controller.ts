@@ -46,8 +46,8 @@ export class CommerceController {
   @Get('public')
   @OptionalAuth()
   @ApiOkResponse({ description: 'Commerce List', type: [CommerceIndexDto] })
-  findPublicCommerce(@CommerceFilters() filters: CommerceFiltersDto) {
-    return this.commerceService.findPublicCommerce({ filters });
+  findPublicCommerce(@CommerceFilters() filters: CommerceFiltersDto, @GetUser() user?: User) {
+    return this.commerceService.findPublicCommerce({ filters, user });
   }
 
   // * ----------------------------------------------------------------------------------------------------------------
@@ -65,8 +65,8 @@ export class CommerceController {
   @Get('slug/:slug')
   @OptionalAuth()
   @ApiOkResponse({ description: 'Commerce Detail', type: CommerceFullDto })
-  findOneBySlug(@Param('slug') slug: string) {
-    return this.commerceService.findOneBySlug({ slug });
+  findOneBySlug(@Param('slug') slug: string, @GetUser() user?: User) {
+    return this.commerceService.findOneBySlug({ slug, user });
   }
 
   // * ----------------------------------------------------------------------------------------------------------------

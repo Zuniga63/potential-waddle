@@ -47,8 +47,8 @@ export class RestaurantsController {
   @Get('public')
   @OptionalAuth()
   @ApiOkResponse({ description: 'Restaurant List', type: [RestaurantDto] })
-  findPublicRestaurants(@RestaurantFilters() filters: RestaurantFiltersDto) {
-    return this.restaurantsService.findPublicRestaurants({ filters });
+  findPublicRestaurants(@RestaurantFilters() filters: RestaurantFiltersDto, @GetUser() user?: User) {
+    return this.restaurantsService.findPublicRestaurants({ filters, user });
   }
 
   // * ----------------------------------------------------------------------------------------------------------------
@@ -76,8 +76,8 @@ export class RestaurantsController {
   @Get('slug/:slug')
   @OptionalAuth()
   @ApiOkResponse({ description: 'Restaurant Detail', type: RestaurantDto })
-  findOneBySlug(@Param('slug') slug: string) {
-    return this.restaurantsService.findOneBySlug({ slug });
+  findOneBySlug(@Param('slug') slug: string, @GetUser() user?: User) {
+    return this.restaurantsService.findOneBySlug({ slug, user });
   }
 
   // * ----------------------------------------------------------------------------------------------------------------

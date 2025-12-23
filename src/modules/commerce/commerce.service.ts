@@ -15,6 +15,9 @@ import { ResourceProvider } from 'src/config/resource-provider.enum';
 import { User } from '../users/entities';
 import { CommerceFindAllParams } from './interfaces';
 import { generateCommerceQueryFiltersAndSort } from './logic/generate-commerce-query-filters-and-sort';
+import { EntityReviewsService } from '../reviews/services';
+import { ReviewDomainsEnum } from '../reviews/enums';
+import { Review } from '../reviews/entities';
 
 @Injectable()
 export class CommerceService {
@@ -38,6 +41,7 @@ export class CommerceService {
     private readonly commerceProductRepository: Repository<CommerceProduct>,
 
     private readonly cloudinaryService: CloudinaryService,
+    private readonly entityReviewsService: EntityReviewsService,
   ) {}
 
   async findAll({ filters }: CommerceFindAllParams = {}) {
@@ -56,26 +60,42 @@ export class CommerceService {
     return commerces.map(commerce => new CommerceIndexDto(commerce));
   }
 
-  async findPublicCommerce({ filters }: CommerceFindAllParams = {}) {
+  async findPublicCommerce({ filters, user }: CommerceFindAllParams = {}) {
     const shouldRandomize = filters?.sortBy === 'random';
     const { where, order } = generateCommerceQueryFiltersAndSort(filters);
-    let commerces = await this.commerceRepository.find({
-      relations: {
-        town: { department: true },
-        categories: { icon: true },
-        images: { imageResource: true },
-        user: true,
-      },
-      where: {
-        ...where,
-        isPublic: true,
-      },
-      order,
-    });
+
+    // Obtener commerces y reviews del usuario en paralelo
+    const [commerces, userReviews] = await Promise.all([
+      this.commerceRepository.find({
+        relations: {
+          town: { department: true },
+          categories: { icon: true },
+          images: { imageResource: true },
+          user: true,
+        },
+        where: {
+          ...where,
+          isPublic: true,
+        },
+        order,
+      }),
+      user
+        ? this.entityReviewsService.getUserReviews({
+            entityType: ReviewDomainsEnum.COMMERCE,
+            userId: user.id,
+          })
+        : Promise.resolve<Review[]>([]),
+    ]);
+
+    let sortedCommerces = commerces;
     if (shouldRandomize) {
-      commerces = commerces.sort(() => Math.random() - 0.5);
+      sortedCommerces = commerces.sort(() => Math.random() - 0.5);
     }
-    return commerces.map(commerce => new CommerceIndexDto(commerce));
+
+    return sortedCommerces.map(commerce => {
+      const userReview = userReviews.find(r => r.commerce?.id === commerce.id);
+      return new CommerceIndexDto(commerce, userReview?.id);
+    });
   }
 
   async findOne(id: string) {
@@ -101,7 +121,7 @@ export class CommerceService {
   // ------------------------------------------------------------------------------------------------
   // Find one commerce by slug
   // ------------------------------------------------------------------------------------------------
-  async findOneBySlug({ slug }: { slug: string }) {
+  async findOneBySlug({ slug, user }: { slug: string; user?: User }) {
     const relations: FindOptionsRelations<Commerce> = {
       categories: { icon: true },
       facilities: { icon: true },
@@ -122,7 +142,16 @@ export class CommerceService {
     if (!commerce) commerce = await this.commerceRepository.findOne({ where: { slug }, relations });
     if (!commerce) throw new NotFoundException('Commerce not found');
 
-    return new CommerceFullDto(commerce);
+    // Obtener review del usuario
+    const userReview = user
+      ? await this.entityReviewsService.findUserReview({
+          entityType: ReviewDomainsEnum.COMMERCE,
+          entityId: commerce.id,
+          userId: user.id,
+        })
+      : null;
+
+    return new CommerceFullDto(commerce, userReview?.id);
   }
 
   // ------------------------------------------------------------------------------------------------

@@ -6,12 +6,14 @@ import {
   JoinTable,
   ManyToMany,
   ManyToOne,
+  OneToMany,
   OneToOne,
   PrimaryGeneratedColumn,
 } from 'typeorm';
 import { Town } from 'src/modules/towns/entities/town.entity';
 import { Category } from 'src/modules/core/entities';
 import { User } from 'src/modules/users/entities/user.entity';
+import { Review } from 'src/modules/reviews/entities';
 
 @Entity({ name: 'transport' })
 export class Transport {
@@ -38,9 +40,21 @@ export class Transport {
   })
   categories?: Category[];
 
+  @OneToMany(() => Review, review => review.transport)
+  reviews?: Review[];
+
   // * ----------------------------------------------------------------------------------------------------------------
   // * MAIN FIELDS
   // * ----------------------------------------------------------------------------------------------------------------
+
+  @Column('smallint', { default: 0 })
+  points: number;
+
+  @Column('float', { default: 0 })
+  rating: number;
+
+  @Column('integer', { name: 'review_count', default: 0 })
+  reviewCount: number;
 
   @Column('text', { name: 'email', nullable: false })
   email: string;

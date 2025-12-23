@@ -59,8 +59,8 @@ export class CommerceFullDto extends CommerceIndexDto {
   })
   products?: CommerceProductDto[];
 
-  constructor(commerce?: Commerce) {
-    super(commerce);
+  constructor(commerce?: Commerce, userReview?: string) {
+    super(commerce, userReview);
 
     if (!commerce) return;
     this.spokenLanguages = commerce.spokenLanguages;

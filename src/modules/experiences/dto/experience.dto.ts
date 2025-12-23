@@ -70,7 +70,10 @@ export class ExperienceDto {
   paymentMethods?: string[];
 
   isPublic: boolean;
-  constructor({ data }: { data: Experience }) {
+
+  userReview?: string;
+
+  constructor({ data, userReview }: { data: Experience; userReview?: string }) {
     if (!data) return;
 
     this.id = data.id;
@@ -110,5 +113,6 @@ export class ExperienceDto {
     this.town = new TownDto(data.town);
     this.isPublic = data.isPublic;
     this.paymentMethods = data.paymentMethods || [];
+    this.userReview = userReview;
   }
 }

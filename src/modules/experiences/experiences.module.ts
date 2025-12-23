@@ -10,6 +10,8 @@ import { Guide } from '../guides/entities/guide.entity';
 import { CloudinaryModule } from '../cloudinary/cloudinary.module';
 import { Town } from '../towns/entities';
 import { PromotionsModule } from '../promotions/promotions.module';
+import { ReviewsModule } from '../reviews/reviews.module';
+
 @Module({
   controllers: [ExperiencesController],
   providers: [ExperiencesService],
@@ -17,6 +19,7 @@ import { PromotionsModule } from '../promotions/promotions.module';
     TypeOrmModule.forFeature([Experience, ImageResource, Facility, Category, Guide, Town]),
     CloudinaryModule,
     PromotionsModule,
+    ReviewsModule,
   ],
 })
 export class ExperiencesModule {}
