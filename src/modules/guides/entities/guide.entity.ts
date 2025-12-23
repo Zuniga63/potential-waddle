@@ -118,6 +118,9 @@ export class Guide {
   @Column('boolean', { name: 'is_public', nullable: false, default: false })
   isPublic: boolean;
 
+  @Column('boolean', { name: 'show_binntu_reviews', default: true })
+  showBinntuReviews: boolean;
+
   @CreateDateColumn({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP', name: 'created_at' })
   createdAt: Date;
 

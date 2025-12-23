@@ -89,6 +89,9 @@ export class Transport {
   @Column('boolean', { name: 'is_public', nullable: true, default: true })
   isPublic: boolean;
 
+  @Column('boolean', { name: 'show_binntu_reviews', default: true })
+  showBinntuReviews: boolean;
+
   @Column('text', { name: 'license_plate', nullable: false })
   licensePlate: string;
 

@@ -163,6 +163,9 @@ export class Lodging {
   @Column('boolean', { name: 'show_google_maps_reviews', default: true })
   showGoogleMapsReviews: boolean;
 
+  @Column('boolean', { name: 'show_binntu_reviews', default: true })
+  showBinntuReviews: boolean;
+
   @Column('text', { name: 'google_maps_name', nullable: true })
   googleMapsName: string | null;
 

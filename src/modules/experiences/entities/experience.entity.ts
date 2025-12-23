@@ -127,6 +127,9 @@ export class Experience {
   @Column('boolean', { default: true, name: 'is_public' })
   isPublic: boolean;
 
+  @Column('boolean', { name: 'show_binntu_reviews', default: true })
+  showBinntuReviews: boolean;
+
   @Column('jsonb', { nullable: true, default: [] })
   guides: ExperienceGuide[];
 
