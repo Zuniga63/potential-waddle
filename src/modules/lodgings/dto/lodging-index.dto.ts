@@ -191,6 +191,13 @@ export class LodgingIndexDto {
 
   @ApiProperty({
     example: true,
+    description: 'Whether to show Binntu reviews',
+    required: false,
+  })
+  showBinntuReviews?: boolean;
+
+  @ApiProperty({
+    example: true,
     description: 'Indicates if the lodging has active promotions',
     required: false,
   })
@@ -211,7 +218,7 @@ export class LodgingIndexDto {
     this.slug = lodging.slug;
     this.categories = lodging.categories.map(category => new CategoryDto(category));
     this.description = lodging.description || '';
-    this.reviewsCount = 0;
+    this.reviewsCount = lodging.reviewCount || 0;
     this.points = lodging.points;
     this.rooms = lodging.roomCount;
     this.images = lodging.images
@@ -224,6 +231,7 @@ export class LodgingIndexDto {
     this.googleMapsRating = lodging.googleMapsRating || undefined;
     this.googleMapsReviewsCount = lodging.googleMapsReviewsCount || undefined;
     this.showGoogleMapsReviews = lodging.showGoogleMapsReviews;
+    this.showBinntuReviews = lodging.showBinntuReviews;
     this.user = new UserDto(lodging.user);
     this.lowestPrice = lodging.lowestPrice || undefined;
     this.highestPrice = lodging.highestPrice || undefined;
