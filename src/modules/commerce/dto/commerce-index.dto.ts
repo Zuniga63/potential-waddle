@@ -230,7 +230,7 @@ export class CommerceIndexDto {
     this.slug = commerce.slug;
     this.categories = commerce.categories.map(category => new CategoryDto(category));
     this.description = commerce.description || '';
-    this.reviewsCount = 0;
+    this.reviewsCount = commerce.reviewCount ?? 0;
     this.points = commerce.points;
     this.images = commerce.images.map(image => image.imageResource.url);
     this.rating = commerce.rating;
