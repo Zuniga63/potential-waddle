@@ -480,49 +480,85 @@ export class VectorizationService {
   }
 
   /**
-   * Delete all vectors for a specific entity type across all namespaces
+   * Delete all vectors for a specific entity type
+   * Gets IDs directly from DB and deletes by ID (much faster than querying Pinecone)
    */
   async deleteByEntityType(entityType: EntityType): Promise<void> {
     this.logger.log(`🗑️ Deleting all ${entityType} vectors...`);
 
     const index = this.getIndex();
 
-    // Get all town IDs to use as namespaces
-    const towns = await this.townRepository.find({ select: ['id'] });
-    const namespaces = [...towns.map(t => t.id), 'default'];
+    // Get entities grouped by town from database
+    let entitiesByTown: Map<string, string[]> = new Map();
+
+    switch (entityType) {
+      case 'lodging':
+        const lodgings = await this.lodgingRepository.find({ relations: ['town'], select: ['id', 'town'] });
+        lodgings.forEach(e => {
+          const ns = e.town?.id || 'default';
+          if (!entitiesByTown.has(ns)) entitiesByTown.set(ns, []);
+          entitiesByTown.get(ns)!.push(`lodging_${e.id}`);
+        });
+        break;
+      case 'restaurant':
+        const restaurants = await this.restaurantRepository.find({ relations: ['town'], select: ['id', 'town'] });
+        restaurants.forEach(e => {
+          const ns = e.town?.id || 'default';
+          if (!entitiesByTown.has(ns)) entitiesByTown.set(ns, []);
+          entitiesByTown.get(ns)!.push(`restaurant_${e.id}`);
+        });
+        break;
+      case 'experience':
+        const experiences = await this.experienceRepository.find({ relations: ['town'], select: ['id', 'town'] });
+        experiences.forEach(e => {
+          const ns = e.town?.id || 'default';
+          if (!entitiesByTown.has(ns)) entitiesByTown.set(ns, []);
+          entitiesByTown.get(ns)!.push(`experience_${e.id}`);
+        });
+        break;
+      case 'place':
+        const places = await this.placeRepository.find({ relations: ['town'], select: ['id', 'town'] });
+        places.forEach(e => {
+          const ns = e.town?.id || 'default';
+          if (!entitiesByTown.has(ns)) entitiesByTown.set(ns, []);
+          entitiesByTown.get(ns)!.push(`place_${e.id}`);
+        });
+        break;
+      case 'guide':
+        const guides = await this.guideRepository.find({ relations: ['town'], select: ['id', 'town'] });
+        guides.forEach(e => {
+          const ns = e.town?.id || 'default';
+          if (!entitiesByTown.has(ns)) entitiesByTown.set(ns, []);
+          entitiesByTown.get(ns)!.push(`guide_${e.id}`);
+        });
+        break;
+      case 'transport':
+        const transports = await this.transportRepository.find({ relations: ['town'], select: ['id', 'town'] });
+        transports.forEach(e => {
+          const ns = e.town?.id || 'default';
+          if (!entitiesByTown.has(ns)) entitiesByTown.set(ns, []);
+          entitiesByTown.get(ns)!.push(`transport_${e.id}`);
+        });
+        break;
+      case 'commerce':
+        const commerces = await this.commerceRepository.find({ relations: ['town'], select: ['id', 'town'] });
+        commerces.forEach(e => {
+          const ns = e.town?.id || 'default';
+          if (!entitiesByTown.has(ns)) entitiesByTown.set(ns, []);
+          entitiesByTown.get(ns)!.push(`commerce_${e.id}`);
+        });
+        break;
+    }
 
     let totalDeleted = 0;
 
-    // Generate a dummy vector for querying (all zeros)
-    const dummyVector = new Array(1536).fill(0);
-
-    for (const namespace of namespaces) {
+    // Delete from each namespace
+    for (const [namespace, ids] of entitiesByTown) {
       try {
-        // Query to get all vector IDs of this entity type in this namespace
-        const queryResult = await index.namespace(namespace).query({
-          vector: dummyVector,
-          topK: 10000,
-          filter: {
-            entity_type: { $eq: entityType },
-          },
-          includeMetadata: false,
-        });
-
-        if (queryResult.matches && queryResult.matches.length > 0) {
-          const ids = queryResult.matches.map(match => match.id);
-
-          // Delete in batches of 1000
-          const batchSize = 1000;
-          for (let i = 0; i < ids.length; i += batchSize) {
-            const batch = ids.slice(i, i + batchSize);
-            await index.namespace(namespace).deleteMany(batch);
-          }
-
-          totalDeleted += ids.length;
-          this.logger.log(`  ✓ Namespace ${namespace}: deleted ${ids.length} vectors`);
-        }
+        await index.namespace(namespace).deleteMany(ids);
+        totalDeleted += ids.length;
+        this.logger.log(`  ✓ Namespace ${namespace}: deleted ${ids.length} vectors`);
       } catch (error) {
-        // Namespace might not exist, skip it
         this.logger.warn(`  ⚠️ Namespace ${namespace}: ${error.message}`);
       }
     }
