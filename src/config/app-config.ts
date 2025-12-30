@@ -46,6 +46,7 @@ export interface EnvironmentVariables {
     environment: string;
     pineconeIndexGoogleReview: string;
     pineconeIndexRafaClaude: string;
+    pineconeIndexVectorizedData: string;
   };
   indexingApi: {
     apiKey: string;
@@ -121,6 +122,7 @@ export const appConfig = (): EnvironmentVariables => ({
     environment: process.env.PINECONE_ENVIRONMENT || '',
     pineconeIndexGoogleReview: process.env.PINECONE_INDEX_BINNTU_GOOGLE_REVIEW || '',
     pineconeIndexRafaClaude: process.env.PINECONE_INDEX_RAFA_CLAUDE || '',
+    pineconeIndexVectorizedData: process.env.PINECONE_INDEX_VECTORIZED_DATA || 'rafa-vectorized-data',
   },
   indexingApi: {
     apiKey: process.env.INDEXING_API_KEY || '',
