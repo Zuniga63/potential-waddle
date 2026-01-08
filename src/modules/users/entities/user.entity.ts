@@ -8,6 +8,8 @@ import {
   CreateDateColumn,
   Entity,
   JoinColumn,
+  JoinTable,
+  ManyToMany,
   ManyToOne,
   OneToMany,
   OneToOne,
@@ -24,6 +26,7 @@ import { Guide } from 'src/modules/guides/entities/guide.entity';
 import { Commerce } from 'src/modules/commerce/entities/commerce.entity';
 import { Restaurant } from 'src/modules/restaurants/entities/restaurant.entity';
 import { Lodging } from 'src/modules/lodgings/entities/lodging.entity';
+import { Town } from 'src/modules/towns/entities/town.entity';
 
 @Entity({ name: 'users' })
 export class User {
@@ -60,6 +63,10 @@ export class User {
 
   @OneToMany(() => Lodging, lodging => lodging.user)
   lodgings?: Lodging[];
+
+  @ManyToMany(() => Town)
+  @JoinTable({ name: 'user_towns' })
+  towns?: Town[];
 
   // * ----------------------------------------------------------------------------------------------------------------
   // * MAIN FIELDS

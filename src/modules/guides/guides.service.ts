@@ -6,8 +6,10 @@ import { FindOptionsRelations, In, Repository } from 'typeorm';
 import { Guide } from './entities/guide.entity';
 import { Category, ImageResource } from '../core/entities';
 import { User } from '../users/entities';
+import { Town } from '../towns/entities/town.entity';
 import { GuideFindAllParams } from './interfaces/guide-find-all-params.interface';
 import { GuidesListDto } from './dto/guides-list.dto';
+import { GuidesFiltersDto } from './dto/guides-filters.dto';
 import { GuideDto } from './dto/guide.dto';
 import { generateGuideQueryFilters } from './utils/generate-guides-query-filters';
 import { UserDto } from '../users/dto/user.dto';
@@ -34,6 +36,9 @@ export class GuidesService {
     @InjectRepository(User)
     private readonly userRepo: Repository<User>,
 
+    @InjectRepository(Town)
+    private readonly townRepo: Repository<Town>,
+
     private readonly cloudinaryService: CloudinaryService,
     private readonly entityReviewsService: EntityReviewsService,
   ) {}
@@ -42,8 +47,9 @@ export class GuidesService {
   // Create guide
   // ------------------------------------------------------------------------------------------------
   async create(createGuideDto: CreateGuideDto, userId: string) {
-    const { categories, ...restDto } = createGuideDto;
+    const { categories, townIds, ...restDto } = createGuideDto;
     const categoriesEntities = categories ? await this.categoryRepo.findBy({ id: In(categories) }) : [];
+    const townsEntities = townIds ? await this.townRepo.findBy({ id: In(townIds) }) : [];
     // Usar userId del JWT, no del DTO (seguridad)
     const user = await this.userRepo.findOneBy({ id: userId });
     if (!user) throw new NotFoundException('User not found');
@@ -51,6 +57,7 @@ export class GuidesService {
     const guide = this.guideRepository.create({
       ...restDto,
       categories: categoriesEntities,
+      towns: townsEntities,
       user,
     });
 
@@ -66,6 +73,7 @@ export class GuidesService {
       categories: { icon: true },
       images: { imageResource: true },
       user: true,
+      towns: true,
     };
 
     const [guides, count] = await this.guideRepository.findAndCount({
@@ -89,6 +97,7 @@ export class GuidesService {
       categories: { icon: true },
       images: { imageResource: true },
       user: true,
+      towns: true,
     };
 
     // Obtener guides y reviews del usuario en paralelo
@@ -133,13 +142,14 @@ export class GuidesService {
     };
   }
 
-  async findPublicFullInfoGuides(): Promise<GuideVectorDto[]> {
-    const { where, order } = generateGuideQueryFilters({});
+  async findPublicFullInfoGuides(filters: GuidesFiltersDto = {}): Promise<GuideVectorDto[]> {
+    const { where, order } = generateGuideQueryFilters(filters);
 
     const relations: FindOptionsRelations<Guide> = {
       categories: { icon: true },
       images: { imageResource: true },
       user: true,
+      towns: true,
       experiences: {
         images: { imageResource: true },
         categories: { icon: true },
@@ -166,6 +176,7 @@ export class GuidesService {
       categories: { icon: true },
       user: true,
       images: { imageResource: true },
+      towns: true,
       experiences: {
         images: { imageResource: true },
         categories: { icon: true },
@@ -198,6 +209,7 @@ export class GuidesService {
       categories: { icon: true },
       user: true,
       images: { imageResource: true },
+      towns: true,
       experiences: {
         images: { imageResource: true },
         categories: { icon: true },
@@ -229,8 +241,9 @@ export class GuidesService {
   // Update guide
   // ------------------------------------------------------------------------------------------------
   async update(slug: string, updateGuideDto: UpdateGuideDto) {
-    const { categories, userId, ...restDto } = updateGuideDto;
+    const { categories, userId, townIds, ...restDto } = updateGuideDto;
     const categoriesEntities = categories ? await this.categoryRepo.findBy({ id: In(categories) }) : [];
+    const townsEntities = townIds ? await this.townRepo.findBy({ id: In(townIds) }) : undefined;
     const user = userId ? await this.userRepo.findOneBy({ id: userId }) : undefined;
     const guide = await this.guideRepository.findOne({ where: { slug } });
     if (!guide) throw new NotFoundException('Guide not found');
@@ -239,6 +252,7 @@ export class GuidesService {
       ...guide,
       ...restDto,
       categories: categoriesEntities || [],
+      ...(townsEntities !== undefined && { towns: townsEntities }),
       user: user || undefined,
     });
 
@@ -458,6 +472,7 @@ export class GuidesService {
       categories: { icon: true },
       images: { imageResource: true },
       user: true,
+      towns: true,
     };
 
     const guides = await this.guideRepository.find({

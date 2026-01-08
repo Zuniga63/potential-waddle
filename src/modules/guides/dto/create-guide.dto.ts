@@ -187,4 +187,15 @@ export class CreateGuideDto {
   @IsOptional()
   @Transform(({ value }) => parseArrayValue(value))
   categories?: string[];
+
+  @ApiProperty({
+    description: 'Town IDs where the guide operates',
+    required: false,
+    type: [String],
+  })
+  @IsOptional()
+  @IsUUID('4', { each: true })
+  @IsArray()
+  @Transform(({ value }) => parseArrayValue(value))
+  townIds?: string[];
 }

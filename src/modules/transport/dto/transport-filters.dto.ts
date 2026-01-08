@@ -31,4 +31,8 @@ export class TransportFiltersDto {
   @Transform(({ value }) => parseArrayValue(value))
   @IsOptional()
   categories?: string[];
+
+  @IsOptional()
+  @IsUUID()
+  townId?: string;
 }

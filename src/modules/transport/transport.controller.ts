@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Patch, Param, Delete, Body, ParseUUIDPipe } from '@nestjs/common';
+import { Controller, Get, Post, Patch, Param, Delete, Body, ParseUUIDPipe, Req } from '@nestjs/common';
 import { TransportService } from './transport.service';
 import { SwaggerTags } from 'src/config';
 import {
@@ -10,6 +10,7 @@ import {
   ApiBadRequestResponse,
   ApiConflictResponse,
 } from '@nestjs/swagger';
+import { Request } from 'express';
 import { TransportFiltersDto } from './dto';
 import { TransportFilters } from './decorators';
 import { TransportListQueryDocsGroup } from './decorators/transport-list-query-docs-group.decorator';
@@ -20,6 +21,7 @@ import { Auth, OptionalAuth } from '../auth/decorators';
 import { RestaurantDto } from '../restaurants/dto/restaurant.dto';
 import { GetUser } from '../common/decorators';
 import { User } from '../users/entities';
+import { TENANT_ID_KEY } from '../tenant/tenant.interceptor';
 
 @Controller('transport')
 @ApiTags(SwaggerTags.Transport)
@@ -45,14 +47,22 @@ export class TransportController {
   // * ----------------------------------------------------------------------------------------------------------------
   @Get()
   @TransportListQueryDocsGroup()
-  findAll(@TransportFilters() filters: TransportFiltersDto) {
+  findAll(@TransportFilters() filters: TransportFiltersDto, @Req() request: Request) {
+    const tenantId = (request as any)[TENANT_ID_KEY];
+    if (tenantId && !filters.townId) {
+      filters.townId = tenantId;
+    }
     return this.transportService.findAll({ filters });
   }
 
   @Get('public')
   @OptionalAuth()
   @TransportListQueryDocsGroup()
-  findPublicTransports(@TransportFilters() filters: TransportFiltersDto, @GetUser() user?: User) {
+  findPublicTransports(@TransportFilters() filters: TransportFiltersDto, @GetUser() user: User | undefined, @Req() request: Request) {
+    const tenantId = (request as any)[TENANT_ID_KEY];
+    if (tenantId && !filters.townId) {
+      filters.townId = tenantId;
+    }
     return this.transportService.findPublicTransports({ filters, user });
   }
 

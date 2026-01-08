@@ -1,7 +1,7 @@
 import { BadRequestException, Injectable, Logger, NotFoundException, UnauthorizedException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 
-import { FindOptionsRelations, Repository } from 'typeorm';
+import { FindOptionsRelations, In, Repository } from 'typeorm';
 
 import { User } from '../entities/user.entity';
 import { CreateUserDto } from '../dto/create-user.dto';
@@ -20,6 +20,7 @@ import { UserRestaurantDto } from '../dto/user-restaurant.dto';
 import { UserCommerceDto } from '../dto/user-commerce.dto';
 import { AdminUsersFiltersDto, AdminUsersListDto, AdminUserDto } from '../dto';
 import { generateAdminUsersQueryFilters } from '../utils';
+import { Town } from 'src/modules/towns/entities/town.entity';
 
 interface AdminUsersFindAllParams {
   filters?: AdminUsersFiltersDto;
@@ -32,6 +33,8 @@ export class UsersService {
   constructor(
     @InjectRepository(User)
     private readonly usersRepository: Repository<User>,
+    @InjectRepository(Town)
+    private readonly townRepository: Repository<Town>,
     private readonly cloudinaryService: CloudinaryService,
   ) {}
 
@@ -119,6 +122,7 @@ export class UsersService {
       .createQueryBuilder('user')
       .innerJoinAndSelect('user.sessions', 'session')
       .leftJoinAndSelect('user.role', 'role')
+      .leftJoinAndSelect('user.towns', 'towns')
       .where('user.id = :id', { id })
       .andWhere('session.id = :sessionId', { sessionId })
       .addSelect('user.password')
@@ -129,6 +133,7 @@ export class UsersService {
     return this.usersRepository
       .createQueryBuilder('user')
       .leftJoinAndSelect('user.role', 'role')
+      .leftJoinAndSelect('user.towns', 'towns')
       .addSelect('user.password')
       .where('user.email = :email', { email })
       .getOne();
@@ -368,5 +373,46 @@ export class UsersService {
     await this.usersRepository.remove(user);
 
     return { deleted: true, id };
+  }
+
+  async updateUserTowns(userId: string, townIds: string[]) {
+    const user = await this.usersRepository.findOne({
+      where: { id: userId },
+      relations: ['towns'],
+    });
+
+    if (!user) throw new NotFoundException('User not found');
+
+    if (townIds.length === 0) {
+      user.towns = [];
+    } else {
+      const towns = await this.townRepository.find({
+        where: { id: In(townIds) },
+      });
+
+      if (towns.length !== townIds.length) {
+        throw new BadRequestException('One or more towns not found');
+      }
+
+      user.towns = towns;
+    }
+
+    await this.usersRepository.save(user);
+
+    return {
+      id: user.id,
+      towns: user.towns.map(t => ({ id: t.id, name: t.name, slug: t.slug })),
+    };
+  }
+
+  async getUserTowns(userId: string) {
+    const user = await this.usersRepository.findOne({
+      where: { id: userId },
+      relations: ['towns'],
+    });
+
+    if (!user) throw new NotFoundException('User not found');
+
+    return user.towns?.map(t => ({ id: t.id, name: t.name, slug: t.slug })) || [];
   }
 }

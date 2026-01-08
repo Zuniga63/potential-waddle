@@ -10,7 +10,9 @@ import {
   UseInterceptors,
   UploadedFiles,
   Body,
+  Req,
 } from '@nestjs/common';
+import { Request } from 'express';
 
 import { SwaggerTags } from 'src/config';
 import { FilesInterceptor } from '@nestjs/platform-express';
@@ -24,6 +26,7 @@ import { RestaurantFilters, RestaurantListApiQueries } from './decorators';
 import { RestaurantVectorDto } from './dto/restaurant-vector.dto';
 import { GetUser } from '../common/decorators';
 import { User } from '../users/entities';
+import { TENANT_ID_KEY } from '../tenant/tenant.interceptor';
 
 @Controller(SwaggerTags.Restaurants)
 @ApiTags(SwaggerTags.Restaurants)
@@ -37,7 +40,11 @@ export class RestaurantsController {
   @OptionalAuth()
   @RestaurantListApiQueries()
   @ApiOkResponse({ description: 'Restaurant List', type: [RestaurantDto] })
-  findAll(@RestaurantFilters() filters: RestaurantFiltersDto) {
+  findAll(@RestaurantFilters() filters: RestaurantFiltersDto, @Req() request: Request) {
+    const tenantId = (request as any)[TENANT_ID_KEY];
+    if (tenantId && !filters.townId) {
+      filters.townId = tenantId;
+    }
     return this.restaurantsService.findAll({ filters });
   }
 
@@ -47,7 +54,11 @@ export class RestaurantsController {
   @Get('public')
   @OptionalAuth()
   @ApiOkResponse({ description: 'Restaurant List', type: [RestaurantDto] })
-  findPublicRestaurants(@RestaurantFilters() filters: RestaurantFiltersDto, @GetUser() user?: User) {
+  findPublicRestaurants(@RestaurantFilters() filters: RestaurantFiltersDto, @GetUser() user: User | undefined, @Req() request: Request) {
+    const tenantId = (request as any)[TENANT_ID_KEY];
+    if (tenantId && !filters.townId) {
+      filters.townId = tenantId;
+    }
     return this.restaurantsService.findPublicRestaurants({ filters, user });
   }
 
@@ -57,7 +68,11 @@ export class RestaurantsController {
   @Get('public/full-info')
   @OptionalAuth()
   @ApiOkResponse({ description: 'Restaurant List', type: [RestaurantVectorDto] })
-  findPublicFullInfoRestaurants(@RestaurantFilters() filters: RestaurantFiltersDto) {
+  findPublicFullInfoRestaurants(@RestaurantFilters() filters: RestaurantFiltersDto, @Req() request: Request) {
+    const tenantId = (request as any)[TENANT_ID_KEY];
+    if (tenantId && !filters.townId) {
+      filters.townId = tenantId;
+    }
     return this.restaurantsService.findPublicFullInfoRestaurants({ filters });
   }
 

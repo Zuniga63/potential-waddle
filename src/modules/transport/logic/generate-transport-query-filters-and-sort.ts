@@ -8,9 +8,10 @@ export function generateTransportQueryFiltersAndSort(filters?: TransportFiltersD
   const order: FindOptionsOrder<Transport> = { firstName: 'ASC' };
   if (!filters) return { where };
 
-  const { search, sortBy } = filters;
+  const { search, sortBy, townId } = filters;
   if (search) where.firstName = ILike(`%${search}%`);
   if (filters.categories) where.categories = { id: In(filters.categories) };
+  if (townId) where.town = { id: townId };
   if (sortBy) {
     const sortOrder = sortBy.startsWith('-') ? 'DESC' : 'ASC';
     const field = sortBy.replace(/^-/, '');

@@ -11,6 +11,7 @@ import {
   ParseUUIDPipe,
   NotImplementedException,
   UploadedFiles,
+  Req,
 } from '@nestjs/common';
 import { FileInterceptor, FilesInterceptor } from '@nestjs/platform-express';
 import {
@@ -22,6 +23,7 @@ import {
   ApiParam,
   ApiTags,
 } from '@nestjs/swagger';
+import { Request } from 'express';
 
 import { PlaceDetailDto, PlaceDto } from './dto';
 import { SwaggerTags } from 'src/config';
@@ -39,6 +41,7 @@ import { PlaceReviewsService } from '../reviews/services';
 import { ContentTypes } from '../common/constants';
 import { ReorderImagesDto } from '../common/dto/reoder-images.dto';
 import { PlaceVectorDto } from './dto/place-vector.dto';
+import { TENANT_ID_KEY } from '../tenant/tenant.interceptor';
 
 @Controller('places')
 @ApiTags(SwaggerTags.Places)
@@ -66,7 +69,12 @@ export class PlacesController {
   @PlaceListQueryDocsGroup()
   @OptionalAuth()
   @ApiOkResponse({ description: 'The places have been successfully retrieved.', type: [PlaceDto] })
-  findAll(@PlaceFilters() filters: PlaceFiltersDto, @GetUser() user: User | null) {
+  findAll(@PlaceFilters() filters: PlaceFiltersDto, @GetUser() user: User | null, @Req() request: Request) {
+    // If tenant is set and no townId filter, use tenant as townId
+    const tenantId = (request as any)[TENANT_ID_KEY];
+    if (tenantId && !filters.townId) {
+      filters.townId = tenantId;
+    }
     return this.placesService.findAll(filters, user);
   }
 
@@ -76,7 +84,11 @@ export class PlacesController {
   @Get('public')
   @OptionalAuth()
   @ApiOkResponse({ description: 'Place List', type: [PlaceDto] })
-  findPublicPlaces(@PlaceFilters() filters: PlaceFiltersDto, @GetUser() user: User | null) {
+  findPublicPlaces(@PlaceFilters() filters: PlaceFiltersDto, @GetUser() user: User | null, @Req() request: Request) {
+    const tenantId = (request as any)[TENANT_ID_KEY];
+    if (tenantId && !filters.townId) {
+      filters.townId = tenantId;
+    }
     return this.placesService.findPublicPlaces(filters, user);
   }
 
@@ -86,7 +98,11 @@ export class PlacesController {
   @Get('public/full-info')
   @OptionalAuth()
   @ApiOkResponse({ description: 'Place List', type: [PlaceVectorDto] })
-  findPublicFullInfoPlaces(@PlaceFilters() filters: PlaceFiltersDto, @GetUser() user: User | null) {
+  findPublicFullInfoPlaces(@PlaceFilters() filters: PlaceFiltersDto, @GetUser() user: User | null, @Req() request: Request) {
+    const tenantId = (request as any)[TENANT_ID_KEY];
+    if (tenantId && !filters.townId) {
+      filters.townId = tenantId;
+    }
     return this.placesService.findPublicFullInfoPlaces(filters, user);
   }
 

@@ -161,7 +161,7 @@ export class GuideDto {
   showBinntuReviews?: boolean;
 
   // Relationships
-  town?: TownDto;
+  towns?: TownDto[];
   user?: UserDto;
   categories?: CategoryDto[];
   experiences?: GuideExperienceDto[];
@@ -194,6 +194,7 @@ export class GuideDto {
     // Map relationships
     this.user = data.user ? new UserDto(data.user) : undefined;
     this.categories = data.categories?.map(category => new CategoryDto(category));
+    this.towns = data.towns?.map(town => new TownDto(town));
     this.experiences = data.experiences?.map(experience => new GuideExperienceDto({ data: experience })) || [];
     this.isPublic = data.isPublic;
     this.rating = data.rating ?? 0;

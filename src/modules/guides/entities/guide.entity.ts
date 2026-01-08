@@ -44,9 +44,13 @@ export class Guide {
   @OneToMany(() => Experience, experience => experience.guide)
   experiences?: Experience[];
 
-  @ManyToOne(() => Town, { nullable: true })
-  @JoinColumn({ name: 'town_id' })
-  town?: Town;
+  @ManyToMany(() => Town)
+  @JoinTable({
+    name: 'guide_town',
+    joinColumn: { name: 'guide_id' },
+    inverseJoinColumn: { name: 'town_id' },
+  })
+  towns?: Town[];
 
   @OneToMany(() => Review, review => review.guide)
   reviews?: Review[];

@@ -4,6 +4,17 @@ import { calculateAge } from 'src/utils';
 import { UserLocationDto } from './user-location.dto';
 import { UserExplorerStatsDto } from './user-explorer-stats.dto';
 
+export class UserTownDto {
+  @ApiProperty({ example: 'df5e7f56-ce51-4428-9d43-84e35a077618' })
+  id: string;
+
+  @ApiProperty({ example: 'San Rafael' })
+  name: string;
+
+  @ApiProperty({ example: 'sanrafael' })
+  slug?: string;
+}
+
 export class UserDto {
   @ApiProperty({ example: 'df5e7f56-ce51-4428-9d43-84e35a077618' })
   id: string;
@@ -56,6 +67,9 @@ export class UserDto {
   @ApiProperty({ type: UserExplorerStatsDto })
   stats: UserExplorerStatsDto;
 
+  @ApiProperty({ type: [UserTownDto] })
+  towns?: UserTownDto[];
+
   constructor(user?: User) {
     if (!user) return;
 
@@ -87,5 +101,7 @@ export class UserDto {
       distanceTraveled: user.distanceTravelled,
       visitedPlaces: 0,
     };
+
+    this.towns = user.towns?.map(t => ({ id: t.id, name: t.name, slug: t.slug })) || [];
   }
 }

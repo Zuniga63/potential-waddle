@@ -1,9 +1,12 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, Like, FindOptionsWhere, In } from 'typeorm';
 
 import { Department, Town } from '../entities';
 import { CreateTownDto, UpdateTownDto } from '../dto';
+import { AdminTownsFiltersDto } from '../dto/admin-towns-filters.dto';
+import { AdminTownsListDto } from '../dto/admin-towns-list.dto';
+import { User } from '../../users/entities/user.entity';
 
 @Injectable()
 export class TownsService {
@@ -12,6 +15,8 @@ export class TownsService {
     private readonly townRepository: Repository<Town>,
     @InjectRepository(Department)
     private readonly municipalityRepository: Repository<Department>,
+    @InjectRepository(User)
+    private readonly userRepository: Repository<User>,
   ) {}
 
   async create(createTownDto: CreateTownDto) {
@@ -30,6 +35,54 @@ export class TownsService {
 
   findAll() {
     return this.townRepository.find({ where: { isEnable: true } });
+  }
+
+  async findAllPaginated(filters: AdminTownsFiltersDto): Promise<AdminTownsListDto> {
+    const { page = 1, limit = 10, search, departmentId, isEnable, sortBy = 'name', sortOrder = 'ASC' } = filters;
+
+    const where: FindOptionsWhere<Town> = {};
+
+    if (isEnable !== undefined) {
+      where.isEnable = isEnable;
+    }
+
+    if (departmentId) {
+      where.department = { id: departmentId };
+    }
+
+    const queryBuilder = this.townRepository
+      .createQueryBuilder('town')
+      .leftJoinAndSelect('town.department', 'department');
+
+    if (search) {
+      queryBuilder.andWhere('(town.name ILIKE :search OR town.code ILIKE :search)', {
+        search: `%${search}%`,
+      });
+    }
+
+    if (isEnable !== undefined) {
+      queryBuilder.andWhere('town.isEnable = :isEnable', { isEnable });
+    }
+
+    if (departmentId) {
+      queryBuilder.andWhere('department.id = :departmentId', { departmentId });
+    }
+
+    // Sorting: always sort by isEnable first (active first), then by selected field
+    const validSortFields = ['name', 'code', 'createdAt', 'updatedAt', 'isEnable'];
+    const sortField = validSortFields.includes(sortBy) ? sortBy : 'name';
+    queryBuilder
+      .orderBy('town.isEnable', 'DESC')
+      .addOrderBy(`town.${sortField}`, sortOrder);
+
+    // Pagination
+    const skip = (page - 1) * limit;
+    queryBuilder.skip(skip).take(limit);
+
+    const [towns, count] = await queryBuilder.getManyAndCount();
+    const pages = Math.ceil(count / limit);
+
+    return new AdminTownsListDto({ currentPage: page, pages, count }, towns);
   }
 
   async findOne(id: string) {

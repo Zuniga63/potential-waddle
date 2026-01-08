@@ -9,8 +9,10 @@ import {
   Delete,
   ParseUUIDPipe,
   UploadedFiles,
+  Req,
 } from '@nestjs/common';
 import { ApiBadRequestResponse, ApiBody, ApiConsumes, ApiOkResponse, ApiTags } from '@nestjs/swagger';
+import { Request } from 'express';
 
 import { SwaggerTags } from 'src/config';
 import { Auth, OptionalAuth } from '../auth/decorators';
@@ -31,6 +33,7 @@ import { FilesInterceptor } from '@nestjs/platform-express';
 import { ContentTypes } from '../common/constants';
 import { ReorderImagesDto } from '../common/dto/reoder-images.dto';
 import { LodgingVectorDto } from './dto/lodging-vector.dto';
+import { TENANT_ID_KEY } from '../tenant/tenant.interceptor';
 
 @Controller('lodgings')
 @ApiTags(SwaggerTags.Lodgings)
@@ -44,7 +47,11 @@ export class LodgingsController {
   @LodgingListQueryParamsDocs()
   @OptionalAuth()
   @ApiOkResponse({ description: 'Lodging List', type: [LodgingIndexDto] })
-  findAll(@LodgingFilters() filters: LodgingFiltersDto) {
+  findAll(@LodgingFilters() filters: LodgingFiltersDto, @Req() request: Request) {
+    const tenantId = (request as any)[TENANT_ID_KEY];
+    if (tenantId && !filters.townId) {
+      filters.townId = tenantId;
+    }
     return this.lodgingsService.findAll({ filters });
   }
 
@@ -54,7 +61,11 @@ export class LodgingsController {
   @Get('public')
   @OptionalAuth()
   @ApiOkResponse({ description: 'Lodging List', type: [LodgingIndexDto] })
-  findPublicLodgings(@LodgingFilters() filters: LodgingFiltersDto, @GetUser() user?: User) {
+  findPublicLodgings(@LodgingFilters() filters: LodgingFiltersDto, @GetUser() user: User | undefined, @Req() request: Request) {
+    const tenantId = (request as any)[TENANT_ID_KEY];
+    if (tenantId && !filters.townId) {
+      filters.townId = tenantId;
+    }
     return this.lodgingsService.findPublicLodgings({ filters, user });
   }
 
@@ -63,7 +74,11 @@ export class LodgingsController {
   // * ----------------------------------------------------------------------------------------------------------------
   @Get('public/full-info')
   @ApiOkResponse({ description: 'Lodging List', type: [LodgingVectorDto] })
-  findPublicFullInfoLodgings(@LodgingFilters() filters: LodgingFiltersDto) {
+  findPublicFullInfoLodgings(@LodgingFilters() filters: LodgingFiltersDto, @Req() request: Request) {
+    const tenantId = (request as any)[TENANT_ID_KEY];
+    if (tenantId && !filters.townId) {
+      filters.townId = tenantId;
+    }
     return this.lodgingsService.findPublicFullInfoLodgings({ filters });
   }
 

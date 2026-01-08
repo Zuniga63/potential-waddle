@@ -10,8 +10,9 @@ export function generateGuideQueryFilters(filters?: GuidesFiltersDto) {
 
   if (!filters) return { where, order };
 
-  const { search, sortBy, categories } = filters;
+  const { search, sortBy, categories, townId } = filters;
   if (search) where.firstName = ILike(`%${search}%`);
+  if (townId) where.towns = { id: townId };
 
   if (sortBy) {
     const sortOrder = sortBy.startsWith('-') ? 'DESC' : 'ASC';

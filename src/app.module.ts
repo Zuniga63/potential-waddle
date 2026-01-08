@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { ConfigModule, ConfigService } from '@nestjs/config';
+import { APP_INTERCEPTOR } from '@nestjs/core';
 import { appConfig, JoiValidationSchema, typeOrmConfig } from './config';
 import { AuthModule } from './modules/auth/auth.module';
 import { CommonModule } from './modules/common/common.module';
@@ -27,6 +28,11 @@ import { WhatsappClicksModule } from './modules/whatsapp-clicks/whatsapp-clicks.
 import { MapModule } from './modules/map/map.module';
 import { EmailModule } from './modules/email/email.module';
 import { TurnstileModule } from './modules/turnstile/turnstile.module';
+import { PineconeModule } from './modules/pinecone/pinecone.module';
+import { RafaModule } from './modules/rafa/rafa.module';
+import { DashboardModule } from './modules/dashboard/dashboard.module';
+import { TenantModule } from './modules/tenant/tenant.module';
+import { TenantInterceptor } from './modules/tenant/tenant.interceptor';
 
 @Module({
   imports: [
@@ -66,8 +72,17 @@ import { TurnstileModule } from './modules/turnstile/turnstile.module';
     PublicEventsModule,
     WhatsappClicksModule,
     MapModule,
+    PineconeModule,
+    RafaModule,
+    DashboardModule,
+    TenantModule,
   ],
   controllers: [],
-  providers: [],
+  providers: [
+    {
+      provide: APP_INTERCEPTOR,
+      useClass: TenantInterceptor,
+    },
+  ],
 })
 export class AppModule {}

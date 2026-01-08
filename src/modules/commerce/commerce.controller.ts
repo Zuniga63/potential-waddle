@@ -10,7 +10,9 @@ import {
   UseInterceptors,
   UploadedFiles,
   Body,
+  Req,
 } from '@nestjs/common';
+import { Request } from 'express';
 
 import { SwaggerTags } from 'src/config';
 import { FilesInterceptor } from '@nestjs/platform-express';
@@ -23,6 +25,7 @@ import { CommerceService } from './commerce.service';
 import { CommerceFilters, CommerceListQueryParamsDocs } from './decorators';
 import { GetUser } from '../common/decorators';
 import { User } from '../users/entities';
+import { TENANT_ID_KEY } from '../tenant/tenant.interceptor';
 
 @Controller(SwaggerTags.Commerce)
 @ApiTags(SwaggerTags.Commerce)
@@ -36,7 +39,11 @@ export class CommerceController {
   @OptionalAuth()
   @CommerceListQueryParamsDocs()
   @ApiOkResponse({ description: 'Commerce List', type: [CommerceIndexDto] })
-  findAll(@CommerceFilters() filters: CommerceFiltersDto) {
+  findAll(@CommerceFilters() filters: CommerceFiltersDto, @Req() request: Request) {
+    const tenantId = (request as any)[TENANT_ID_KEY];
+    if (tenantId && !filters.townId) {
+      filters.townId = tenantId;
+    }
     return this.commerceService.findAll({ filters });
   }
 
@@ -46,7 +53,11 @@ export class CommerceController {
   @Get('public')
   @OptionalAuth()
   @ApiOkResponse({ description: 'Commerce List', type: [CommerceIndexDto] })
-  findPublicCommerce(@CommerceFilters() filters: CommerceFiltersDto, @GetUser() user?: User) {
+  findPublicCommerce(@CommerceFilters() filters: CommerceFiltersDto, @GetUser() user: User | undefined, @Req() request: Request) {
+    const tenantId = (request as any)[TENANT_ID_KEY];
+    if (tenantId && !filters.townId) {
+      filters.townId = tenantId;
+    }
     return this.commerceService.findPublicCommerce({ filters, user });
   }
 

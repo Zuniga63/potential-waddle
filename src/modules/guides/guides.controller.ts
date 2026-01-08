@@ -9,6 +9,7 @@ import {
   ParseUUIDPipe,
   UseInterceptors,
   UploadedFiles,
+  Req,
 } from '@nestjs/common';
 import { SwaggerTags } from 'src/config';
 import {
@@ -20,6 +21,7 @@ import {
   ApiBadRequestResponse,
   ApiConsumes,
 } from '@nestjs/swagger';
+import { Request } from 'express';
 import { CreateGuideDto } from './dto/create-guide.dto';
 import { UpdateGuideDto } from './dto/update-guide.dto';
 import { GuidesService } from './guides.service';
@@ -33,6 +35,7 @@ import { ReorderImagesDto } from '../common/dto/reoder-images.dto';
 import { FilesInterceptor } from '@nestjs/platform-express';
 import { GetUser } from '../common/decorators';
 import { User } from '../users/entities';
+import { TENANT_ID_KEY } from '../tenant/tenant.interceptor';
 
 @Controller('guides')
 @ApiTags(SwaggerTags.Guides)
@@ -55,7 +58,11 @@ export class GuidesController {
   // * ----------------------------------------------------------------------------------------------------------------
   @Get()
   @GuideListQueryDocsGroup()
-  findAll(@GuidesFilters() filters: GuidesFiltersDto) {
+  findAll(@GuidesFilters() filters: GuidesFiltersDto, @Req() request: Request) {
+    const tenantId = (request as any)[TENANT_ID_KEY];
+    if (tenantId && !filters.townId) {
+      filters.townId = tenantId;
+    }
     return this.guidesService.findAll({ filters });
   }
 
@@ -65,7 +72,11 @@ export class GuidesController {
   @Get('public')
   @OptionalAuth()
   @GuideListQueryDocsGroup()
-  findPublicGuides(@GuidesFilters() filters: GuidesFiltersDto, @GetUser() user?: User) {
+  findPublicGuides(@GuidesFilters() filters: GuidesFiltersDto, @GetUser() user: User | undefined, @Req() request: Request) {
+    const tenantId = (request as any)[TENANT_ID_KEY];
+    if (tenantId && !filters.townId) {
+      filters.townId = tenantId;
+    }
     return this.guidesService.findPublicGuides({ filters, user });
   }
 
@@ -73,8 +84,12 @@ export class GuidesController {
   // * GET ALL PUBLIC GUIDES WITH FULL INFO
   @Get('public/full-info')
   @GuideListQueryDocsGroup()
-  findPublicFullInfoGuides() {
-    return this.guidesService.findPublicFullInfoGuides();
+  findPublicFullInfoGuides(@GuidesFilters() filters: GuidesFiltersDto, @Req() request: Request) {
+    const tenantId = (request as any)[TENANT_ID_KEY];
+    if (tenantId && !filters.townId) {
+      filters.townId = tenantId;
+    }
+    return this.guidesService.findPublicFullInfoGuides(filters);
   }
 
   // * ----------------------------------------------------------------------------------------------------------------

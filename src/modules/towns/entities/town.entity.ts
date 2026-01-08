@@ -65,6 +65,9 @@ export class Town {
   name: string;
 
   @Column('text', { nullable: true, unique: true })
+  slug: string;
+
+  @Column('text', { nullable: true, unique: true })
   code: string;
 
   @Column('text', { nullable: true })

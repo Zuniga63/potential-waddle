@@ -304,7 +304,7 @@ export class VectorizationService {
 
     const guides = await this.guideRepository.find({
       relations: {
-        town: { department: true },
+        towns: { department: true },
         categories: true,
       },
       where: { isPublic: true },
@@ -312,15 +312,16 @@ export class VectorizationService {
 
     const chunks = guides.map(guide => {
       const categoriesStr = guide.categories?.map(c => c.name).join(', ') || '';
+      const primaryTown = guide.towns?.[0];
 
       return this.chunkingService.createGuideChunk({
         id: guide.id,
         full_name: `${guide.firstName} ${guide.lastName}`,
         slug: guide.slug,
         biography: guide.biography || undefined,
-        town_name: guide.town?.name || undefined,
-        town_id: guide.town?.id,
-        department: guide.town?.department?.name || undefined,
+        town_name: primaryTown?.name || undefined,
+        town_id: primaryTown?.id,
+        department: primaryTown?.department?.name || undefined,
         rating: guide.rating,
         email: guide.email,
         phone: guide.phone || undefined,
@@ -525,11 +526,13 @@ export class VectorizationService {
         });
         break;
       case 'guide':
-        const guides = await this.guideRepository.find({ relations: ['town'], select: ['id', 'town'] });
+        const guides = await this.guideRepository.find({ relations: ['towns'], select: ['id', 'towns'] });
         guides.forEach(e => {
-          const ns = e.town?.id || 'default';
-          if (!entitiesByTown.has(ns)) entitiesByTown.set(ns, []);
-          entitiesByTown.get(ns)!.push(`guide_${e.id}`);
+          const townIds = e.towns?.map(t => t.id) || ['default'];
+          townIds.forEach(townId => {
+            if (!entitiesByTown.has(townId)) entitiesByTown.set(townId, []);
+            entitiesByTown.get(townId)!.push(`guide_${e.id}`);
+          });
         });
         break;
       case 'transport':

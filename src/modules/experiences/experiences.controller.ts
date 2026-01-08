@@ -10,7 +10,9 @@ import {
   UseInterceptors,
   UploadedFiles,
   Body,
+  Req,
 } from '@nestjs/common';
+import { Request } from 'express';
 
 import { SwaggerTags } from 'src/config';
 import { OptionalAuth } from '../auth/decorators';
@@ -24,6 +26,7 @@ import { FilesInterceptor } from '@nestjs/platform-express';
 import { ContentTypes } from '../common/constants';
 import { ReorderImagesDto } from '../common/dto/reoder-images.dto';
 import { ExperienceVectorDto } from './dto/experience-vector.dto';
+import { TENANT_ID_KEY } from '../tenant/tenant.interceptor';
 
 @Controller(SwaggerTags.Experiences)
 @ApiTags(SwaggerTags.Experiences)
@@ -37,7 +40,11 @@ export class ExperiencesController {
   @OptionalAuth()
   @ExperienceListApiQueries()
   @ApiOkResponse({ description: 'Experience List', type: [CreateExperienceDto] })
-  findAll(@ExperienceFilters() filters: ExperienceFiltersDto) {
+  findAll(@ExperienceFilters() filters: ExperienceFiltersDto, @Req() request: Request) {
+    const tenantId = (request as any)[TENANT_ID_KEY];
+    if (tenantId && !filters.townId) {
+      filters.townId = tenantId;
+    }
     return this.experiencesService.findAll({ filters });
   }
 
@@ -47,7 +54,11 @@ export class ExperiencesController {
   @Get('public')
   @OptionalAuth()
   @ApiOkResponse({ description: 'Experience List', type: [CreateExperienceDto] })
-  findPublicExperiences(@ExperienceFilters() filters: ExperienceFiltersDto, @GetUser() user?: User) {
+  findPublicExperiences(@ExperienceFilters() filters: ExperienceFiltersDto, @GetUser() user: User | undefined, @Req() request: Request) {
+    const tenantId = (request as any)[TENANT_ID_KEY];
+    if (tenantId && !filters.townId) {
+      filters.townId = tenantId;
+    }
     return this.experiencesService.findPublicExperiences({ filters, user });
   }
 
@@ -57,7 +68,11 @@ export class ExperiencesController {
   @Get('public/full-info')
   @OptionalAuth()
   @ApiOkResponse({ description: 'Experience List', type: [ExperienceVectorDto] })
-  findPublicFullInfoExperiences(@ExperienceFilters() filters: ExperienceFiltersDto) {
+  findPublicFullInfoExperiences(@ExperienceFilters() filters: ExperienceFiltersDto, @Req() request: Request) {
+    const tenantId = (request as any)[TENANT_ID_KEY];
+    if (tenantId && !filters.townId) {
+      filters.townId = tenantId;
+    }
     return this.experiencesService.findPublicFullInfoExperiences({ filters });
   }
 

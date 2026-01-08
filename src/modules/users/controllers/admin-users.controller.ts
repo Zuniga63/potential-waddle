@@ -1,5 +1,5 @@
-import { Controller, Delete, Get, Param, ParseUUIDPipe, Patch, Body } from '@nestjs/common';
-import { ApiOkResponse, ApiOperation, ApiTags } from '@nestjs/swagger';
+import { Controller, Delete, Get, Param, ParseUUIDPipe, Patch, Body, Put } from '@nestjs/common';
+import { ApiBody, ApiOkResponse, ApiOperation, ApiTags } from '@nestjs/swagger';
 
 import { SwaggerTags } from 'src/config';
 import { GenericFindAllFilters } from 'src/modules/common/decorators';
@@ -47,5 +47,20 @@ export class AdminUsersController {
   @ApiOkResponse({ description: 'User deleted' })
   remove(@Param('id', new ParseUUIDPipe()) id: string) {
     return this.usersService.remove(id);
+  }
+
+  @Get(':id/towns')
+  @ApiOperation({ summary: 'Get user assigned towns (Admin)' })
+  @ApiOkResponse({ description: 'Return user towns' })
+  getUserTowns(@Param('id', new ParseUUIDPipe()) id: string) {
+    return this.usersService.getUserTowns(id);
+  }
+
+  @Put(':id/towns')
+  @ApiOperation({ summary: 'Update user assigned towns (Admin)' })
+  @ApiBody({ schema: { type: 'object', properties: { townIds: { type: 'array', items: { type: 'string' } } } } })
+  @ApiOkResponse({ description: 'User towns updated' })
+  updateUserTowns(@Param('id', new ParseUUIDPipe()) id: string, @Body() body: { townIds: string[] }) {
+    return this.usersService.updateUserTowns(id, body.townIds || []);
   }
 }
