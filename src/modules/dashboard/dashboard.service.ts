@@ -44,7 +44,6 @@ export class DashboardService {
 
   async getStats(townId?: string): Promise<DashboardStats> {
     const townFilter = townId ? { town: { id: townId } } : {};
-    const guideTownFilter = townId ? { towns: { id: townId } } : {};
 
     const [
       totalLodgings,
@@ -61,7 +60,7 @@ export class DashboardService {
       this.placeRepository.count({ where: townFilter }),
       this.commerceRepository.count({ where: townFilter }),
       this.countReviewsByTown(townId),
-      this.guideRepository.count({ where: guideTownFilter }),
+      this.countGuidesByTown(townId),
       this.experienceRepository.count({ where: townFilter }),
       this.transportRepository.count({ where: townFilter }),
     ]);
@@ -78,12 +77,28 @@ export class DashboardService {
     };
   }
 
+  private async countGuidesByTown(townId?: string): Promise<number> {
+    if (!townId) {
+      return this.guideRepository.count();
+    }
+
+    // Guides have ManyToMany relation with towns through guide_town junction table
+    const count = await this.guideRepository
+      .createQueryBuilder('guide')
+      .innerJoin('guide.towns', 'town')
+      .where('town.id = :townId', { townId })
+      .getCount();
+
+    return count;
+  }
+
   private async countReviewsByTown(townId?: string): Promise<number> {
     if (!townId) {
       return this.reviewRepository.count();
     }
 
     // Reviews don't have direct town relation, need to join through place/lodging/etc
+    // Guide has ManyToMany with towns, so we join through guide_town
     const count = await this.reviewRepository
       .createQueryBuilder('review')
       .leftJoin('review.place', 'place')
@@ -93,13 +108,14 @@ export class DashboardService {
       .leftJoin('review.restaurant', 'restaurant')
       .leftJoin('review.transport', 'transport')
       .leftJoin('review.guide', 'guide')
+      .leftJoin('guide.towns', 'guideTown')
       .where('place.town_id = :townId', { townId })
       .orWhere('lodging.town_id = :townId', { townId })
       .orWhere('experience.town_id = :townId', { townId })
       .orWhere('commerce.town_id = :townId', { townId })
       .orWhere('restaurant.town_id = :townId', { townId })
       .orWhere('transport.town_id = :townId', { townId })
-      .orWhere('guide.town_id = :townId', { townId })
+      .orWhere('guideTown.id = :townId', { townId })
       .getCount();
 
     return count;
