@@ -8,16 +8,27 @@ import {
   ParseUUIDPipe,
   Patch,
   Post,
+  Query,
 } from '@nestjs/common';
 import { ApiOperation, ApiResponse, ApiTags, ApiParam } from '@nestjs/swagger';
 import { SwaggerTags } from 'src/config';
-import { CreateAppIconDto, UpdateAppIconDto } from '../dto';
+import { Auth } from 'src/modules/auth/decorators';
+import { CreateAppIconDto, UpdateAppIconDto, AdminAppIconsFiltersDto } from '../dto';
 import { AppIconsService } from '../services';
 
 @Controller('app-icons')
 @ApiTags(SwaggerTags.AppIcons)
 export class AppIconsController {
   constructor(private readonly appIconsService: AppIconsService) {}
+
+  // * -------------------------------------------------------------------------------------------------------------
+  // * GET ALL APP ICONS PAGINATED (ADMIN)
+  // * -------------------------------------------------------------------------------------------------------------
+  @Get('admin/list')
+  @Auth()
+  getAdminList(@Query() filters: AdminAppIconsFiltersDto) {
+    return this.appIconsService.findAllPaginated(filters);
+  }
 
   // * -------------------------------------------------------------------------------------------------------------
   // * CREATE NEW APP ICON

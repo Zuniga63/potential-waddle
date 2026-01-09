@@ -1,7 +1,8 @@
 import { Body, Controller, Delete, Get, HttpStatus, ParseEnumPipe, Patch, Post, Query, Param } from '@nestjs/common';
 import { ApiOperation, ApiQuery, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { SwaggerTags } from 'src/config';
-import { CreateFacilityDto, UpdateFacilityDto } from '../dto';
+import { Auth } from 'src/modules/auth/decorators';
+import { CreateFacilityDto, UpdateFacilityDto, AdminFacilitiesFiltersDto } from '../dto';
 import { FacilitiesService } from '../services';
 import { ModelsEnum } from '../enums';
 
@@ -9,6 +10,16 @@ import { ModelsEnum } from '../enums';
 @ApiTags(SwaggerTags.Facilities)
 export class FacilitiesController {
   constructor(private readonly facilitiesService: FacilitiesService) {}
+
+  // * -------------------------------------------------------------------------------------------------------------
+  // * GET ALL FACILITIES PAGINATED (ADMIN)
+  // * -------------------------------------------------------------------------------------------------------------
+  @Get('admin/list')
+  @Auth()
+  getAdminList(@Query() filters: AdminFacilitiesFiltersDto) {
+    return this.facilitiesService.findAllPaginated(filters);
+  }
+
   // * -------------------------------------------------------------------------------------------------------------
   // * CREATE NEW FACILITY
   // * -------------------------------------------------------------------------------------------------------------

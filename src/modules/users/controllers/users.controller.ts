@@ -55,4 +55,11 @@ export class UsersController {
   findUserTransport(@Param('id') userId: string) {
     return this.usersService.getUserTransport(userId);
   }
+
+  @Get(':id/reviews')
+  @ApiOperation({ summary: 'Get all reviews made by a user (visited places)' })
+  @ApiOkResponse({ description: 'Return all reviews made by the user to places, lodgings, restaurants, etc.' })
+  findUserReviews(@Param('id') userId: string) {
+    return this.usersService.getUserReviews(userId);
+  }
 }

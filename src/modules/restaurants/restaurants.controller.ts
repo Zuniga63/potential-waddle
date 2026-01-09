@@ -11,6 +11,7 @@ import {
   UploadedFiles,
   Body,
   Req,
+  Query,
 } from '@nestjs/common';
 import { Request } from 'express';
 
@@ -19,7 +20,7 @@ import { FilesInterceptor } from '@nestjs/platform-express';
 import { ContentTypes } from '../common/constants';
 import { ReorderImagesDto } from '../common/dto/reoder-images.dto';
 
-import { RestaurantFiltersDto, CreateRestaurantDto, UpdateRestaurantDto, RestaurantDto } from './dto';
+import { RestaurantFiltersDto, CreateRestaurantDto, UpdateRestaurantDto, RestaurantDto, AdminRestaurantsFiltersDto, AdminRestaurantsListDto } from './dto';
 import { Auth, OptionalAuth } from '../auth/decorators';
 import { RestaurantsService } from './restaurants.service';
 import { RestaurantFilters, RestaurantListApiQueries } from './decorators';
@@ -46,6 +47,20 @@ export class RestaurantsController {
       filters.townId = tenantId;
     }
     return this.restaurantsService.findAll({ filters });
+  }
+
+  // * ----------------------------------------------------------------------------------------------------------------
+  // * GET ALL RESTAURANTS PAGINATED (ADMIN)
+  // * ----------------------------------------------------------------------------------------------------------------
+  @Get('admin/list')
+  @Auth()
+  @ApiOkResponse({ description: 'Restaurant List Paginated', type: AdminRestaurantsListDto })
+  findAllPaginated(@Query() filters: AdminRestaurantsFiltersDto, @Req() request: Request) {
+    const tenantId = (request as any)[TENANT_ID_KEY];
+    if (tenantId && !filters.townId) {
+      filters.townId = tenantId;
+    }
+    return this.restaurantsService.findAllPaginated(filters);
   }
 
   // * ----------------------------------------------------------------------------------------------------------------

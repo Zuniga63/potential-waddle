@@ -9,7 +9,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { FindOptionsRelations, In, Point, Repository } from 'typeorm';
 
 import { Lodging, LodgingImage, LodgingPlace, LodgingRoomType } from './entities';
-import { CreateLodgingDto, LodgingFullDto, LodgingIndexDto, UpdateLodgingDto } from './dto';
+import { AdminLodgingsFiltersDto, AdminLodgingsListDto, CreateLodgingDto, LodgingFullDto, LodgingIndexDto, UpdateLodgingDto } from './dto';
 import { LodgingFindAllParams } from './interfaces';
 import { generateLodgingQueryFilters } from './utils';
 import { Category, Facility, ImageResource } from '../core/entities';
@@ -71,6 +71,53 @@ export class LodgingsService {
     const lodgings = await this.lodgingRespository.find({ relations, order, where });
 
     return lodgings.map(lodgings => new LodgingIndexDto(lodgings));
+  }
+
+  // ------------------------------------------------------------------------------------------------
+  // Find all lodgings paginated (Admin)
+  // ------------------------------------------------------------------------------------------------
+  async findAllPaginated(filters: AdminLodgingsFiltersDto): Promise<AdminLodgingsListDto> {
+    const { page = 1, limit = 10, search, categoryId, townId, isPublic, sortBy = 'name', sortOrder = 'ASC' } = filters;
+
+    const queryBuilder = this.lodgingRespository
+      .createQueryBuilder('lodging')
+      .leftJoinAndSelect('lodging.town', 'town')
+      .leftJoinAndSelect('town.department', 'department')
+      .leftJoinAndSelect('lodging.categories', 'categories')
+      .leftJoinAndSelect('categories.icon', 'categoryIcon')
+      .leftJoinAndSelect('lodging.images', 'images')
+      .leftJoinAndSelect('images.imageResource', 'imageResource')
+      .leftJoinAndSelect('lodging.user', 'user');
+
+    if (search) {
+      queryBuilder.andWhere('lodging.name ILIKE :search', { search: `%${search}%` });
+    }
+
+    if (categoryId) {
+      queryBuilder.andWhere('categories.id = :categoryId', { categoryId });
+    }
+
+    if (townId) {
+      queryBuilder.andWhere('town.id = :townId', { townId });
+    }
+
+    if (isPublic !== undefined) {
+      queryBuilder.andWhere('lodging.isPublic = :isPublic', { isPublic });
+    }
+
+    // Sorting
+    const validSortFields = ['name', 'points', 'rating', 'createdAt', 'updatedAt', 'lowestPrice'];
+    const sortField = validSortFields.includes(sortBy) ? sortBy : 'name';
+    queryBuilder.orderBy(`lodging.${sortField}`, sortOrder);
+
+    // Pagination
+    const skip = (page - 1) * limit;
+    queryBuilder.skip(skip).take(limit);
+
+    const [lodgings, count] = await queryBuilder.getManyAndCount();
+    const pages = Math.ceil(count / limit);
+
+    return new AdminLodgingsListDto({ currentPage: page, pages, count }, lodgings);
   }
 
   // ------------------------------------------------------------------------------------------------

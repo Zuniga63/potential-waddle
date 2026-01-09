@@ -2,7 +2,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { FindOptionsRelations, Geometry, In, Repository } from 'typeorm';
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 
-import { PlaceDetailDto, PlaceDto } from './dto';
+import { PlaceDetailDto, PlaceDto, AdminPlacesFiltersDto, AdminPlacesListDto } from './dto';
 import { Place, PlaceImage } from './entities';
 import { generatePlaceQueryFilters } from './utils';
 import { CreatePlaceDto } from './dto/create-place.dto';
@@ -429,5 +429,51 @@ export class PlacesService {
     place.isPublic = isPublic;
     await this.placeRepo.save(place);
     return { message: 'Place visibility updated', data: isPublic };
+  }
+
+  // ------------------------------------------------------------------------------------------------
+  // Find all places paginated (Admin)
+  // ------------------------------------------------------------------------------------------------
+  async findAllPaginated(filters: AdminPlacesFiltersDto): Promise<AdminPlacesListDto> {
+    const { page = 1, limit = 10, search, categoryId, townId, isPublic, sortBy = 'name', sortOrder = 'ASC' } = filters;
+
+    const queryBuilder = this.placeRepo
+      .createQueryBuilder('place')
+      .leftJoinAndSelect('place.town', 'town')
+      .leftJoinAndSelect('town.department', 'department')
+      .leftJoinAndSelect('place.categories', 'categories')
+      .leftJoinAndSelect('categories.icon', 'categoryIcon')
+      .leftJoinAndSelect('place.images', 'images')
+      .leftJoinAndSelect('images.imageResource', 'imageResource');
+
+    if (search) {
+      queryBuilder.andWhere('place.name ILIKE :search', { search: `%${search}%` });
+    }
+
+    if (categoryId) {
+      queryBuilder.andWhere('categories.id = :categoryId', { categoryId });
+    }
+
+    if (townId) {
+      queryBuilder.andWhere('town.id = :townId', { townId });
+    }
+
+    if (isPublic !== undefined) {
+      queryBuilder.andWhere('place.isPublic = :isPublic', { isPublic });
+    }
+
+    // Sorting
+    const validSortFields = ['name', 'points', 'rating', 'createdAt', 'updatedAt'];
+    const sortField = validSortFields.includes(sortBy) ? sortBy : 'name';
+    queryBuilder.orderBy(`place.${sortField}`, sortOrder);
+
+    // Pagination
+    const skip = (page - 1) * limit;
+    queryBuilder.skip(skip).take(limit);
+
+    const [places, count] = await queryBuilder.getManyAndCount();
+    const pages = Math.ceil(count / limit);
+
+    return new AdminPlacesListDto({ currentPage: page, pages, count }, places);
   }
 }

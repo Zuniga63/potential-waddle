@@ -10,9 +10,10 @@ import { Restaurant } from '../restaurants/entities';
 import { Lodging } from '../lodgings/entities';
 import { Experience } from '../experiences/entities';
 import { Town } from '../towns/entities/town.entity';
+import { Review } from '../reviews/entities';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([User, UserPoint, Place, Restaurant, Lodging, Experience, Town]), CloudinaryModule],
+  imports: [TypeOrmModule.forFeature([User, UserPoint, Place, Restaurant, Lodging, Experience, Town, Review]), CloudinaryModule],
   controllers: [UsersController, ExplorersController, AdminUsersController],
   providers: [UsersService, ExplorersService],
   exports: [UsersService],

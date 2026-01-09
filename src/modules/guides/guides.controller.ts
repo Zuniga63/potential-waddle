@@ -10,6 +10,7 @@ import {
   UseInterceptors,
   UploadedFiles,
   Req,
+  Query,
 } from '@nestjs/common';
 import { SwaggerTags } from 'src/config';
 import {
@@ -28,6 +29,8 @@ import { GuidesService } from './guides.service';
 import { GuideDto } from './dto/guide.dto';
 import { GuidesFilters } from './decorators/guides-filters.decorator';
 import { GuidesFiltersDto } from './dto/guides-filters.dto';
+import { AdminGuidesFiltersDto } from './dto/admin-guides-filters.dto';
+import { AdminGuidesListDto } from './dto/admin-guides-list.dto';
 import { GuideListQueryDocsGroup } from './decorators/guides-list-query-docs-group.decorator';
 import { Auth, OptionalAuth } from '../auth/decorators';
 import { ContentTypes } from '../common/constants/content-types';
@@ -64,6 +67,20 @@ export class GuidesController {
       filters.townId = tenantId;
     }
     return this.guidesService.findAll({ filters });
+  }
+
+  // * ----------------------------------------------------------------------------------------------------------------
+  // * GET ALL GUIDES PAGINATED (ADMIN)
+  // * ----------------------------------------------------------------------------------------------------------------
+  @Get('admin/list')
+  @Auth()
+  @ApiOkResponse({ description: 'Guide List Paginated', type: AdminGuidesListDto })
+  findAllPaginated(@Query() filters: AdminGuidesFiltersDto, @Req() request: Request) {
+    const tenantId = (request as any)[TENANT_ID_KEY];
+    if (tenantId && !filters.townId) {
+      filters.townId = tenantId;
+    }
+    return this.guidesService.findAllPaginated(filters);
   }
 
   // * ----------------------------------------------------------------------------------------------------------------

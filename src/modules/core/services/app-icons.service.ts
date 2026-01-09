@@ -2,7 +2,7 @@ import { Injectable, NotFoundException, ConflictException } from '@nestjs/common
 import { InjectRepository } from '@nestjs/typeorm';
 import { AppIcon } from '../entities';
 import { Repository } from 'typeorm';
-import { CreateAppIconDto, UpdateAppIconDto } from '../dto';
+import { CreateAppIconDto, UpdateAppIconDto, AdminAppIconsFiltersDto, AdminAppIconsListDto } from '../dto';
 
 @Injectable()
 export class AppIconsService {
@@ -10,6 +10,39 @@ export class AppIconsService {
     @InjectRepository(AppIcon)
     private readonly appIconsRepository: Repository<AppIcon>,
   ) {}
+
+  // * -------------------------------------------------------------------------------------------------------------
+  // * GET ALL APP ICONS PAGINATED (ADMIN)
+  // * -------------------------------------------------------------------------------------------------------------
+  async findAllPaginated(filters: AdminAppIconsFiltersDto): Promise<AdminAppIconsListDto> {
+    const { page = 1, limit = 10, search, sortBy = 'name', sortOrder = 'ASC' } = filters;
+
+    const queryBuilder = this.appIconsRepository
+      .createQueryBuilder('appIcon')
+      .leftJoinAndSelect('appIcon.categories', 'categories')
+      .leftJoinAndSelect('appIcon.facilities', 'facilities');
+
+    if (search) {
+      queryBuilder.andWhere('(appIcon.name ILIKE :search OR appIcon.code ILIKE :search)', { search: `%${search}%` });
+    }
+
+    const validSortFields = ['name', 'code', 'createdAt', 'updatedAt'];
+    const sortField = validSortFields.includes(sortBy) ? sortBy : 'name';
+    queryBuilder.orderBy(`appIcon.${sortField}`, sortOrder);
+
+    const count = await queryBuilder.getCount();
+    const skip = (page - 1) * limit;
+    queryBuilder.skip(skip).take(limit);
+
+    const data = await queryBuilder.getMany();
+
+    return {
+      currentPage: page,
+      pages: Math.ceil(count / limit),
+      count,
+      data,
+    };
+  }
 
   // * -------------------------------------------------------------------------------------------------------------
   // * CREATE NEW APP ICON

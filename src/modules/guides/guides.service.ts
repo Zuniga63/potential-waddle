@@ -11,6 +11,8 @@ import { GuideFindAllParams } from './interfaces/guide-find-all-params.interface
 import { GuidesListDto } from './dto/guides-list.dto';
 import { GuidesFiltersDto } from './dto/guides-filters.dto';
 import { GuideDto } from './dto/guide.dto';
+import { AdminGuidesFiltersDto } from './dto/admin-guides-filters.dto';
+import { AdminGuidesListDto } from './dto/admin-guides-list.dto';
 import { generateGuideQueryFilters } from './utils/generate-guides-query-filters';
 import { UserDto } from '../users/dto/user.dto';
 import { CloudinaryService } from '../cloudinary/cloudinary.service';
@@ -85,6 +87,55 @@ export class GuidesService {
     });
 
     return new GuidesListDto({ currentPage: page, pages: Math.ceil(count / limit), count }, guides);
+  }
+
+  // ------------------------------------------------------------------------------------------------
+  // Find all guides paginated (Admin)
+  // ------------------------------------------------------------------------------------------------
+  async findAllPaginated(filters: AdminGuidesFiltersDto): Promise<AdminGuidesListDto> {
+    const { page = 1, limit = 10, search, categoryId, townId, isPublic, sortBy = 'firstName', sortOrder = 'ASC' } = filters;
+
+    const queryBuilder = this.guideRepository
+      .createQueryBuilder('guide')
+      .leftJoinAndSelect('guide.towns', 'towns')
+      .leftJoinAndSelect('guide.categories', 'categories')
+      .leftJoinAndSelect('categories.icon', 'categoryIcon')
+      .leftJoinAndSelect('guide.images', 'images')
+      .leftJoinAndSelect('images.imageResource', 'imageResource')
+      .leftJoinAndSelect('guide.user', 'user');
+
+    if (search) {
+      queryBuilder.andWhere(
+        '(guide.firstName ILIKE :search OR guide.lastName ILIKE :search)',
+        { search: `%${search}%` }
+      );
+    }
+
+    if (categoryId) {
+      queryBuilder.andWhere('categories.id = :categoryId', { categoryId });
+    }
+
+    if (townId) {
+      queryBuilder.andWhere('towns.id = :townId', { townId });
+    }
+
+    if (isPublic !== undefined) {
+      queryBuilder.andWhere('guide.isPublic = :isPublic', { isPublic });
+    }
+
+    // Sorting
+    const validSortFields = ['firstName', 'lastName', 'points', 'rating', 'createdAt', 'updatedAt'];
+    const sortField = validSortFields.includes(sortBy) ? sortBy : 'firstName';
+    queryBuilder.orderBy(`guide.${sortField}`, sortOrder);
+
+    // Pagination
+    const skip = (page - 1) * limit;
+    queryBuilder.skip(skip).take(limit);
+
+    const [guides, count] = await queryBuilder.getManyAndCount();
+    const pages = Math.ceil(count / limit);
+
+    return new AdminGuidesListDto({ currentPage: page, pages, count }, guides);
   }
 
   async findPublicGuides({ filters, user }: GuideFindAllParams = {}) {

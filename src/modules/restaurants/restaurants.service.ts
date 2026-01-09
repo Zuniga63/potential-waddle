@@ -3,7 +3,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { FindOptionsRelations, In, Point } from 'typeorm';
 
-import { RestaurantDto, CreateRestaurantDto, UpdateRestaurantDto } from './dto';
+import { RestaurantDto, CreateRestaurantDto, UpdateRestaurantDto, AdminRestaurantsFiltersDto, AdminRestaurantsListDto } from './dto';
 import { Restaurant, RestaurantImage } from './entities';
 import { RestaurantFindAllParams } from './interfaces';
 import { generateRestaurantQueryFiltersAndSort } from './logic';
@@ -55,6 +55,53 @@ export class RestaurantsService {
     });
 
     return restaurants.map(restaurant => new RestaurantIndexDto({ data: restaurant }));
+  }
+
+  // ------------------------------------------------------------------------------------------------
+  // Find all restaurants paginated (Admin)
+  // ------------------------------------------------------------------------------------------------
+  async findAllPaginated(filters: AdminRestaurantsFiltersDto): Promise<AdminRestaurantsListDto> {
+    const { page = 1, limit = 10, search, categoryId, townId, isPublic, sortBy = 'name', sortOrder = 'ASC' } = filters;
+
+    const queryBuilder = this.restaurantRepository
+      .createQueryBuilder('restaurant')
+      .leftJoinAndSelect('restaurant.town', 'town')
+      .leftJoinAndSelect('town.department', 'department')
+      .leftJoinAndSelect('restaurant.categories', 'categories')
+      .leftJoinAndSelect('categories.icon', 'categoryIcon')
+      .leftJoinAndSelect('restaurant.images', 'images')
+      .leftJoinAndSelect('images.imageResource', 'imageResource')
+      .leftJoinAndSelect('restaurant.user', 'user');
+
+    if (search) {
+      queryBuilder.andWhere('restaurant.name ILIKE :search', { search: `%${search}%` });
+    }
+
+    if (categoryId) {
+      queryBuilder.andWhere('categories.id = :categoryId', { categoryId });
+    }
+
+    if (townId) {
+      queryBuilder.andWhere('town.id = :townId', { townId });
+    }
+
+    if (isPublic !== undefined) {
+      queryBuilder.andWhere('restaurant.isPublic = :isPublic', { isPublic });
+    }
+
+    // Sorting
+    const validSortFields = ['name', 'points', 'rating', 'createdAt', 'updatedAt', 'lowestPrice'];
+    const sortField = validSortFields.includes(sortBy) ? sortBy : 'name';
+    queryBuilder.orderBy(`restaurant.${sortField}`, sortOrder);
+
+    // Pagination
+    const skip = (page - 1) * limit;
+    queryBuilder.skip(skip).take(limit);
+
+    const [restaurants, count] = await queryBuilder.getManyAndCount();
+    const pages = Math.ceil(count / limit);
+
+    return new AdminRestaurantsListDto({ currentPage: page, pages, count }, restaurants);
   }
 
   // ------------------------------------------------------------------------------------------------

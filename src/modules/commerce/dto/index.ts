@@ -6,3 +6,5 @@ export { CommerceFullDto } from './commerce-full.dto';
 export { CreateCommerceProductDto } from './create-commerce-product.dto';
 export { UpdateCommerceProductDto } from './update-commerce-product.dto';
 export { CommerceProductDto } from './commerce-product.dto';
+export { AdminCommerceFiltersDto } from './admin-commerce-filters.dto';
+export { AdminCommerceListDto } from './admin-commerce-list.dto';

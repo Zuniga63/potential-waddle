@@ -2,7 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Facility, Model } from '../entities';
 import { FindOptionsOrder, FindOptionsRelations, FindOptionsWhere, In, IsNull, Not, Repository } from 'typeorm';
-import { CreateFacilityDto, UpdateFacilityDto } from '../dto';
+import { CreateFacilityDto, UpdateFacilityDto, AdminFacilitiesFiltersDto, AdminFacilitiesListDto } from '../dto';
 import { ModelsEnum } from '../enums';
 import { NotFoundException } from '@nestjs/common';
 
@@ -14,6 +14,47 @@ export class FacilitiesService {
     @InjectRepository(Model)
     private readonly modelsRepository: Repository<Model>,
   ) {}
+
+  // * -------------------------------------------------------------------------------------------------------------
+  // * GET ALL FACILITIES PAGINATED (ADMIN)
+  // * -------------------------------------------------------------------------------------------------------------
+  async findAllPaginated(filters: AdminFacilitiesFiltersDto): Promise<AdminFacilitiesListDto> {
+    const { page = 1, limit = 10, search, modelId, isEnabled, sortBy = 'name', sortOrder = 'ASC' } = filters;
+
+    const queryBuilder = this.facilitiesRepository
+      .createQueryBuilder('facility')
+      .leftJoinAndSelect('facility.icon', 'icon')
+      .leftJoinAndSelect('facility.models', 'models');
+
+    if (search) {
+      queryBuilder.andWhere('(facility.name ILIKE :search OR facility.slug ILIKE :search)', { search: `%${search}%` });
+    }
+
+    if (modelId) {
+      queryBuilder.andWhere('models.id = :modelId', { modelId });
+    }
+
+    if (isEnabled !== undefined) {
+      queryBuilder.andWhere('facility.isEnabled = :isEnabled', { isEnabled });
+    }
+
+    const validSortFields = ['name', 'slug', 'createdAt', 'updatedAt'];
+    const sortField = validSortFields.includes(sortBy) ? sortBy : 'name';
+    queryBuilder.orderBy(`facility.${sortField}`, sortOrder);
+
+    const count = await queryBuilder.getCount();
+    const skip = (page - 1) * limit;
+    queryBuilder.skip(skip).take(limit);
+
+    const data = await queryBuilder.getMany();
+
+    return {
+      currentPage: page,
+      pages: Math.ceil(count / limit),
+      count,
+      data,
+    };
+  }
 
   // * -------------------------------------------------------------------------------------------------------------
   // * CREATE NEW FACILITY

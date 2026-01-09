@@ -10,6 +10,7 @@ import {
   ParseUUIDPipe,
   UploadedFiles,
   Req,
+  Query,
 } from '@nestjs/common';
 import { ApiBadRequestResponse, ApiBody, ApiConsumes, ApiOkResponse, ApiTags } from '@nestjs/swagger';
 import { Request } from 'express';
@@ -22,6 +23,8 @@ import { User } from '../users/entities';
 import { LodgingsService } from './lodgings.service';
 import { LodgingFilters, LodgingListQueryParamsDocs } from './decorators';
 import {
+  AdminLodgingsFiltersDto,
+  AdminLodgingsListDto,
   CreateLodgingDto,
   LodgingFiltersDto,
   LodgingFullDto,
@@ -53,6 +56,20 @@ export class LodgingsController {
       filters.townId = tenantId;
     }
     return this.lodgingsService.findAll({ filters });
+  }
+
+  // * ----------------------------------------------------------------------------------------------------------------
+  // * GET ALL LODGINGS PAGINATED (ADMIN)
+  // * ----------------------------------------------------------------------------------------------------------------
+  @Get('admin/list')
+  @Auth()
+  @ApiOkResponse({ description: 'Lodging List Paginated', type: AdminLodgingsListDto })
+  findAllPaginated(@Query() filters: AdminLodgingsFiltersDto, @Req() request: Request) {
+    const tenantId = (request as any)[TENANT_ID_KEY];
+    if (tenantId && !filters.townId) {
+      filters.townId = tenantId;
+    }
+    return this.lodgingsService.findAllPaginated(filters);
   }
 
   // * ----------------------------------------------------------------------------------------------------------------

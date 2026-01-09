@@ -21,6 +21,7 @@ import { UserCommerceDto } from '../dto/user-commerce.dto';
 import { AdminUsersFiltersDto, AdminUsersListDto, AdminUserDto } from '../dto';
 import { generateAdminUsersQueryFilters } from '../utils';
 import { Town } from 'src/modules/towns/entities/town.entity';
+import { Review } from 'src/modules/reviews/entities';
 
 interface AdminUsersFindAllParams {
   filters?: AdminUsersFiltersDto;
@@ -35,6 +36,8 @@ export class UsersService {
     private readonly usersRepository: Repository<User>,
     @InjectRepository(Town)
     private readonly townRepository: Repository<Town>,
+    @InjectRepository(Review)
+    private readonly reviewRepository: Repository<Review>,
     private readonly cloudinaryService: CloudinaryService,
   ) {}
 
@@ -414,5 +417,71 @@ export class UsersService {
     if (!user) throw new NotFoundException('User not found');
 
     return user.towns?.map(t => ({ id: t.id, name: t.name, slug: t.slug })) || [];
+  }
+
+  // * ----------------------------------------------------------------------------------------------------------------
+  // * GET USER REVIEWS (lugares visitados)
+  // * ----------------------------------------------------------------------------------------------------------------
+  async getUserReviews(userId: string) {
+    const reviews = await this.reviewRepository.find({
+      where: { user: { id: userId } },
+      relations: {
+        place: { images: { imageResource: true }, town: true },
+        lodging: { images: { imageResource: true }, town: true },
+        restaurant: { images: { imageResource: true }, town: true },
+        commerce: { images: { imageResource: true }, town: true },
+        experience: { images: { imageResource: true }, town: true },
+        transport: { town: true },
+        guide: true,
+        images: { image: true },
+      },
+      order: { createdAt: 'DESC' },
+    });
+
+    return reviews.map(review => {
+      // Determinar el tipo y la entidad
+      let type: string | null = null;
+      let entity: any = null;
+
+      if (review.place) {
+        type = 'place';
+        entity = review.place;
+      } else if (review.lodging) {
+        type = 'lodging';
+        entity = review.lodging;
+      } else if (review.restaurant) {
+        type = 'restaurant';
+        entity = review.restaurant;
+      } else if (review.commerce) {
+        type = 'commerce';
+        entity = review.commerce;
+      } else if (review.experience) {
+        type = 'experience';
+        entity = review.experience;
+      } else if (review.transport) {
+        type = 'transport';
+        entity = review.transport;
+      } else if (review.guide) {
+        type = 'guide';
+        entity = review.guide;
+      }
+
+      // Obtener la primera imagen de la entidad
+      const entityImage = entity?.images?.[0]?.imageResource?.url || null;
+
+      return {
+        id: review.id,
+        type,
+        entityId: entity?.id || null,
+        name: entity?.name || entity?.username || 'Sin nombre',
+        image: entityImage,
+        location: entity?.town?.name || null,
+        rating: entity?.rating || null,
+        userRating: review.rating,
+        comment: review.comment,
+        reviewDate: review.createdAt,
+        status: review.status,
+      };
+    });
   }
 }

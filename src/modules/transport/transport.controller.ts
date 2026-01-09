@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Patch, Param, Delete, Body, ParseUUIDPipe, Req } from '@nestjs/common';
+import { Controller, Get, Post, Patch, Param, Delete, Body, ParseUUIDPipe, Req, Query } from '@nestjs/common';
 import { TransportService } from './transport.service';
 import { SwaggerTags } from 'src/config';
 import {
@@ -11,7 +11,7 @@ import {
   ApiConflictResponse,
 } from '@nestjs/swagger';
 import { Request } from 'express';
-import { TransportFiltersDto } from './dto';
+import { TransportFiltersDto, AdminTransportFiltersDto, AdminTransportListDto } from './dto';
 import { TransportFilters } from './decorators';
 import { TransportListQueryDocsGroup } from './decorators/transport-list-query-docs-group.decorator';
 import { TransportDto } from './dto/transport.dto';
@@ -64,6 +64,20 @@ export class TransportController {
       filters.townId = tenantId;
     }
     return this.transportService.findPublicTransports({ filters, user });
+  }
+
+  // * ----------------------------------------------------------------------------------------------------------------
+  // * GET ALL TRANSPORTS PAGINATED (ADMIN)
+  // * ----------------------------------------------------------------------------------------------------------------
+  @Get('admin/list')
+  @Auth()
+  @ApiOkResponse({ description: 'Transport List Paginated', type: AdminTransportListDto })
+  findAllPaginated(@Query() filters: AdminTransportFiltersDto, @Req() request: Request) {
+    const tenantId = (request as any)[TENANT_ID_KEY];
+    if (tenantId && !filters.townId) {
+      filters.townId = tenantId;
+    }
+    return this.transportService.findAllPaginated(filters);
   }
 
   // * ----------------------------------------------------------------------------------------------------------------

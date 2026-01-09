@@ -7,6 +7,7 @@ import {
   ParseUUIDPipe,
   Patch,
   Post,
+  Query,
   UseInterceptors,
   UploadedFiles,
   Body,
@@ -15,12 +16,19 @@ import {
 import { Request } from 'express';
 
 import { SwaggerTags } from 'src/config';
-import { OptionalAuth } from '../auth/decorators';
+import { Auth, OptionalAuth } from '../auth/decorators';
 import { GetUser } from '../common/decorators';
 import { User } from '../users/entities';
 
 import { ExperiencesService } from './experiences.service';
-import { CreateExperienceDto, ExperienceDto, ExperienceFiltersDto, UpdateExperienceDto } from './dto';
+import {
+  AdminExperiencesFiltersDto,
+  AdminExperiencesListDto,
+  CreateExperienceDto,
+  ExperienceDto,
+  ExperienceFiltersDto,
+  UpdateExperienceDto,
+} from './dto';
 import { ExperienceFilters, ExperienceListApiQueries } from './decorators';
 import { FilesInterceptor } from '@nestjs/platform-express';
 import { ContentTypes } from '../common/constants';
@@ -48,13 +56,31 @@ export class ExperiencesController {
     return this.experiencesService.findAll({ filters });
   }
 
+  // * ----------------------------------------------------------------------------------------------------------------
+  // * GET ALL EXPERIENCES PAGINATED (ADMIN)
+  // * ----------------------------------------------------------------------------------------------------------------
+  @Get('admin/list')
+  @Auth()
+  @ApiOkResponse({ description: 'Experience List Paginated', type: AdminExperiencesListDto })
+  findAllPaginated(@Query() filters: AdminExperiencesFiltersDto, @Req() request: Request) {
+    const tenantId = (request as any)[TENANT_ID_KEY];
+    if (tenantId && !filters.townId) {
+      filters.townId = tenantId;
+    }
+    return this.experiencesService.findAllPaginated(filters);
+  }
+
   // ------------------------------------------------------------------------------------------------
   // GET ALL PUBLIC EXPERIENCES
   // ------------------------------------------------------------------------------------------------
   @Get('public')
   @OptionalAuth()
   @ApiOkResponse({ description: 'Experience List', type: [CreateExperienceDto] })
-  findPublicExperiences(@ExperienceFilters() filters: ExperienceFiltersDto, @GetUser() user: User | undefined, @Req() request: Request) {
+  findPublicExperiences(
+    @ExperienceFilters() filters: ExperienceFiltersDto,
+    @GetUser() user: User | undefined,
+    @Req() request: Request,
+  ) {
     const tenantId = (request as any)[TENANT_ID_KEY];
     if (tenantId && !filters.townId) {
       filters.townId = tenantId;

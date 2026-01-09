@@ -2,7 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Category, Facility, Model } from '../entities';
 import { Repository } from 'typeorm';
-import { CreateModelDto } from '../dto';
+import { CreateModelDto, AdminModelsFiltersDto, AdminModelsListDto } from '../dto';
 
 @Injectable()
 export class ModelsService {
@@ -22,6 +22,40 @@ export class ModelsService {
     const model = this.modelsRepository.create(createModelDto);
     return this.modelsRepository.save(model);
   }
+
+  // * -------------------------------------------------------------------------------------------------------------
+  // * GET ALL MODELS PAGINATED (ADMIN)
+  // * -------------------------------------------------------------------------------------------------------------
+  async findAllPaginated(filters: AdminModelsFiltersDto): Promise<AdminModelsListDto> {
+    const { page = 1, limit = 10, search, sortBy = 'name', sortOrder = 'ASC' } = filters;
+
+    const queryBuilder = this.modelsRepository
+      .createQueryBuilder('model')
+      .leftJoinAndSelect('model.categories', 'categories')
+      .leftJoinAndSelect('model.facilities', 'facilities');
+
+    if (search) {
+      queryBuilder.andWhere('(model.name ILIKE :search OR model.slug ILIKE :search)', { search: `%${search}%` });
+    }
+
+    const validSortFields = ['name', 'slug', 'createdAt', 'updatedAt'];
+    const sortField = validSortFields.includes(sortBy) ? sortBy : 'name';
+    queryBuilder.orderBy(`model.${sortField}`, sortOrder);
+
+    const count = await queryBuilder.getCount();
+    const skip = (page - 1) * limit;
+    queryBuilder.skip(skip).take(limit);
+
+    const data = await queryBuilder.getMany();
+
+    return {
+      currentPage: page,
+      pages: Math.ceil(count / limit),
+      count,
+      data,
+    };
+  }
+
   // * -------------------------------------------------------------------------------------------------------------
   // * GET ALL MODELS
   // * -------------------------------------------------------------------------------------------------------------

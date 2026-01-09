@@ -2,7 +2,7 @@ import { FindOptionsRelations, In, Point, Repository } from 'typeorm';
 import { InjectRepository } from '@nestjs/typeorm';
 import { BadRequestException, Injectable, NotFoundException, NotImplementedException } from '@nestjs/common';
 
-import { CreateExperienceDto, ExperienceDto, UpdateExperienceDto } from './dto';
+import { AdminExperiencesFiltersDto, AdminExperiencesListDto, CreateExperienceDto, ExperienceDto, UpdateExperienceDto } from './dto';
 import { Experience, ExperienceImage } from './entities';
 import type { ExperienceFindAllParams } from './interfaces';
 import { generateExperienceQueryFiltersAndSort } from './logic';
@@ -63,6 +63,53 @@ export class ExperiencesService {
     });
 
     return experiences.map(experience => new ExperienceIndexDto({ data: experience }));
+  }
+
+  // ------------------------------------------------------------------------------------------------
+  // Find all experiences paginated (Admin)
+  // ------------------------------------------------------------------------------------------------
+  async findAllPaginated(filters: AdminExperiencesFiltersDto): Promise<AdminExperiencesListDto> {
+    const { page = 1, limit = 10, search, categoryId, townId, isPublic, sortBy = 'title', sortOrder = 'ASC' } = filters;
+
+    const queryBuilder = this.experienceRepository
+      .createQueryBuilder('experience')
+      .leftJoinAndSelect('experience.town', 'town')
+      .leftJoinAndSelect('town.department', 'department')
+      .leftJoinAndSelect('experience.categories', 'categories')
+      .leftJoinAndSelect('categories.icon', 'categoryIcon')
+      .leftJoinAndSelect('experience.images', 'images')
+      .leftJoinAndSelect('images.imageResource', 'imageResource')
+      .leftJoinAndSelect('experience.guide', 'guide');
+
+    if (search) {
+      queryBuilder.andWhere('experience.title ILIKE :search', { search: `%${search}%` });
+    }
+
+    if (categoryId) {
+      queryBuilder.andWhere('categories.id = :categoryId', { categoryId });
+    }
+
+    if (townId) {
+      queryBuilder.andWhere('town.id = :townId', { townId });
+    }
+
+    if (isPublic !== undefined) {
+      queryBuilder.andWhere('experience.isPublic = :isPublic', { isPublic });
+    }
+
+    // Sorting
+    const validSortFields = ['title', 'points', 'rating', 'createdAt', 'updatedAt', 'price'];
+    const sortField = validSortFields.includes(sortBy) ? sortBy : 'title';
+    queryBuilder.orderBy(`experience.${sortField}`, sortOrder);
+
+    // Pagination
+    const skip = (page - 1) * limit;
+    queryBuilder.skip(skip).take(limit);
+
+    const [experiences, count] = await queryBuilder.getManyAndCount();
+    const pages = Math.ceil(count / limit);
+
+    return new AdminExperiencesListDto({ currentPage: page, pages, count }, experiences);
   }
 
   // ------------------------------------------------------------------------------------------------

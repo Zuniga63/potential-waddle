@@ -1,13 +1,24 @@
-import { Body, Controller, Delete, Get, HttpStatus, NotImplementedException, Patch, Post } from '@nestjs/common';
+import { Body, Controller, Delete, Get, HttpStatus, NotImplementedException, Patch, Post, Query } from '@nestjs/common';
 import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { SwaggerTags } from 'src/config';
-import { CreateModelDto } from '../dto';
+import { Auth } from 'src/modules/auth/decorators';
+import { CreateModelDto, AdminModelsFiltersDto } from '../dto';
 import { ModelsService } from '../services';
 
 @Controller('models')
 @ApiTags(SwaggerTags.Models)
 export class ModelsController {
   constructor(private readonly modelsService: ModelsService) {}
+
+  // * -------------------------------------------------------------------------------------------------------------
+  // * GET ALL MODELS PAGINATED (ADMIN)
+  // * -------------------------------------------------------------------------------------------------------------
+  @Get('admin/list')
+  @Auth()
+  getAdminList(@Query() filters: AdminModelsFiltersDto) {
+    return this.modelsService.findAllPaginated(filters);
+  }
+
   // * -------------------------------------------------------------------------------------------------------------
   // * CREATE NEW MODEL
   // * -------------------------------------------------------------------------------------------------------------

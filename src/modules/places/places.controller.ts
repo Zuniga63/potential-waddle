@@ -12,6 +12,7 @@ import {
   NotImplementedException,
   UploadedFiles,
   Req,
+  Query,
 } from '@nestjs/common';
 import { FileInterceptor, FilesInterceptor } from '@nestjs/platform-express';
 import {
@@ -25,7 +26,7 @@ import {
 } from '@nestjs/swagger';
 import { Request } from 'express';
 
-import { PlaceDetailDto, PlaceDto } from './dto';
+import { PlaceDetailDto, PlaceDto, AdminPlacesFiltersDto, AdminPlacesListDto } from './dto';
 import { SwaggerTags } from 'src/config';
 import { PlaceFilters, PlaceListQueryDocsGroup } from './decorators';
 import { PlacesService } from './places.service';
@@ -76,6 +77,20 @@ export class PlacesController {
       filters.townId = tenantId;
     }
     return this.placesService.findAll(filters, user);
+  }
+
+  // * ----------------------------------------------------------------------------------------------------------------
+  // * GET ALL PLACES PAGINATED (ADMIN)
+  // * ----------------------------------------------------------------------------------------------------------------
+  @Get('admin/list')
+  @Auth()
+  @ApiOkResponse({ description: 'Place List Paginated', type: AdminPlacesListDto })
+  findAllPaginated(@Query() filters: AdminPlacesFiltersDto, @Req() request: Request) {
+    const tenantId = (request as any)[TENANT_ID_KEY];
+    if (tenantId && !filters.townId) {
+      filters.townId = tenantId;
+    }
+    return this.placesService.findAllPaginated(filters);
   }
 
   // * ----------------------------------------------------------------------------------------------------------------

@@ -11,6 +11,7 @@ import {
   UploadedFiles,
   Body,
   Req,
+  Query,
 } from '@nestjs/common';
 import { Request } from 'express';
 
@@ -19,7 +20,7 @@ import { FilesInterceptor } from '@nestjs/platform-express';
 import { ContentTypes } from '../common/constants';
 import { ReorderImagesDto } from '../common/dto/reoder-images.dto';
 
-import { CommerceFiltersDto, CreateCommerceDto, UpdateCommerceDto, CommerceFullDto, CommerceIndexDto } from './dto';
+import { CommerceFiltersDto, CreateCommerceDto, UpdateCommerceDto, CommerceFullDto, CommerceIndexDto, AdminCommerceFiltersDto, AdminCommerceListDto } from './dto';
 import { Auth, OptionalAuth } from '../auth/decorators';
 import { CommerceService } from './commerce.service';
 import { CommerceFilters, CommerceListQueryParamsDocs } from './decorators';
@@ -59,6 +60,20 @@ export class CommerceController {
       filters.townId = tenantId;
     }
     return this.commerceService.findPublicCommerce({ filters, user });
+  }
+
+  // * ----------------------------------------------------------------------------------------------------------------
+  // * GET ALL COMMERCE PAGINATED (ADMIN)
+  // * ----------------------------------------------------------------------------------------------------------------
+  @Get('admin/list')
+  @Auth()
+  @ApiOkResponse({ description: 'Commerce List Paginated', type: AdminCommerceListDto })
+  findAllPaginated(@Query() filters: AdminCommerceFiltersDto, @Req() request: Request) {
+    const tenantId = (request as any)[TENANT_ID_KEY];
+    if (tenantId && !filters.townId) {
+      filters.townId = tenantId;
+    }
+    return this.commerceService.findAllPaginated(filters);
   }
 
   // * ----------------------------------------------------------------------------------------------------------------

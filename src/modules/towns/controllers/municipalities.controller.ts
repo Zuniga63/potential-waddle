@@ -1,14 +1,21 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, Query } from '@nestjs/common';
 import { ApiNotImplementedResponse, ApiTags } from '@nestjs/swagger';
 
 import { SwaggerTags } from 'src/config';
-import { CreateMunicipalityDto, UpdateMunicipalityDto } from '../dto';
+import { Auth } from 'src/modules/auth/decorators';
+import { CreateMunicipalityDto, UpdateMunicipalityDto, AdminDepartmentsFiltersDto } from '../dto';
 import { MunicipalitiesService } from '../services/municipalities.service';
 
 @Controller('municipalities')
 @ApiTags(SwaggerTags.Municipality)
 export class MunicipalitiesController {
   constructor(private readonly municipalitiesServices: MunicipalitiesService) {}
+
+  @Get('admin/list')
+  @Auth()
+  getAdminList(@Query() filters: AdminDepartmentsFiltersDto) {
+    return this.municipalitiesServices.findAllPaginated(filters);
+  }
 
   @Post()
   create(@Body() createMunicipalityDto: CreateMunicipalityDto) {

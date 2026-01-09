@@ -3,7 +3,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { FindOptionsRelations, In, Point } from 'typeorm';
 import { Commerce, CommerceImage, CommerceProduct } from './entities';
-import { CreateCommerceDto, UpdateCommerceDto, CommerceIndexDto, CommerceFullDto } from './dto';
+import { CreateCommerceDto, UpdateCommerceDto, CommerceIndexDto, CommerceFullDto, AdminCommerceFiltersDto, AdminCommerceListDto } from './dto';
 import { Facility, ImageResource } from '../core/entities';
 import { Category } from '../core/entities';
 import { Town } from '../towns/entities';
@@ -58,6 +58,53 @@ export class CommerceService {
     });
 
     return commerces.map(commerce => new CommerceIndexDto(commerce));
+  }
+
+  // ------------------------------------------------------------------------------------------------
+  // Find all commerce paginated (Admin)
+  // ------------------------------------------------------------------------------------------------
+  async findAllPaginated(filters: AdminCommerceFiltersDto): Promise<AdminCommerceListDto> {
+    const { page = 1, limit = 10, search, categoryId, townId, isPublic, sortBy = 'name', sortOrder = 'ASC' } = filters;
+
+    const queryBuilder = this.commerceRepository
+      .createQueryBuilder('commerce')
+      .leftJoinAndSelect('commerce.town', 'town')
+      .leftJoinAndSelect('town.department', 'department')
+      .leftJoinAndSelect('commerce.categories', 'categories')
+      .leftJoinAndSelect('categories.icon', 'categoryIcon')
+      .leftJoinAndSelect('commerce.images', 'images')
+      .leftJoinAndSelect('images.imageResource', 'imageResource')
+      .leftJoinAndSelect('commerce.user', 'user');
+
+    if (search) {
+      queryBuilder.andWhere('commerce.name ILIKE :search', { search: `%${search}%` });
+    }
+
+    if (categoryId) {
+      queryBuilder.andWhere('categories.id = :categoryId', { categoryId });
+    }
+
+    if (townId) {
+      queryBuilder.andWhere('town.id = :townId', { townId });
+    }
+
+    if (isPublic !== undefined) {
+      queryBuilder.andWhere('commerce.isPublic = :isPublic', { isPublic });
+    }
+
+    // Sorting
+    const validSortFields = ['name', 'points', 'rating', 'createdAt', 'updatedAt'];
+    const sortField = validSortFields.includes(sortBy) ? sortBy : 'name';
+    queryBuilder.orderBy(`commerce.${sortField}`, sortOrder);
+
+    // Pagination
+    const skip = (page - 1) * limit;
+    queryBuilder.skip(skip).take(limit);
+
+    const [commerces, count] = await queryBuilder.getManyAndCount();
+    const pages = Math.ceil(count / limit);
+
+    return new AdminCommerceListDto({ currentPage: page, pages, count }, commerces);
   }
 
   async findPublicCommerce({ filters, user }: CommerceFindAllParams = {}) {

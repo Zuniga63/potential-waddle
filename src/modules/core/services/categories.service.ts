@@ -6,12 +6,14 @@ import {
   FindOptionsRelations,
   FindOptionsSelect,
   FindOptionsWhere,
+  ILike,
   In,
   IsNull,
   Not,
   Repository,
 } from 'typeorm';
 import { CreateCategoryDto, UpdateCategoryDto } from '../dto';
+import { AdminCategoriesFiltersDto, AdminCategoriesListDto } from '../dto/categories';
 import { ModelsEnum } from '../enums';
 import { CloudinaryService } from 'src/modules/cloudinary/cloudinary.service';
 import { CloudinaryPresets, ResourceProvider } from 'src/config';
@@ -154,6 +156,74 @@ export class CategoriesService {
       relations,
       select,
     });
+  }
+
+  // * -------------------------------------------------------------------------------------------------------------
+  // * GET ALL CATEGORIES (PAGINATED - ADMIN)
+  // * -------------------------------------------------------------------------------------------------------------
+  async findAllPaginated(filters: AdminCategoriesFiltersDto): Promise<AdminCategoriesListDto> {
+    const { page = 1, limit = 10, search, model, sortBy = 'name', sortOrder = 'ASC' } = filters;
+
+    const where: FindOptionsWhere<Category> = {};
+
+    // Search by name
+    if (search) {
+      where.name = ILike(`%${search}%`);
+    }
+
+    // Filter by model
+    if (model) {
+      where.models = { slug: model };
+    }
+
+    // Build order
+    const order: FindOptionsOrder<Category> = {};
+    if (sortBy === 'name') {
+      order.name = sortOrder;
+    } else if (sortBy === 'createdAt') {
+      order.createdAt = sortOrder;
+    } else if (sortBy === 'updatedAt') {
+      order.updatedAt = sortOrder;
+    } else {
+      order.name = sortOrder;
+    }
+
+    const relations: FindOptionsRelations<Category> = {
+      icon: true,
+      imageResource: true,
+      models: true,
+      places: true,
+      restaurants: true,
+      lodgings: true,
+      experiences: true,
+      commerces: true,
+      guides: true,
+      transports: true,
+    };
+
+    const select: FindOptionsSelect<Category> = {
+      models: { id: true, name: true, slug: true },
+      places: { id: true },
+      restaurants: { id: true },
+      lodgings: { id: true },
+      experiences: { id: true },
+      commerces: { id: true },
+      guides: { id: true },
+      transports: { id: true },
+    };
+
+    const [categories, count] = await this.categoriesRepository.findAndCount({
+      where,
+      order,
+      relations,
+      select,
+      skip: (page - 1) * limit,
+      take: limit,
+    });
+
+    const pages = Math.ceil(count / limit);
+
+    return new AdminCategoriesListDto({ currentPage: page, pages, count }, categories);
   }
 
   // * -------------------------------------------------------------------------------------------------------------

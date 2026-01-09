@@ -11,6 +11,8 @@ import { Town } from '../towns/entities';
 import { User } from '../users/entities';
 import { UpdateTransportDto } from './dto/update-transport.dto';
 import { TransportListDto } from './dto/transport-list.dto';
+import { AdminTransportFiltersDto } from './dto/admin-transport-filters.dto';
+import { AdminTransportListDto } from './dto/admin-transport-list.dto';
 import { EntityReviewsService } from '../reviews/services/entity-reviews.service';
 import { ReviewDomainsEnum } from '../reviews/enums';
 import { Review } from '../reviews/entities';
@@ -74,6 +76,51 @@ export class TransportService {
     });
 
     return new TransportListDto({ currentPage: page, pages: Math.ceil(count / limit), count }, transports);
+  }
+
+  // ------------------------------------------------------------------------------------------------
+  // Find all transports paginated (Admin)
+  // ------------------------------------------------------------------------------------------------
+  async findAllPaginated(filters: AdminTransportFiltersDto): Promise<AdminTransportListDto> {
+    const { page = 1, limit = 10, search, categoryId, townId, isPublic, sortBy = 'firstName', sortOrder = 'ASC' } = filters;
+
+    const queryBuilder = this.transportRepository
+      .createQueryBuilder('transport')
+      .leftJoinAndSelect('transport.town', 'town')
+      .leftJoinAndSelect('town.department', 'department')
+      .leftJoinAndSelect('transport.categories', 'categories')
+      .leftJoinAndSelect('categories.icon', 'categoryIcon')
+      .leftJoinAndSelect('transport.user', 'user');
+
+    if (search) {
+      queryBuilder.andWhere('(transport.firstName ILIKE :search OR transport.lastName ILIKE :search)', { search: `%${search}%` });
+    }
+
+    if (categoryId) {
+      queryBuilder.andWhere('categories.id = :categoryId', { categoryId });
+    }
+
+    if (townId) {
+      queryBuilder.andWhere('town.id = :townId', { townId });
+    }
+
+    if (isPublic !== undefined) {
+      queryBuilder.andWhere('transport.isPublic = :isPublic', { isPublic });
+    }
+
+    // Sorting
+    const validSortFields = ['firstName', 'lastName', 'points', 'rating', 'createdAt', 'updatedAt'];
+    const sortField = validSortFields.includes(sortBy) ? sortBy : 'firstName';
+    queryBuilder.orderBy(`transport.${sortField}`, sortOrder);
+
+    // Pagination
+    const skip = (page - 1) * limit;
+    queryBuilder.skip(skip).take(limit);
+
+    const [transports, count] = await queryBuilder.getManyAndCount();
+    const pages = Math.ceil(count / limit);
+
+    return new AdminTransportListDto({ currentPage: page, pages, count }, transports);
   }
 
   async findPublicTransports({ filters, user }: TransportFindAllParams = {}) {

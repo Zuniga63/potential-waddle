@@ -20,7 +20,7 @@ import { SwaggerTags } from 'src/config';
 import { CreateCategoryDto, UpdateCategoryDto } from '../dto';
 import { CategoriesService } from '../services';
 import { ModelsEnum } from '../enums';
-import { PublicCategoryDto, FullCategoryDto } from '../dto/categories';
+import { PublicCategoryDto, FullCategoryDto, AdminCategoriesFiltersDto, AdminCategoriesListDto } from '../dto/categories';
 import { ContentTypes } from 'src/modules/common/constants';
 
 @Controller('categories')
@@ -82,6 +82,19 @@ export class CategoriesController {
   })
   findAllFull() {
     return this.categoriesService.findAllFull();
+  }
+  // * -------------------------------------------------------------------------------------------------------------
+  // * GET ALL CATEGORIES (PAGINATED - ADMIN)
+  // * -------------------------------------------------------------------------------------------------------------
+  @Get('admin/list')
+  @ApiOperation({ summary: 'Get paginated categories for admin' })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    type: AdminCategoriesListDto,
+    description: 'Returns paginated categories with complete information for admin management',
+  })
+  findAllPaginated(@Query() filters: AdminCategoriesFiltersDto) {
+    return this.categoriesService.findAllPaginated(filters);
   }
   // * -------------------------------------------------------------------------------------------------------------
   // * GET CATEGORY BY ID

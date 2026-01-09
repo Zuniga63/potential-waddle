@@ -4,3 +4,5 @@ export { CreateMunicipalityDto } from './create-municipality.dto';
 export { UpdateMunicipalityDto } from './update-municipality.dto';
 export { TownDto } from './town.dto';
 export { DepartmentDto } from './department.dto';
+export { AdminDepartmentsFiltersDto } from './admin-departments-filters.dto';
+export { AdminDepartmentsListDto } from './admin-departments-list.dto';
