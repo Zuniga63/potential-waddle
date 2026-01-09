@@ -500,4 +500,106 @@ export class WhatsappClicksService {
       },
     };
   }
+
+  /**
+   * Get dashboard stats - clicks by day grouped by entity type
+   */
+  async getDashboardStats(days: number = 7) {
+    const startDate = new Date();
+    startDate.setDate(startDate.getDate() - days);
+    startDate.setHours(0, 0, 0, 0);
+
+    // Query to get clicks by date and entity type
+    const query = `
+      SELECT
+        DATE(wc.clicked_at) as date,
+        wc.entity_type,
+        COUNT(*) as total_clicks,
+        COUNT(*) FILTER (WHERE wc.is_repeat_click = false) as unique_clicks
+      FROM whatsapp_click wc
+      WHERE wc.clicked_at >= $1
+      GROUP BY DATE(wc.clicked_at), wc.entity_type
+      ORDER BY date ASC, wc.entity_type
+    `;
+
+    const results = await this.whatsappClickRepository.query(query, [startDate]);
+
+    // Entity type labels in Spanish
+    const entityLabels: Record<string, string> = {
+      restaurant: 'Restaurantes',
+      lodging: 'Alojamientos',
+      experience: 'Experiencias',
+      guide: 'Guías',
+      commerce: 'Comercios',
+      transport: 'Transporte',
+      place: 'Lugares',
+    };
+
+    // Generate all dates in range
+    const dates: string[] = [];
+    const current = new Date(startDate);
+    const today = new Date();
+    today.setHours(23, 59, 59, 999);
+
+    while (current <= today) {
+      dates.push(current.toISOString().split('T')[0]);
+      current.setDate(current.getDate() + 1);
+    }
+
+    // Initialize data structure
+    const entityTypes = ['restaurant', 'lodging', 'experience', 'guide', 'commerce', 'transport', 'place'];
+    const dataByEntityType: Record<string, { date: string; clicks: number; uniqueClicks: number }[]> = {};
+
+    entityTypes.forEach(type => {
+      dataByEntityType[type] = dates.map(date => ({
+        date,
+        clicks: 0,
+        uniqueClicks: 0,
+      }));
+    });
+
+    // Fill in the actual data
+    results.forEach((row: any) => {
+      const dateStr = row.date.toISOString().split('T')[0];
+      const entityType = row.entity_type;
+
+      if (dataByEntityType[entityType]) {
+        const dayData = dataByEntityType[entityType].find(d => d.date === dateStr);
+        if (dayData) {
+          dayData.clicks = parseInt(row.total_clicks, 10);
+          dayData.uniqueClicks = parseInt(row.unique_clicks, 10);
+        }
+      }
+    });
+
+    // Calculate totals by entity type
+    const totalsByEntityType: Record<string, { total: number; unique: number }> = {};
+    entityTypes.forEach(type => {
+      totalsByEntityType[type] = {
+        total: dataByEntityType[type].reduce((sum, d) => sum + d.clicks, 0),
+        unique: dataByEntityType[type].reduce((sum, d) => sum + d.uniqueClicks, 0),
+      };
+    });
+
+    // Format for chart
+    const chartData = dates.map(date => {
+      const dayData: Record<string, any> = { date };
+      entityTypes.forEach(type => {
+        const found = dataByEntityType[type].find(d => d.date === date);
+        dayData[type] = found?.clicks || 0;
+      });
+      return dayData;
+    });
+
+    return {
+      dates,
+      entityTypes: entityTypes.map(type => ({
+        key: type,
+        label: entityLabels[type] || type,
+      })),
+      chartData,
+      totalsByEntityType,
+      dataByEntityType,
+    };
+  }
 }

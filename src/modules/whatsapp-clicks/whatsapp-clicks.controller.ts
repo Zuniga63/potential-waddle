@@ -66,4 +66,12 @@ export class WhatsappClicksController {
       limit: limit ? parseInt(limit, 10) : 20,
     });
   }
+
+  @Get('admin/dashboard-stats')
+  @ApiOperation({ summary: 'Get WhatsApp clicks by day and entity type for dashboard' })
+  @ApiQuery({ name: 'days', required: false, description: 'Number of days to fetch (default 7)' })
+  @ApiResponse({ status: 200, description: 'Dashboard stats retrieved successfully' })
+  async getDashboardStats(@Query('days') days?: string) {
+    return this.whatsappClicksService.getDashboardStats(days ? parseInt(days, 10) : 7);
+  }
 }
