@@ -1,7 +1,9 @@
-import { Controller, Post, Get, Body, Query, Ip } from '@nestjs/common';
+import { Controller, Post, Get, Body, Query, Ip, Req } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiQuery } from '@nestjs/swagger';
 import { WhatsappClicksService } from './whatsapp-clicks.service';
 import { CreateWhatsappClickDto } from './dto';
+import { TENANT_ID_KEY } from '../tenant/tenant.interceptor';
+import { Request } from 'express';
 
 @ApiTags('WhatsApp Clicks')
 @Controller('whatsapp-clicks')
@@ -71,7 +73,11 @@ export class WhatsappClicksController {
   @ApiOperation({ summary: 'Get WhatsApp clicks by day and entity type for dashboard' })
   @ApiQuery({ name: 'days', required: false, description: 'Number of days to fetch (default 7)' })
   @ApiResponse({ status: 200, description: 'Dashboard stats retrieved successfully' })
-  async getDashboardStats(@Query('days') days?: string) {
-    return this.whatsappClicksService.getDashboardStats(days ? parseInt(days, 10) : 7);
+  async getDashboardStats(
+    @Query('days') days?: string,
+    @Req() request?: Request,
+  ) {
+    const townId = (request as any)?.[TENANT_ID_KEY];
+    return this.whatsappClicksService.getDashboardStats(days ? parseInt(days, 10) : 7, townId);
   }
 }

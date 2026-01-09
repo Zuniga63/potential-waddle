@@ -504,25 +504,55 @@ export class WhatsappClicksService {
   /**
    * Get dashboard stats - clicks by day grouped by entity type
    */
-  async getDashboardStats(days: number = 7) {
+  async getDashboardStats(days: number = 7, townId?: string) {
     const startDate = new Date();
     startDate.setDate(startDate.getDate() - days);
     startDate.setHours(0, 0, 0, 0);
 
-    // Query to get clicks by date and entity type
-    const query = `
-      SELECT
-        DATE(wc.clicked_at) as date,
-        wc.entity_type,
-        COUNT(*) as total_clicks,
-        COUNT(*) FILTER (WHERE wc.is_repeat_click = false) as unique_clicks
-      FROM whatsapp_click wc
-      WHERE wc.clicked_at >= $1
-      GROUP BY DATE(wc.clicked_at), wc.entity_type
-      ORDER BY date ASC, wc.entity_type
-    `;
+    // Build query with optional town filter
+    // When townId is provided, we need to filter clicks by entities belonging to that town
+    let query: string;
+    let params: any[];
 
-    const results = await this.whatsappClickRepository.query(query, [startDate]);
+    if (townId) {
+      // Filter clicks by entities that belong to the specified town
+      query = `
+        SELECT
+          DATE(wc.clicked_at) as date,
+          wc.entity_type,
+          COUNT(*) as total_clicks,
+          COUNT(*) FILTER (WHERE wc.is_repeat_click = false) as unique_clicks
+        FROM whatsapp_click wc
+        WHERE wc.clicked_at >= $1
+          AND (
+            (wc.entity_type = 'restaurant' AND EXISTS (SELECT 1 FROM restaurant r WHERE r.id = wc.entity_id::uuid AND r.town_id = $2))
+            OR (wc.entity_type = 'lodging' AND EXISTS (SELECT 1 FROM lodging l WHERE l.id = wc.entity_id::uuid AND l.town_id = $2))
+            OR (wc.entity_type = 'place' AND EXISTS (SELECT 1 FROM place p WHERE p.id = wc.entity_id::uuid AND p.town_id = $2))
+            OR (wc.entity_type = 'commerce' AND EXISTS (SELECT 1 FROM commerce c WHERE c.id = wc.entity_id::uuid AND c.town_id = $2))
+            OR (wc.entity_type = 'transport' AND EXISTS (SELECT 1 FROM transport t WHERE t.id = wc.entity_id::uuid AND t.town_id = $2))
+            OR (wc.entity_type = 'guide' AND EXISTS (SELECT 1 FROM guide_town gt WHERE gt.guide_id = wc.entity_id::uuid AND gt.town_id = $2))
+          )
+        GROUP BY DATE(wc.clicked_at), wc.entity_type
+        ORDER BY date ASC, wc.entity_type
+      `;
+      params = [startDate, townId];
+    } else {
+      // No town filter - return all clicks
+      query = `
+        SELECT
+          DATE(wc.clicked_at) as date,
+          wc.entity_type,
+          COUNT(*) as total_clicks,
+          COUNT(*) FILTER (WHERE wc.is_repeat_click = false) as unique_clicks
+        FROM whatsapp_click wc
+        WHERE wc.clicked_at >= $1
+        GROUP BY DATE(wc.clicked_at), wc.entity_type
+        ORDER BY date ASC, wc.entity_type
+      `;
+      params = [startDate];
+    }
+
+    const results = await this.whatsappClickRepository.query(query, params);
 
     // Entity type labels in Spanish
     const entityLabels: Record<string, string> = {
