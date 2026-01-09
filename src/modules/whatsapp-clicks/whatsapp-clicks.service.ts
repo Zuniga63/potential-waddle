@@ -528,7 +528,6 @@ export class WhatsappClicksService {
     const entityLabels: Record<string, string> = {
       restaurant: 'Restaurantes',
       lodging: 'Alojamientos',
-      experience: 'Experiencias',
       guide: 'Guías',
       commerce: 'Comercios',
       transport: 'Transporte',
@@ -547,7 +546,7 @@ export class WhatsappClicksService {
     }
 
     // Initialize data structure
-    const entityTypes = ['restaurant', 'lodging', 'experience', 'guide', 'commerce', 'transport', 'place'];
+    const entityTypes = ['restaurant', 'lodging', 'guide', 'commerce', 'transport', 'place'];
     const dataByEntityType: Record<string, { date: string; clicks: number; uniqueClicks: number }[]> = {};
 
     entityTypes.forEach(type => {
