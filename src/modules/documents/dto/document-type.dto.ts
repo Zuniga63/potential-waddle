@@ -49,6 +49,12 @@ export class DocumentTypeResponseDto {
   @ApiProperty()
   isActive: boolean;
 
+  @ApiProperty({ required: false, nullable: true })
+  templateUrl: string | null;
+
+  @ApiProperty({ required: false, nullable: true })
+  templateFileName: string | null;
+
   @ApiProperty()
   createdAt: Date;
 

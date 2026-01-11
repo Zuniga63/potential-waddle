@@ -8,8 +8,18 @@ import {
   Delete,
   ParseUUIDPipe,
   Query,
+  UseInterceptors,
+  UploadedFile,
 } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiOkResponse, ApiBearerAuth } from '@nestjs/swagger';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiOkResponse,
+  ApiBearerAuth,
+  ApiConsumes,
+  ApiBody,
+} from '@nestjs/swagger';
+import { FileInterceptor } from '@nestjs/platform-express';
 import { DocumentTypeService } from '../services';
 import { CreateDocumentTypeDto, UpdateDocumentTypeDto, DocumentTypeResponseDto } from '../dto';
 import { Auth } from '../../auth/decorators';
@@ -70,5 +80,37 @@ export class DocumentTypeController {
   @ApiOperation({ summary: 'Delete a document type' })
   remove(@Param('id', ParseUUIDPipe) id: string) {
     return this.documentTypeService.remove(id);
+  }
+
+  @Post(':id/template')
+  @Auth()
+  @ApiBearerAuth()
+  @UseInterceptors(FileInterceptor('file'))
+  @ApiConsumes('multipart/form-data')
+  @ApiOperation({ summary: 'Upload a template document for a document type' })
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        file: { type: 'string', format: 'binary' },
+      },
+      required: ['file'],
+    },
+  })
+  @ApiOkResponse({ type: DocumentTypeResponseDto })
+  uploadTemplate(
+    @Param('id', ParseUUIDPipe) id: string,
+    @UploadedFile() file: Express.Multer.File,
+  ) {
+    return this.documentTypeService.uploadTemplate(id, file);
+  }
+
+  @Delete(':id/template')
+  @Auth()
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Delete template document from a document type' })
+  @ApiOkResponse({ type: DocumentTypeResponseDto })
+  deleteTemplate(@Param('id', ParseUUIDPipe) id: string) {
+    return this.documentTypeService.deleteTemplate(id);
   }
 }

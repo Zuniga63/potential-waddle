@@ -34,6 +34,16 @@ export class DocumentType {
   @Column('boolean', { name: 'is_active', default: true })
   isActive: boolean;
 
+  // Template document fields
+  @Column('varchar', { name: 'template_url', length: 500, nullable: true })
+  templateUrl: string | null;
+
+  @Column('varchar', { name: 'template_file_name', length: 255, nullable: true })
+  templateFileName: string | null;
+
+  @Column('varchar', { name: 'template_gcp_path', length: 500, nullable: true })
+  templateGcpPath: string | null;
+
   @CreateDateColumn({ name: 'created_at' })
   createdAt: Date;
 
