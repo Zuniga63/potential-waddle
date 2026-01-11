@@ -31,6 +31,7 @@
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.40.1",
+    "@google-cloud/storage": "^7.18.0",
     "@google/generative-ai": "^0.24.1",
     "@langchain/openai": "^0.5.7",
     "@nestjs/axios": "3.0.3",

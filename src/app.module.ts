@@ -33,6 +33,7 @@ import { RafaModule } from './modules/rafa/rafa.module';
 import { DashboardModule } from './modules/dashboard/dashboard.module';
 import { TenantModule } from './modules/tenant/tenant.module';
 import { TenantInterceptor } from './modules/tenant/tenant.interceptor';
+import { DocumentsModule } from './modules/documents/documents.module';
 
 @Module({
   imports: [
@@ -76,6 +77,7 @@ import { TenantInterceptor } from './modules/tenant/tenant.interceptor';
     RafaModule,
     DashboardModule,
     TenantModule,
+    DocumentsModule,
   ],
   controllers: [],
   providers: [
