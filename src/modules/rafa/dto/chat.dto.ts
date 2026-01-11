@@ -39,6 +39,7 @@ export interface ChatResponseDto {
   conversation_complete: boolean;
   context_update?: UserContext;
   conversation_id: string;
+  suggested_actions?: string[];
 }
 
 // Card types supported by frontend

@@ -12,6 +12,7 @@ import { Transport } from '../transport/entities/transport.entity';
 
 export interface DashboardStats {
   totalLodgings: number;
+  totalLodgingsCapacity: number;
   totalRestaurants: number;
   totalPlaces: number;
   totalCommerce: number;
@@ -47,6 +48,7 @@ export class DashboardService {
 
     const [
       totalLodgings,
+      totalLodgingsCapacity,
       totalRestaurants,
       totalPlaces,
       totalCommerce,
@@ -56,6 +58,7 @@ export class DashboardService {
       totalTransport,
     ] = await Promise.all([
       this.lodgingRepository.count({ where: townFilter }),
+      this.sumLodgingsCapacity(townId),
       this.restaurantRepository.count({ where: townFilter }),
       this.placeRepository.count({ where: townFilter }),
       this.commerceRepository.count({ where: townFilter }),
@@ -67,6 +70,7 @@ export class DashboardService {
 
     return {
       totalLodgings,
+      totalLodgingsCapacity,
       totalRestaurants,
       totalPlaces,
       totalCommerce,
@@ -75,6 +79,20 @@ export class DashboardService {
       totalExperiences,
       totalTransport,
     };
+  }
+
+  private async sumLodgingsCapacity(townId?: string): Promise<number> {
+    const queryBuilder = this.lodgingRepository
+      .createQueryBuilder('lodging')
+      .select('COALESCE(SUM(lodging.capacity), 0)', 'total')
+      .where('lodging.isPublic = :isPublic', { isPublic: true });
+
+    if (townId) {
+      queryBuilder.andWhere('lodging.town_id = :townId', { townId });
+    }
+
+    const result = await queryBuilder.getRawOne();
+    return parseInt(result?.total || '0', 10);
   }
 
   private async countGuidesByTown(townId?: string): Promise<number> {

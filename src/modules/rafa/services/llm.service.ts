@@ -234,4 +234,56 @@ Respond naturally in Spanish. Do NOT include JSON or technical information.`;
       })
       .join('\n');
   }
+
+  /**
+   * Generate a response using a custom system prompt from an expert.
+   * This allows experts to have full control over their prompts.
+   */
+  async generateExpertResponse(
+    systemPrompt: string,
+    userMessage: string,
+    cards: ChatCard[],
+    history: RafaMessage[],
+    additionalContext?: Record<string, unknown>,
+  ): Promise<string> {
+    try {
+      const chatModel = this.genAI.getGenerativeModel({
+        model: 'gemini-2.0-flash',
+        generationConfig: {
+          temperature: 0.7,
+          maxOutputTokens: 1024,
+        },
+      });
+
+      // Build full prompt with context
+      let fullPrompt = systemPrompt;
+
+      // Add history context
+      if (history && history.length > 0) {
+        fullPrompt += `\n\nHISTORIAL RECIENTE:\n${this.formatHistory(history)}`;
+      }
+
+      // Add cards/results context
+      if (cards && cards.length > 0) {
+        fullPrompt += `\n\nRESULTADOS ENCONTRADOS:\n${this.formatCards(cards)}`;
+      }
+
+      // Add any additional context
+      if (additionalContext) {
+        fullPrompt += `\n\nCONTEXTO ADICIONAL:\n${JSON.stringify(additionalContext, null, 2)}`;
+      }
+
+      fullPrompt += `\n\nResponde en español de forma natural y amigable. NO incluyas JSON ni información técnica.`;
+
+      const result = await chatModel.generateContent([
+        { text: fullPrompt },
+        { text: `Usuario: "${userMessage}"` },
+      ]);
+
+      return result.response.text();
+    } catch (error) {
+      this.logger.error(`Error generating expert response: ${error.message}`);
+      return 'Lo siento, tuve un problema procesando tu solicitud. ¿Podrías intentar de nuevo?';
+    }
+  }
 }

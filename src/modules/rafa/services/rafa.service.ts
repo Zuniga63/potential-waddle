@@ -3,17 +3,26 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 
 import { RafaConversation, RafaMessage, RafaLead } from '../entities';
-import { ChatRequestDto, ChatResponseDto, ChatCard, UserContext } from '../dto/chat.dto';
+import { ChatRequestDto, ChatResponseDto, UserContext } from '../dto/chat.dto';
 import { RafaIntent } from '../dto/rafa-intent.enum';
 import { TripState, EMPTY_TRIP_STATE, mergeTripState } from '../dto/trip-state.dto';
-import { INTENT_CONFIG, checkIntentRequirements } from '../dto/intent-config';
 import { ClassifyOutput } from '../dto/classify-output.dto';
 import { LlmService } from './llm.service';
 import { ToolsService } from './tools.service';
+import {
+  BaseExpert,
+  ExpertContext,
+  SearchExpert,
+  ConversationExpert,
+  BudgetExpert,
+  ItineraryExpert,
+  LeadExpert,
+} from '../experts';
 
 @Injectable()
 export class RafaService {
   private readonly logger = new Logger(RafaService.name);
+  private readonly experts: BaseExpert[];
 
   constructor(
     @InjectRepository(RafaConversation) private conversationRepo: Repository<RafaConversation>,
@@ -21,7 +30,28 @@ export class RafaService {
     @InjectRepository(RafaLead) private leadRepo: Repository<RafaLead>,
     private readonly llmService: LlmService,
     private readonly toolsService: ToolsService,
-  ) {}
+    private readonly searchExpert: SearchExpert,
+    private readonly conversationExpert: ConversationExpert,
+    private readonly budgetExpert: BudgetExpert,
+    private readonly itineraryExpert: ItineraryExpert,
+    private readonly leadExpert: LeadExpert,
+  ) {
+    // Register all experts for routing
+    this.experts = [
+      this.searchExpert,
+      this.conversationExpert,
+      this.budgetExpert,
+      this.itineraryExpert,
+      this.leadExpert,
+    ];
+  }
+
+  /**
+   * Find the expert that can handle the given intent
+   */
+  private findExpert(intent: RafaIntent): BaseExpert | null {
+    return this.experts.find(expert => expert.canHandle(intent)) || null;
+  }
 
   async chat(dto: ChatRequestDto, userId?: string): Promise<ChatResponseDto> {
     // 1. Get or create conversation
@@ -38,80 +68,101 @@ export class RafaService {
     // 4. Update state with extracted data
     const updatedState = await this.updateState(conversation, classification);
 
-    // 5. DECIDE - Check if we can execute or need more info
-    const intentConfig = INTENT_CONFIG[classification.intent];
-    const { canExecute, missingFields } = checkIntentRequirements(classification.intent, updatedState);
+    // 5. ROUTE - Find the expert that can handle this intent
+    const expert = this.findExpert(classification.intent);
 
-    let cards: ChatCard[] = [];
-    let response: string;
-    let followUpQuestions: string[] = [];
+    if (!expert) {
+      this.logger.warn(`No expert found for intent: ${classification.intent}`);
+      // Fallback to conversation expert for unknown intents
+      const fallbackResponse = await this.conversationExpert.handle({
+        message: dto.message,
+        intent: RafaIntent.UNKNOWN,
+        state: updatedState,
+        classification,
+        conversationId: conversation.id,
+        history,
+      });
 
-    // 6. EXECUTE - Run tool if we can
-    if (canExecute && intentConfig.tool) {
-      this.logger.debug(`Executing tool: ${intentConfig.tool}`);
-      cards = await this.toolsService.executeTool(
-        intentConfig.tool,
+      await this.saveMessage(conversation.id, 'assistant', fallbackResponse.message, classification.intent, classification.confidence);
+
+      return this.buildResponse(
+        fallbackResponse,
+        classification,
         updatedState,
-        dto.message,
-        {
-          selectedPosition: classification.extractedData.selectedPosition ?? undefined,
-          selectedName: classification.extractedData.selectedName ?? undefined,
-        },
+        conversation.id,
+        userId,
       );
-
-      // Update lastResults in state
-      if (cards.length > 0) {
-        const entityType = this.getEntityTypeFromTool(intentConfig.tool);
-        if (entityType) {
-          const simpleResults = this.toolsService.getSimpleResults(cards);
-          await this.updateConversationState(conversation.id, {
-            ...updatedState,
-            lastResults: {
-              entityType,
-              items: simpleResults,
-            },
-          });
-        }
-      }
     }
 
-    // 7. Generate follow-up questions if missing fields
-    if (missingFields.length > 0) {
-      followUpQuestions = this.generateFollowUpQuestions(classification.intent, missingFields);
-    }
+    this.logger.debug(`Routing to expert: ${expert.name}`);
 
-    // 8. RESPOND - Generate natural language response
-    response = await this.llmService.generateResponse(
-      dto.message,
-      classification.intent,
-      updatedState,
-      cards,
-      missingFields,
+    // 6. BUILD CONTEXT - Prepare context for the expert
+    const expertContext: ExpertContext = {
+      message: dto.message,
+      intent: classification.intent,
+      state: updatedState,
+      classification,
+      conversationId: conversation.id,
       history,
-    );
+    };
+
+    // 7. EXECUTE - Let the expert handle the request
+    const expertResponse = await expert.handle(expertContext);
+
+    // 8. UPDATE STATE - Apply any state updates from the expert
+    if (expertResponse.stateUpdates && Object.keys(expertResponse.stateUpdates).length > 0) {
+      const newState = mergeTripState(updatedState, expertResponse.stateUpdates);
+      await this.updateConversationState(conversation.id, newState);
+    }
 
     // 9. Save assistant message
-    await this.saveMessage(conversation.id, 'assistant', response, classification.intent, classification.confidence);
+    await this.saveMessage(
+      conversation.id,
+      'assistant',
+      expertResponse.message,
+      classification.intent,
+      classification.confidence,
+    );
 
-    // 10. Build context update for frontend
+    // 10. BUILD RESPONSE - Convert expert response to API response
+    return this.buildResponse(
+      expertResponse,
+      classification,
+      updatedState,
+      conversation.id,
+      userId,
+    );
+  }
+
+  /**
+   * Build the API response from an expert response
+   */
+  private buildResponse(
+    expertResponse: ReturnType<BaseExpert['handle']> extends Promise<infer R> ? R : never,
+    classification: ClassifyOutput,
+    state: TripState,
+    conversationId: string,
+    userId?: string,
+  ): ChatResponseDto {
     const contextUpdate: UserContext = {
       user_id: userId,
-      conversation_id: conversation.id,
+      conversation_id: conversationId,
       previous_intent: classification.intent,
-      collected_params: this.stateToParams(updatedState),
-      pending_questions: followUpQuestions,
+      collected_params: this.stateToParams(state),
+      pending_questions: expertResponse.followUpQuestions,
       session_data: {},
     };
 
     return {
-      message: response,
+      message: expertResponse.message,
       intent: classification.intent,
-      cards,
-      follow_up_questions: followUpQuestions,
-      requires_more_info: missingFields.length > 0,
+      cards: expertResponse.cards,
+      follow_up_questions: expertResponse.followUpQuestions,
+      requires_more_info: expertResponse.requiresMoreInfo,
       conversation_complete: classification.intent === RafaIntent.FAREWELL,
       context_update: contextUpdate,
-      conversation_id: conversation.id,
+      conversation_id: conversationId,
+      suggested_actions: expertResponse.suggestedActions,
     };
   }
 
@@ -223,46 +274,6 @@ export class RafaService {
       [RafaIntent.UNKNOWN]: 'Procesando',
     };
     return goals[intent] || 'Procesando';
-  }
-
-  private getEntityTypeFromTool(
-    tool: string,
-  ): 'lodging' | 'restaurant' | 'experience' | 'place' | 'guide' | 'transport' | 'commerce' | null {
-    const mapping: Record<string, 'lodging' | 'restaurant' | 'experience' | 'place' | 'guide' | 'transport' | 'commerce'> = {
-      searchLodgings: 'lodging',
-      searchRestaurants: 'restaurant',
-      searchExperiences: 'experience',
-      searchPlaces: 'place',
-      searchGuides: 'guide',
-      searchTransport: 'transport',
-      searchCommerce: 'commerce',
-    };
-    return mapping[tool] || null;
-  }
-
-  private generateFollowUpQuestions(intent: RafaIntent, missingFields: string[]): string[] {
-    const questions: string[] = [];
-
-    for (const field of missingFields) {
-      switch (field) {
-        case 'destination':
-          questions.push('¿A qué destino te gustaría ir?');
-          break;
-        case 'days or dates':
-          questions.push('¿Cuántos días planeas quedarte o qué fechas tienes en mente?');
-          break;
-        case 'partySize':
-          questions.push('¿Cuántas personas viajan?');
-          break;
-        case 'one of: contactPhone, contactEmail':
-          questions.push('¿Me puedes dar tu teléfono o email para la reserva?');
-          break;
-        default:
-          break;
-      }
-    }
-
-    return questions.slice(0, 2); // Max 2 follow-up questions
   }
 
   private stateToParams(state: TripState): Record<string, unknown> {

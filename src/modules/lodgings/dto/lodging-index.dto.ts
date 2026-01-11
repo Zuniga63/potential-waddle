@@ -90,6 +90,14 @@ export class LodgingIndexDto {
   rooms: number;
 
   @ApiProperty({
+    example: 10,
+    description: 'The capacity of the lodging (number of guests)',
+    readOnly: true,
+    required: false,
+  })
+  capacity?: number;
+
+  @ApiProperty({
     description: 'Minimum price of the lodging',
     readOnly: true,
     required: false,
@@ -221,6 +229,7 @@ export class LodgingIndexDto {
     this.reviewsCount = lodging.reviewCount || 0;
     this.points = lodging.points;
     this.rooms = lodging.roomCount;
+    this.capacity = lodging.capacity || undefined;
     this.images = lodging.images
       .sort((a, b) => a.order - b.order)
       .map(image => image.imageResource.url)
