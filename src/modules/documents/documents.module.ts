@@ -1,31 +1,35 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 
-import { DocumentType, TownDocumentRequirement, Document } from './entities';
+import { DocumentType, TownDocumentRequirement, Document, CategoryDocumentExclusion } from './entities';
 import {
   GcpStorageService,
   DocumentTypeService,
   TownDocumentRequirementService,
   DocumentService,
+  CategoryDocumentExclusionService,
 } from './services';
 import {
   DocumentTypeController,
   TownDocumentRequirementController,
   DocumentController,
+  CategoryDocumentExclusionController,
 } from './controllers';
 import { Town } from '../towns/entities/town.entity';
+import { Category } from '../core/entities/category.entity';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([DocumentType, TownDocumentRequirement, Document, Town]),
+    TypeOrmModule.forFeature([DocumentType, TownDocumentRequirement, Document, CategoryDocumentExclusion, Town, Category]),
   ],
-  controllers: [DocumentTypeController, TownDocumentRequirementController, DocumentController],
+  controllers: [DocumentTypeController, TownDocumentRequirementController, DocumentController, CategoryDocumentExclusionController],
   providers: [
     GcpStorageService,
     DocumentTypeService,
     TownDocumentRequirementService,
     DocumentService,
+    CategoryDocumentExclusionService,
   ],
-  exports: [DocumentService, TownDocumentRequirementService, GcpStorageService],
+  exports: [DocumentService, TownDocumentRequirementService, GcpStorageService, CategoryDocumentExclusionService],
 })
 export class DocumentsModule {}

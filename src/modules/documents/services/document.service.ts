@@ -1,7 +1,7 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, LessThan } from 'typeorm';
-import { Document, DocumentType, TownDocumentRequirement } from '../entities';
+import { Repository, LessThan, In } from 'typeorm';
+import { Document, DocumentType, TownDocumentRequirement, CategoryDocumentExclusion } from '../entities';
 import { CreateDocumentDto, UpdateDocumentStatusDto, EntityDocumentStatusDto } from '../dto';
 import { DocumentEntityType, DocumentStatus } from '../enums';
 import { GcpStorageService } from './gcp-storage.service';
@@ -18,6 +18,8 @@ export class DocumentService {
     private readonly requirementRepository: Repository<TownDocumentRequirement>,
     @InjectRepository(Town)
     private readonly townRepository: Repository<Town>,
+    @InjectRepository(CategoryDocumentExclusion)
+    private readonly exclusionRepository: Repository<CategoryDocumentExclusion>,
     private readonly gcpStorageService: GcpStorageService,
   ) {}
 
@@ -147,6 +149,7 @@ export class DocumentService {
     townId: string,
     entityType: DocumentEntityType,
     entityId: string,
+    categoryIds?: string[],
   ): Promise<EntityDocumentStatusDto[]> {
     // Get requirements for this town and entity type
     const requirements = await this.requirementRepository.find({
@@ -154,13 +157,42 @@ export class DocumentService {
       relations: ['documentType'],
     });
 
+    // Get excluded document type IDs for the entity's categories
+    // A document is only excluded if ALL categories exclude it
+    let excludedDocumentTypeIds: string[] = [];
+    if (categoryIds && categoryIds.length > 0) {
+      const exclusions = await this.exclusionRepository.find({
+        where: { category: { id: In(categoryIds) } },
+        relations: ['documentType', 'category'],
+      });
+
+      // Count how many categories exclude each document type
+      const exclusionCounts = new Map<string, number>();
+      exclusions.forEach((e) => {
+        const count = exclusionCounts.get(e.documentType.id) || 0;
+        exclusionCounts.set(e.documentType.id, count + 1);
+      });
+
+      // Only exclude if ALL categories exclude it
+      exclusionCounts.forEach((count, documentTypeId) => {
+        if (count === categoryIds.length) {
+          excludedDocumentTypeIds.push(documentTypeId);
+        }
+      });
+    }
+
+    // Filter out excluded document types
+    const filteredRequirements = requirements.filter(
+      (req) => !excludedDocumentTypeIds.includes(req.documentTypeId),
+    );
+
     // Get existing documents for this entity
     const documents = await this.findByEntity(entityType, entityId);
     const documentMap = new Map(documents.map((d) => [d.documentTypeId, d]));
 
     const now = new Date();
 
-    return requirements.map((req) => {
+    return filteredRequirements.map((req) => {
       const document = documentMap.get(req.documentTypeId);
       const isExpired = document?.expirationDate ? new Date(document.expirationDate) < now : false;
       const isUploaded = !!document;
@@ -207,8 +239,9 @@ export class DocumentService {
     townId: string,
     entityType: DocumentEntityType,
     entityId: string,
+    categoryIds?: string[],
   ): Promise<{ complete: boolean; missing: string[]; expired: string[] }> {
-    const status = await this.getEntityDocumentStatus(townId, entityType, entityId);
+    const status = await this.getEntityDocumentStatus(townId, entityType, entityId, categoryIds);
 
     const missing = status
       .filter((s) => s.isRequired && !s.isUploaded)

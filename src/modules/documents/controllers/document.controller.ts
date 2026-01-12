@@ -10,6 +10,7 @@ import {
   UseInterceptors,
   UploadedFile,
   Req,
+  Query,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -84,10 +85,12 @@ export class DocumentController {
   getEntityDocumentStatus(
     @Param('entityType') entityType: DocumentEntityType,
     @Param('entityId', ParseUUIDPipe) entityId: string,
+    @Query('categoryIds') categoryIds: string,
     @Req() request: Request,
   ) {
     const townId = (request as any)[TENANT_ID_KEY];
-    return this.documentService.getEntityDocumentStatus(townId, entityType, entityId);
+    const categoryIdArray = categoryIds ? categoryIds.split(',') : undefined;
+    return this.documentService.getEntityDocumentStatus(townId, entityType, entityId, categoryIdArray);
   }
 
   @Get('entity/:entityType/:entityId/check')
@@ -97,10 +100,12 @@ export class DocumentController {
   hasAllRequiredDocuments(
     @Param('entityType') entityType: DocumentEntityType,
     @Param('entityId', ParseUUIDPipe) entityId: string,
+    @Query('categoryIds') categoryIds: string,
     @Req() request: Request,
   ) {
     const townId = (request as any)[TENANT_ID_KEY];
-    return this.documentService.hasAllRequiredDocuments(townId, entityType, entityId);
+    const categoryIdArray = categoryIds ? categoryIds.split(',') : undefined;
+    return this.documentService.hasAllRequiredDocuments(townId, entityType, entityId, categoryIdArray);
   }
 
   @Get(':id')
