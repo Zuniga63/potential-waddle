@@ -49,9 +49,16 @@ export class ReviewsService {
         images: { image: true },
       },
       select: {
-        /*  user: { username: true, id: true, profilePhoto: true }, */
+        id: true,
+        rating: true,
+        isPublic: true,
+        comment: true,
+        status: true,
+        createdAt: true,
+        approvedAt: true,
+        user: { id: true, username: true, profilePhoto: {} },
         place: { id: true, name: true },
-        images: { id: true },
+        images: { id: true, status: true, image: { id: true, url: true } },
       },
       where,
     });
