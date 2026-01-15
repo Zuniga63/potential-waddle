@@ -15,11 +15,12 @@ import { generateReviewsQueryFilters } from './utils/generate-google-reviews-que
 import { GoogleReviewsListDto } from './dto/google-reviews-list.dto';
 import { PineconeService } from '../pinecone/pinecone.service';
 import { GoogleReviewInterface } from './interfaces/google-review.interface';
-import { Anthropic } from '@anthropic-ai/sdk';
-import { Model } from '@anthropic-ai/sdk/resources/messages';
+import { GoogleGenerativeAI, GenerativeModel } from '@google/generative-ai';
 import { GoogleReviewSummary } from './entities/google-review-summary.entity';
-import { generalAnalysisPrompt } from '../ai/lib/anthropic/anthropic';
-import { specificAnalysisPrompt } from '../ai/lib/anthropic/anthropic';
+import {
+  reviewAnalysisPrompt,
+  specificQuestionPrompt,
+} from '../ai/lib/gemini/review-analysis-prompts';
 @Injectable()
 export class GooglePlacesService {
   private readonly logger = new Logger(GooglePlacesService.name);
@@ -28,8 +29,7 @@ export class GooglePlacesService {
   private readonly serpApiKey: string | undefined;
   private readonly apifyToken: string | undefined;
   private readonly actorId = 'apify/google-maps-reviews-scraper';
-  private readonly anthropicModel: string | undefined;
-  private readonly anthropic: Anthropic;
+  private readonly geminiModel: GenerativeModel;
   constructor(
     private readonly httpService: HttpService,
 
@@ -53,10 +53,19 @@ export class GooglePlacesService {
     this.apiKey = configService.get<string>('googlePlaces.apiKey', { infer: true });
     this.serpApiKey = configService.get<string>('serpApi.apiKey', { infer: true });
     this.apifyToken = configService.get<string>('apify.apiKey', { infer: true });
-    this.anthropicModel = configService.get<string>('anthropic.model', { infer: true });
-    this.anthropic = new Anthropic({
-      apiKey: configService.get<string>('anthropic.apiKey', { infer: true }),
-    });
+
+    // Initialize Gemini AI
+    const geminiApiKey = configService.get<string>('GEMINI_API_KEY');
+    if (geminiApiKey) {
+      const genAI = new GoogleGenerativeAI(geminiApiKey);
+      this.geminiModel = genAI.getGenerativeModel({
+        model: 'gemini-2.0-flash',
+        generationConfig: {
+          temperature: 0.7,
+          maxOutputTokens: 8000,
+        },
+      });
+    }
   }
 
   // 🔹 Extract Place ID from Google Maps URL
@@ -640,57 +649,48 @@ export class GooglePlacesService {
   async reviewSummary(
     message: string,
     entityId: string,
-    entityType: 'lodging' | 'restaurant' | 'commerce',
+    entityType: 'lodging' | 'restaurant' | 'commerce' | 'experience' | 'place',
     type: 'general' | 'specific',
   ) {
     try {
-      // Use the message directly since it's now a string
+      if (!this.geminiModel) {
+        throw new Error('Gemini AI is not configured. Please set GEMINI_API_KEY.');
+      }
+
       const userQuestion = message;
       let contextMessage = '';
-      // Search for relevant documents in Pinecone
+      let prompt = '';
+
       if (type === 'specific') {
+        // Search for relevant documents in Pinecone for specific questions
         const relevantDocs = await this.pineconeService.searchDocuments(userQuestion, entityId, entityType);
-        // Format the results for context
         const formattedResults = this.formatSearchResults(relevantDocs);
-
-        // Create context message
-        contextMessage = `
-      Here is the most relevant information about lodgings in San Rafael, Antioquia to answer the user:
-
-      ${formattedResults}
-
-      Remember to respond using the appropriate format when recommending specific lodging.
-      `;
+        contextMessage = formattedResults;
+        prompt = `${specificQuestionPrompt}\n\n## RESEÑAS:\n${contextMessage}\n\n## PREGUNTA DEL USUARIO:\n${userQuestion}`;
       } else {
-        // Obtener reviews según el tipo de entidad
+        // Get all reviews for general analysis
         const reviews = await this.googleReviewRepository.find({
-          where: { entityType: entityType, entityId: entityId },
+          where: { entityType, entityId },
+          order: { reviewDate: 'DESC' },
         });
-        const reviewsToSave = reviews.map(review => {
-          return {
-            authorName: review.authorName,
-            rating: review.rating,
-            text: review.text,
-            reviewDate: review.reviewDate,
-          };
-        });
-        console.log(reviews.length, `${entityType}-reviews-length`);
-        contextMessage = JSON.stringify(reviewsToSave);
+
+        const reviewsData = reviews.map(review => ({
+          autor: review.authorName,
+          rating: review.rating,
+          comentario: review.text,
+          fecha: review.reviewDate,
+        }));
+
+        this.logger.log(`Analyzing ${reviews.length} reviews for ${entityType} ${entityId}`);
+        contextMessage = JSON.stringify(reviewsData, null, 2);
+        prompt = `${reviewAnalysisPrompt}\n\n## RESEÑAS A ANALIZAR (${reviews.length} total):\n${contextMessage}`;
       }
-      console.log(contextMessage, 'contextMessage');
-      // Send the query to Claude with relevant context
-      const response = await this.anthropic.messages.create({
-        model: this.anthropicModel as Model,
-        max_tokens: 5000,
-        messages: [
-          {
-            role: 'user',
-            content: `${type === 'general' ? generalAnalysisPrompt : specificAnalysisPrompt}\n\n${contextMessage}\n\n${message}`,
-          },
-        ],
-        temperature: 0.7,
-      });
-      const responseText = response.content[0].type === 'text' ? response.content[0].text : '';
+
+      // Send to Gemini
+      this.logger.log(`🤖 Sending request to GEMINI 2.0 Flash...`);
+      const result = await this.geminiModel.generateContent(prompt);
+      const responseText = result.response.text();
+      this.logger.log(`✅ GEMINI response received (${responseText.length} chars)`);
 
       // Save the summary
       const summary = this.googleReviewSummaryRepository.create({
@@ -702,16 +702,18 @@ export class GooglePlacesService {
       });
       await this.googleReviewSummaryRepository.save(summary);
 
+      this.logger.log(`Summary generated successfully for ${entityType} ${entityId}`);
+
       return {
         response: responseText,
       };
     } catch (error) {
-      this.logger.error('Error processing request:', error);
+      this.logger.error('Error generating review summary:', error);
       throw error;
     }
   }
 
-  async getReviewsSummary(entityId: string, entityType: 'lodging' | 'restaurant') {
+  async getReviewsSummary(entityId: string, entityType: 'lodging' | 'restaurant' | 'commerce' | 'experience' | 'place') {
     const reviews = await this.googleReviewSummaryRepository.find({
       where: { entityId, entityType },
       order: { createdAt: 'DESC' },
@@ -735,6 +737,7 @@ export class GooglePlacesService {
     };
     const counts: Record<string, number> = {};
     for (const review of reviews) {
+      if (review.rating == null) continue;
       const key = numberToText[review.rating] || review.rating.toString();
       counts[key] = (counts[key] || 0) + 1;
     }
@@ -765,5 +768,147 @@ export class GooglePlacesService {
       .sort((a, b) => a.name.localeCompare(b.name)); // Opcional: ordenar por año
 
     return result;
+  }
+
+  /**
+   * Get reviews count by month for the current year
+   * Returns: [{ name: "Ene", value: 10 }, ...]
+   */
+  async getReviewsCountByMonth(entityId: string, entityType: 'lodging' | 'restaurant' | 'commerce') {
+    const currentYear = new Date().getFullYear();
+    const reviews = await this.googleReviewRepository.find({
+      where: { entityId, entityType },
+    });
+
+    const monthNames = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
+    const counts: number[] = new Array(12).fill(0);
+
+    for (const review of reviews) {
+      if (!review.reviewDate) continue;
+      const date = new Date(review.reviewDate);
+      if (date.getFullYear() === currentYear) {
+        counts[date.getMonth()]++;
+      }
+    }
+
+    return monthNames.map((name, index) => ({
+      name,
+      value: counts[index],
+    }));
+  }
+
+  /**
+   * Get rating trend over time (average rating per month)
+   * Returns: [{ month: "Ene 2024", rating: 4.5, count: 15 }, ...]
+   */
+  async getReviewsRatingTrend(entityId: string, entityType: 'lodging' | 'restaurant' | 'commerce') {
+    const reviews = await this.googleReviewRepository.find({
+      where: { entityId, entityType },
+      order: { reviewDate: 'ASC' },
+    });
+
+    const monthNames = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
+    const monthlyData: Record<string, { sum: number; count: number }> = {};
+
+    for (const review of reviews) {
+      if (!review.reviewDate || review.rating == null) continue;
+      const date = new Date(review.reviewDate);
+      const key = `${monthNames[date.getMonth()]} ${date.getFullYear()}`;
+
+      if (!monthlyData[key]) {
+        monthlyData[key] = { sum: 0, count: 0 };
+      }
+      monthlyData[key].sum += review.rating;
+      monthlyData[key].count++;
+    }
+
+    // Convert to array and sort by date
+    const result = Object.entries(monthlyData)
+      .map(([month, data]) => ({
+        month,
+        rating: Number((data.sum / data.count).toFixed(2)),
+        count: data.count,
+      }))
+      .slice(-12); // Last 12 months
+
+    return result;
+  }
+
+  /**
+   * Get aggregate metrics for reviews
+   * Returns: { averageRating, totalReviews, fiveStarPercentage, monthlyChange, distribution }
+   */
+  async getReviewsMetrics(entityId: string, entityType: 'lodging' | 'restaurant' | 'commerce') {
+    this.logger.log(`📊 getReviewsMetrics called: entityId=${entityId}, entityType=${entityType}`);
+    const reviews = await this.googleReviewRepository.find({
+      where: { entityId, entityType },
+    });
+    this.logger.log(`📊 Found ${reviews.length} reviews for metrics`);
+
+    if (reviews.length === 0) {
+      return {
+        averageRating: 0,
+        totalReviews: 0,
+        fiveStarCount: 0,
+        fiveStarPercentage: 0,
+        thisMonthCount: 0,
+        lastMonthCount: 0,
+        monthlyChange: 0,
+        distribution: { 5: 0, 4: 0, 3: 0, 2: 0, 1: 0 },
+      };
+    }
+
+    // Calculate average rating
+    const validRatings = reviews.filter(r => r.rating != null);
+    const totalRating = validRatings.reduce((sum, r) => sum + r.rating, 0);
+    const averageRating = Number((totalRating / validRatings.length).toFixed(2));
+
+    // Calculate distribution
+    const distribution: Record<number, number> = { 5: 0, 4: 0, 3: 0, 2: 0, 1: 0 };
+    for (const review of reviews) {
+      if (review.rating != null && distribution[review.rating] !== undefined) {
+        distribution[review.rating]++;
+      }
+    }
+
+    // Five star percentage
+    const fiveStarCount = distribution[5];
+    const fiveStarPercentage = Number(((fiveStarCount / reviews.length) * 100).toFixed(1));
+
+    // Monthly change calculation
+    const now = new Date();
+    const thisMonth = now.getMonth();
+    const thisYear = now.getFullYear();
+    const lastMonth = thisMonth === 0 ? 11 : thisMonth - 1;
+    const lastMonthYear = thisMonth === 0 ? thisYear - 1 : thisYear;
+
+    let thisMonthCount = 0;
+    let lastMonthCount = 0;
+
+    for (const review of reviews) {
+      if (!review.reviewDate) continue;
+      const date = new Date(review.reviewDate);
+      if (date.getMonth() === thisMonth && date.getFullYear() === thisYear) {
+        thisMonthCount++;
+      }
+      if (date.getMonth() === lastMonth && date.getFullYear() === lastMonthYear) {
+        lastMonthCount++;
+      }
+    }
+
+    const monthlyChange = lastMonthCount > 0
+      ? Number((((thisMonthCount - lastMonthCount) / lastMonthCount) * 100).toFixed(1))
+      : thisMonthCount > 0 ? 100 : 0;
+
+    return {
+      averageRating,
+      totalReviews: reviews.length,
+      fiveStarCount,
+      fiveStarPercentage,
+      thisMonthCount,
+      lastMonthCount,
+      monthlyChange,
+      distribution,
+    };
   }
 }

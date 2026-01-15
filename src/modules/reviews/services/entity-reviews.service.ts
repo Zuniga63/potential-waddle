@@ -1,5 +1,6 @@
 import { BadRequestException, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
+import { ConfigService } from '@nestjs/config';
 import { DataSource, Repository } from 'typeorm';
 import { Review, ReviewImage } from '../entities';
 import { ReviewDomainsEnum, ReviewStatusEnum } from '../enums';
@@ -10,6 +11,8 @@ import { TinifyService } from 'src/modules/tinify/tinify.service';
 import { CloudinaryService } from 'src/modules/cloudinary/cloudinary.service';
 import { CLOUDINARY_FOLDERS } from 'src/config/cloudinary-folders';
 import { CloudinaryPresets, ResourceProvider } from 'src/config';
+import { GoogleGenerativeAI, GenerativeModel } from '@google/generative-ai';
+import { reviewAnalysisPrompt } from 'src/modules/ai/lib/gemini/review-analysis-prompts';
 
 // Entities
 import { Lodging } from 'src/modules/lodgings/entities';
@@ -46,6 +49,7 @@ type ReviewableEntity = {
 @Injectable()
 export class EntityReviewsService {
   private logger = new Logger(EntityReviewsService.name);
+  private geminiModel: GenerativeModel | null = null;
 
   constructor(
     @InjectRepository(Review)
@@ -84,7 +88,22 @@ export class EntityReviewsService {
     private readonly dataSource: DataSource,
     private readonly tinifyService: TinifyService,
     private readonly cloudinaryService: CloudinaryService,
-  ) {}
+    private readonly configService: ConfigService,
+  ) {
+    // Initialize Gemini
+    const geminiApiKey = configService.get<string>('GEMINI_API_KEY');
+    if (geminiApiKey) {
+      const genAI = new GoogleGenerativeAI(geminiApiKey);
+      this.geminiModel = genAI.getGenerativeModel({
+        model: 'gemini-2.0-flash',
+        generationConfig: {
+          temperature: 0.7,
+          maxOutputTokens: 8000,
+        },
+      });
+      this.logger.log('Gemini AI initialized for Binntu Reviews');
+    }
+  }
 
   // * ----------------------------------------------------------------------------------------------------------------
   // * CREATE REVIEW
@@ -192,6 +211,80 @@ export class EntityReviewsService {
       relations: { user: true, images: { image: true } },
       order: { createdAt: 'DESC' },
     });
+  }
+
+  // * ----------------------------------------------------------------------------------------------------------------
+  // * FIND ALL REVIEWS FOR ENTITY OWNER (with pagination)
+  // * ----------------------------------------------------------------------------------------------------------------
+  async findAllForOwner({
+    entityType,
+    entityId,
+    userId,
+    page = 1,
+    limit = 10,
+    status,
+    sortBy,
+  }: {
+    entityType: ReviewDomainsEnum;
+    entityId: string;
+    userId: string;
+    page?: number;
+    limit?: number;
+    status?: ReviewStatusEnum;
+    sortBy?: string;
+  }) {
+    const repository = this.getEntityRepository(entityType);
+    const relationKey = this.getEntityRelationKey(entityType);
+
+    // Verify entity exists and user is owner
+    const entity = await repository.findOne({
+      where: { id: entityId },
+      relations: { user: true },
+    });
+
+    if (!entity) throw new NotFoundException(`${entityType} not found`);
+    if (!entity.user || entity.user.id !== userId) {
+      throw new BadRequestException('You are not the owner of this entity');
+    }
+
+    // Parse sortBy parameter (e.g., "-createdAt" for DESC, "createdAt" for ASC)
+    let order: Record<string, 'ASC' | 'DESC'> = { createdAt: 'DESC' };
+    if (sortBy) {
+      const isDesc = sortBy.startsWith('-');
+      const field = isDesc ? sortBy.slice(1) : sortBy;
+      const validFields = ['createdAt', 'rating'];
+      if (validFields.includes(field)) {
+        order = { [field]: isDesc ? 'DESC' : 'ASC' };
+      }
+    }
+
+    const skip = (page - 1) * limit;
+    const where: any = { [relationKey]: { id: entityId } };
+    if (status) where.status = status;
+
+    const [reviews, count] = await this.reviewRepository.findAndCount({
+      skip,
+      take: limit,
+      where,
+      relations: { user: true, images: { image: true } },
+      order,
+    });
+
+    // Transform images
+    const transformedReviews = reviews.map(review => ({
+      ...review,
+      images: review.images?.map(({ image, ...rest }) => ({
+        ...rest,
+        url: image?.url,
+      })),
+    }));
+
+    return {
+      currentPage: page,
+      pages: Math.ceil(count / limit),
+      count,
+      data: transformedReviews,
+    };
   }
 
   // * ----------------------------------------------------------------------------------------------------------------
@@ -372,6 +465,251 @@ export class EntityReviewsService {
       where: { user: { id: userId } },
       relations: { [relationKey]: true },
     });
+  }
+
+  // * ----------------------------------------------------------------------------------------------------------------
+  // * CHARTS & METRICS METHODS
+  // * ----------------------------------------------------------------------------------------------------------------
+
+  /**
+   * Get reviews count by rating (distribution)
+   * Returns: [{ name: "cinco", value: X }, ...]
+   */
+  async getReviewsCountByRating(entityType: ReviewDomainsEnum, entityId: string) {
+    const relationKey = this.getEntityRelationKey(entityType);
+    const reviews = await this.reviewRepository.find({
+      where: { [relationKey]: { id: entityId }, status: ReviewStatusEnum.APPROVED },
+      select: ['rating'],
+    });
+
+    const counts: Record<number, number> = { 5: 0, 4: 0, 3: 0, 2: 0, 1: 0 };
+    for (const review of reviews) {
+      if (review.rating && counts[review.rating] !== undefined) {
+        counts[review.rating]++;
+      }
+    }
+
+    const names = ['cinco', 'cuatro', 'tres', 'dos', 'uno'];
+    return [5, 4, 3, 2, 1].map((rating, index) => ({
+      name: names[index],
+      value: counts[rating],
+    }));
+  }
+
+  /**
+   * Get reviews count by year
+   * Returns: [{ name: "2024", value: X }, ...]
+   */
+  async getReviewsCountByYear(entityType: ReviewDomainsEnum, entityId: string) {
+    const relationKey = this.getEntityRelationKey(entityType);
+    const reviews = await this.reviewRepository.find({
+      where: { [relationKey]: { id: entityId }, status: ReviewStatusEnum.APPROVED },
+      select: ['createdAt'],
+    });
+
+    const yearCounts: Record<number, number> = {};
+    for (const review of reviews) {
+      if (!review.createdAt) continue;
+      const year = new Date(review.createdAt).getFullYear();
+      yearCounts[year] = (yearCounts[year] || 0) + 1;
+    }
+
+    return Object.entries(yearCounts)
+      .sort(([a], [b]) => Number(a) - Number(b))
+      .map(([year, count]) => ({
+        name: year,
+        value: count,
+      }));
+  }
+
+  /**
+   * Get reviews count by month (current year)
+   * Returns: [{ name: "Ene", value: X }, ...]
+   */
+  async getReviewsCountByMonth(entityType: ReviewDomainsEnum, entityId: string) {
+    const relationKey = this.getEntityRelationKey(entityType);
+    const currentYear = new Date().getFullYear();
+    const reviews = await this.reviewRepository.find({
+      where: { [relationKey]: { id: entityId }, status: ReviewStatusEnum.APPROVED },
+      select: ['createdAt'],
+    });
+
+    const monthNames = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
+    const counts: number[] = new Array(12).fill(0);
+
+    for (const review of reviews) {
+      if (!review.createdAt) continue;
+      const date = new Date(review.createdAt);
+      if (date.getFullYear() === currentYear) {
+        counts[date.getMonth()]++;
+      }
+    }
+
+    return monthNames.map((name, index) => ({
+      name,
+      value: counts[index],
+    }));
+  }
+
+  /**
+   * Get rating trend over time (average rating per month)
+   * Returns: [{ month: "Ene 2024", rating: 4.5, count: 15 }, ...]
+   */
+  async getReviewsRatingTrend(entityType: ReviewDomainsEnum, entityId: string) {
+    const relationKey = this.getEntityRelationKey(entityType);
+    const reviews = await this.reviewRepository.find({
+      where: { [relationKey]: { id: entityId }, status: ReviewStatusEnum.APPROVED },
+      select: ['createdAt', 'rating'],
+      order: { createdAt: 'ASC' },
+    });
+
+    const monthNames = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
+    const monthlyData: Record<string, { sum: number; count: number }> = {};
+
+    for (const review of reviews) {
+      if (!review.createdAt || review.rating == null) continue;
+      const date = new Date(review.createdAt);
+      const key = `${monthNames[date.getMonth()]} ${date.getFullYear()}`;
+
+      if (!monthlyData[key]) {
+        monthlyData[key] = { sum: 0, count: 0 };
+      }
+      monthlyData[key].sum += review.rating;
+      monthlyData[key].count++;
+    }
+
+    return Object.entries(monthlyData)
+      .map(([month, data]) => ({
+        month,
+        rating: Number((data.sum / data.count).toFixed(2)),
+        count: data.count,
+      }))
+      .slice(-12);
+  }
+
+  /**
+   * Get aggregate metrics for reviews
+   */
+  async getReviewsMetrics(entityType: ReviewDomainsEnum, entityId: string) {
+    const relationKey = this.getEntityRelationKey(entityType);
+    this.logger.log(`📊 getReviewsMetrics called: entityType=${entityType}, entityId=${entityId}`);
+
+    const reviews = await this.reviewRepository.find({
+      where: { [relationKey]: { id: entityId }, status: ReviewStatusEnum.APPROVED },
+      select: ['rating', 'createdAt'],
+    });
+
+    this.logger.log(`📊 Found ${reviews.length} approved reviews for metrics`);
+
+    if (reviews.length === 0) {
+      return {
+        averageRating: 0,
+        totalReviews: 0,
+        fiveStarCount: 0,
+        fiveStarPercentage: 0,
+        thisMonthCount: 0,
+        lastMonthCount: 0,
+        monthlyChange: 0,
+        distribution: { 5: 0, 4: 0, 3: 0, 2: 0, 1: 0 },
+      };
+    }
+
+    // Calculate average rating
+    const validRatings = reviews.filter(r => r.rating != null);
+    const totalRating = validRatings.reduce((sum, r) => sum + r.rating, 0);
+    const averageRating = Number((totalRating / validRatings.length).toFixed(2));
+
+    // Calculate distribution
+    const distribution: Record<number, number> = { 5: 0, 4: 0, 3: 0, 2: 0, 1: 0 };
+    for (const review of reviews) {
+      if (review.rating != null && distribution[review.rating] !== undefined) {
+        distribution[review.rating]++;
+      }
+    }
+
+    // Five star percentage
+    const fiveStarCount = distribution[5];
+    const fiveStarPercentage = Number(((fiveStarCount / reviews.length) * 100).toFixed(1));
+
+    // Monthly change calculation
+    const now = new Date();
+    const thisMonth = now.getMonth();
+    const thisYear = now.getFullYear();
+    const lastMonth = thisMonth === 0 ? 11 : thisMonth - 1;
+    const lastMonthYear = thisMonth === 0 ? thisYear - 1 : thisYear;
+
+    let thisMonthCount = 0;
+    let lastMonthCount = 0;
+
+    for (const review of reviews) {
+      if (!review.createdAt) continue;
+      const date = new Date(review.createdAt);
+      if (date.getMonth() === thisMonth && date.getFullYear() === thisYear) {
+        thisMonthCount++;
+      }
+      if (date.getMonth() === lastMonth && date.getFullYear() === lastMonthYear) {
+        lastMonthCount++;
+      }
+    }
+
+    const monthlyChange = lastMonthCount > 0
+      ? Number((((thisMonthCount - lastMonthCount) / lastMonthCount) * 100).toFixed(1))
+      : thisMonthCount > 0 ? 100 : 0;
+
+    return {
+      averageRating,
+      totalReviews: reviews.length,
+      fiveStarCount,
+      fiveStarPercentage,
+      thisMonthCount,
+      lastMonthCount,
+      monthlyChange,
+      distribution,
+    };
+  }
+
+  /**
+   * Generate AI analysis of reviews using Gemini
+   */
+  async generateReviewSummary(entityType: ReviewDomainsEnum, entityId: string) {
+    if (!this.geminiModel) {
+      throw new BadRequestException('Gemini AI is not configured. Please set GEMINI_API_KEY.');
+    }
+
+    const relationKey = this.getEntityRelationKey(entityType);
+    const reviews = await this.reviewRepository.find({
+      where: { [relationKey]: { id: entityId }, status: ReviewStatusEnum.APPROVED },
+      relations: { user: true },
+      order: { createdAt: 'DESC' },
+    });
+
+    if (reviews.length === 0) {
+      throw new NotFoundException('No reviews found for this entity');
+    }
+
+    // Transform reviews for analysis
+    const reviewsData = reviews.map(review => ({
+      rating: review.rating,
+      comentario: review.comment || '',
+      fecha: review.createdAt,
+      usuario: review.user?.username || 'Anónimo',
+    }));
+
+    this.logger.log(`🤖 Analyzing ${reviews.length} Binntu reviews with Gemini...`);
+    const contextMessage = JSON.stringify(reviewsData, null, 2);
+    const prompt = `${reviewAnalysisPrompt}\n\n## RESEÑAS A ANALIZAR (${reviews.length} total):\n${contextMessage}`;
+
+    // Send to Gemini
+    this.logger.log(`🤖 Sending request to GEMINI 2.0 Flash...`);
+    const result = await this.geminiModel.generateContent(prompt);
+    const responseText = result.response.text();
+    this.logger.log(`✅ GEMINI response received (${responseText.length} chars)`);
+
+    return {
+      response: responseText,
+      reviewCount: reviews.length,
+      generatedAt: new Date(),
+    };
   }
 
   // * ----------------------------------------------------------------------------------------------------------------

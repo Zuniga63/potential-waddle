@@ -7,6 +7,7 @@ import {
   ParseUUIDPipe,
   Patch,
   Post,
+  Query,
   UploadedFiles,
   UseInterceptors,
 } from '@nestjs/common';
@@ -54,6 +55,28 @@ export class LodgingReviewsController {
       entityType: ReviewDomainsEnum.LODGINGS,
       entityId,
       status: ReviewStatusEnum.APPROVED,
+    });
+  }
+
+  @Get(':id/reviews/owner')
+  @Auth()
+  @ApiOkResponse({ description: 'Owner reviews retrieved successfully' })
+  findAllForOwner(
+    @Param('id', ParseUUIDPipe) entityId: string,
+    @GetUser() user: User,
+    @Query('page') page?: string,
+    @Query('limit') limit?: string,
+    @Query('status') status?: ReviewStatusEnum,
+    @Query('sortBy') sortBy?: string,
+  ) {
+    return this.entityReviewsService.findAllForOwner({
+      entityType: ReviewDomainsEnum.LODGINGS,
+      entityId,
+      userId: user.id,
+      page: page ? parseInt(page, 10) : 1,
+      limit: limit ? parseInt(limit, 10) : 10,
+      status,
+      sortBy,
     });
   }
 
@@ -119,6 +142,44 @@ export class LodgingReviewsController {
       reviewId,
       userId: user.id,
     });
+  }
+
+  // Charts & Analytics Endpoints
+  @Get(':id/reviews/analytics/distribution')
+  @ApiOkResponse({ description: 'Reviews distribution by rating' })
+  getReviewsDistribution(@Param('id', ParseUUIDPipe) entityId: string) {
+    return this.entityReviewsService.getReviewsCountByRating(ReviewDomainsEnum.LODGINGS, entityId);
+  }
+
+  @Get(':id/reviews/analytics/by-year')
+  @ApiOkResponse({ description: 'Reviews count by year' })
+  getReviewsByYear(@Param('id', ParseUUIDPipe) entityId: string) {
+    return this.entityReviewsService.getReviewsCountByYear(ReviewDomainsEnum.LODGINGS, entityId);
+  }
+
+  @Get(':id/reviews/analytics/by-month')
+  @ApiOkResponse({ description: 'Reviews count by month (current year)' })
+  getReviewsByMonth(@Param('id', ParseUUIDPipe) entityId: string) {
+    return this.entityReviewsService.getReviewsCountByMonth(ReviewDomainsEnum.LODGINGS, entityId);
+  }
+
+  @Get(':id/reviews/analytics/trend')
+  @ApiOkResponse({ description: 'Rating trend over time' })
+  getRatingTrend(@Param('id', ParseUUIDPipe) entityId: string) {
+    return this.entityReviewsService.getReviewsRatingTrend(ReviewDomainsEnum.LODGINGS, entityId);
+  }
+
+  @Get(':id/reviews/analytics/metrics')
+  @ApiOkResponse({ description: 'Aggregate metrics for reviews' })
+  getReviewsMetrics(@Param('id', ParseUUIDPipe) entityId: string) {
+    return this.entityReviewsService.getReviewsMetrics(ReviewDomainsEnum.LODGINGS, entityId);
+  }
+
+  @Post(':id/reviews/analytics/summary')
+  @Auth()
+  @ApiOkResponse({ description: 'Generate AI analysis of reviews' })
+  generateReviewSummary(@Param('id', ParseUUIDPipe) entityId: string) {
+    return this.entityReviewsService.generateReviewSummary(ReviewDomainsEnum.LODGINGS, entityId);
   }
 }
 
