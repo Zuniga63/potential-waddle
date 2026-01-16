@@ -125,11 +125,15 @@ export class EntityReviewsService {
     const repository = this.getEntityRepository(entityType);
     const relationKey = this.getEntityRelationKey(entityType);
 
+    // Entidades que tienen relación con town
+    const entitiesWithTown = [ReviewDomainsEnum.LODGINGS, ReviewDomainsEnum.RESTAURANTS, ReviewDomainsEnum.COMMERCE];
+    const hasTownRelation = entitiesWithTown.includes(entityType);
+
     // Verificar que la entidad existe y que el usuario no ha dejado review
     const [entity, userHasReview] = await Promise.all([
       repository.findOne({
         where: { id: entityId },
-        relations: { town: true },
+        relations: hasTownRelation ? { town: true } : {},
       }),
       this.reviewRepository.exists({
         where: { user: { id: user.id }, [relationKey]: { id: entityId } },
@@ -236,14 +240,29 @@ export class EntityReviewsService {
     const repository = this.getEntityRepository(entityType);
     const relationKey = this.getEntityRelationKey(entityType);
 
+    // Determine owner relation based on entity type
+    // Experience belongs to Guide which belongs to User
+    // All others have direct user relation
+    const isExperience = entityType === ReviewDomainsEnum.EXPERIENCES;
+    const ownerRelation = isExperience ? { guide: { user: true } } : { user: true };
+
     // Verify entity exists and user is owner
     const entity = await repository.findOne({
       where: { id: entityId },
-      relations: { user: true },
+      relations: ownerRelation,
     });
 
     if (!entity) throw new NotFoundException(`${entityType} not found`);
-    if (!entity.user || entity.user.id !== userId) {
+
+    // Check ownership based on entity type
+    let isOwner = false;
+    if (isExperience) {
+      isOwner = entity.guide?.user?.id === userId;
+    } else {
+      isOwner = entity.user?.id === userId;
+    }
+
+    if (!isOwner) {
       throw new BadRequestException('You are not the owner of this entity');
     }
 

@@ -231,6 +231,28 @@ export class RestaurantReviewsController {
     });
   }
 
+  @Get(':id/reviews/owner')
+  @Auth()
+  @ApiOkResponse({ description: 'Owner reviews retrieved successfully' })
+  findAllForOwner(
+    @Param('id', ParseUUIDPipe) entityId: string,
+    @GetUser() user: User,
+    @Query('page') page?: string,
+    @Query('limit') limit?: string,
+    @Query('status') status?: ReviewStatusEnum,
+    @Query('sortBy') sortBy?: string,
+  ) {
+    return this.entityReviewsService.findAllForOwner({
+      entityType: ReviewDomainsEnum.RESTAURANTS,
+      entityId,
+      userId: user.id,
+      page: page ? parseInt(page, 10) : 1,
+      limit: limit ? parseInt(limit, 10) : 10,
+      status,
+      sortBy,
+    });
+  }
+
   @Get(':id/reviews/:reviewId')
   @Auth()
   @ApiOkResponse({ description: 'Review retrieved successfully' })
@@ -281,28 +303,6 @@ export class RestaurantReviewsController {
       entityId,
       reviewId,
       userId: user.id,
-    });
-  }
-
-  @Get(':id/reviews/owner')
-  @Auth()
-  @ApiOkResponse({ description: 'Owner reviews retrieved successfully' })
-  findAllForOwner(
-    @Param('id', ParseUUIDPipe) entityId: string,
-    @GetUser() user: User,
-    @Query('page') page?: string,
-    @Query('limit') limit?: string,
-    @Query('status') status?: ReviewStatusEnum,
-    @Query('sortBy') sortBy?: string,
-  ) {
-    return this.entityReviewsService.findAllForOwner({
-      entityType: ReviewDomainsEnum.RESTAURANTS,
-      entityId,
-      userId: user.id,
-      page: page ? parseInt(page, 10) : 1,
-      limit: limit ? parseInt(limit, 10) : 10,
-      status,
-      sortBy,
     });
   }
 
@@ -393,6 +393,28 @@ export class CommerceReviewsController {
     });
   }
 
+  @Get(':id/reviews/owner')
+  @Auth()
+  @ApiOkResponse({ description: 'Owner reviews retrieved successfully' })
+  findAllForOwner(
+    @Param('id', ParseUUIDPipe) entityId: string,
+    @GetUser() user: User,
+    @Query('page') page?: string,
+    @Query('limit') limit?: string,
+    @Query('status') status?: ReviewStatusEnum,
+    @Query('sortBy') sortBy?: string,
+  ) {
+    return this.entityReviewsService.findAllForOwner({
+      entityType: ReviewDomainsEnum.COMMERCE,
+      entityId,
+      userId: user.id,
+      page: page ? parseInt(page, 10) : 1,
+      limit: limit ? parseInt(limit, 10) : 10,
+      status,
+      sortBy,
+    });
+  }
+
   @Get(':id/reviews/:reviewId')
   @Auth()
   @ApiOkResponse({ description: 'Review retrieved successfully' })
@@ -443,28 +465,6 @@ export class CommerceReviewsController {
       entityId,
       reviewId,
       userId: user.id,
-    });
-  }
-
-  @Get(':id/reviews/owner')
-  @Auth()
-  @ApiOkResponse({ description: 'Owner reviews retrieved successfully' })
-  findAllForOwner(
-    @Param('id', ParseUUIDPipe) entityId: string,
-    @GetUser() user: User,
-    @Query('page') page?: string,
-    @Query('limit') limit?: string,
-    @Query('status') status?: ReviewStatusEnum,
-    @Query('sortBy') sortBy?: string,
-  ) {
-    return this.entityReviewsService.findAllForOwner({
-      entityType: ReviewDomainsEnum.COMMERCE,
-      entityId,
-      userId: user.id,
-      page: page ? parseInt(page, 10) : 1,
-      limit: limit ? parseInt(limit, 10) : 10,
-      status,
-      sortBy,
     });
   }
 
@@ -555,6 +555,28 @@ export class ExperienceReviewsController {
     });
   }
 
+  @Get(':id/reviews/owner')
+  @Auth()
+  @ApiOkResponse({ description: 'Owner reviews retrieved successfully' })
+  findAllForOwner(
+    @Param('id', ParseUUIDPipe) entityId: string,
+    @GetUser() user: User,
+    @Query('page') page?: string,
+    @Query('limit') limit?: string,
+    @Query('status') status?: ReviewStatusEnum,
+    @Query('sortBy') sortBy?: string,
+  ) {
+    return this.entityReviewsService.findAllForOwner({
+      entityType: ReviewDomainsEnum.EXPERIENCES,
+      entityId,
+      userId: user.id,
+      page: page ? parseInt(page, 10) : 1,
+      limit: limit ? parseInt(limit, 10) : 10,
+      status,
+      sortBy,
+    });
+  }
+
   @Get(':id/reviews/:reviewId')
   @Auth()
   @ApiOkResponse({ description: 'Review retrieved successfully' })
@@ -606,6 +628,44 @@ export class ExperienceReviewsController {
       reviewId,
       userId: user.id,
     });
+  }
+
+  // Charts & Analytics Endpoints
+  @Get(':id/reviews/analytics/distribution')
+  @ApiOkResponse({ description: 'Reviews distribution by rating' })
+  getReviewsDistribution(@Param('id', ParseUUIDPipe) entityId: string) {
+    return this.entityReviewsService.getReviewsCountByRating(ReviewDomainsEnum.EXPERIENCES, entityId);
+  }
+
+  @Get(':id/reviews/analytics/by-year')
+  @ApiOkResponse({ description: 'Reviews count by year' })
+  getReviewsByYear(@Param('id', ParseUUIDPipe) entityId: string) {
+    return this.entityReviewsService.getReviewsCountByYear(ReviewDomainsEnum.EXPERIENCES, entityId);
+  }
+
+  @Get(':id/reviews/analytics/by-month')
+  @ApiOkResponse({ description: 'Reviews count by month (current year)' })
+  getReviewsByMonth(@Param('id', ParseUUIDPipe) entityId: string) {
+    return this.entityReviewsService.getReviewsCountByMonth(ReviewDomainsEnum.EXPERIENCES, entityId);
+  }
+
+  @Get(':id/reviews/analytics/trend')
+  @ApiOkResponse({ description: 'Rating trend over time' })
+  getRatingTrend(@Param('id', ParseUUIDPipe) entityId: string) {
+    return this.entityReviewsService.getReviewsRatingTrend(ReviewDomainsEnum.EXPERIENCES, entityId);
+  }
+
+  @Get(':id/reviews/analytics/metrics')
+  @ApiOkResponse({ description: 'Aggregate metrics for reviews' })
+  getReviewsMetrics(@Param('id', ParseUUIDPipe) entityId: string) {
+    return this.entityReviewsService.getReviewsMetrics(ReviewDomainsEnum.EXPERIENCES, entityId);
+  }
+
+  @Post(':id/reviews/analytics/summary')
+  @Auth()
+  @ApiOkResponse({ description: 'Generate AI analysis of reviews' })
+  generateReviewSummary(@Param('id', ParseUUIDPipe) entityId: string) {
+    return this.entityReviewsService.generateReviewSummary(ReviewDomainsEnum.EXPERIENCES, entityId);
   }
 }
 
@@ -657,6 +717,28 @@ export class TransportReviewsController {
     });
   }
 
+  @Get(':id/reviews/owner')
+  @Auth()
+  @ApiOkResponse({ description: 'Owner reviews retrieved successfully' })
+  findAllForOwner(
+    @Param('id', ParseUUIDPipe) entityId: string,
+    @GetUser() user: User,
+    @Query('page') page?: string,
+    @Query('limit') limit?: string,
+    @Query('status') status?: ReviewStatusEnum,
+    @Query('sortBy') sortBy?: string,
+  ) {
+    return this.entityReviewsService.findAllForOwner({
+      entityType: ReviewDomainsEnum.TRANSPORT,
+      entityId,
+      userId: user.id,
+      page: page ? parseInt(page, 10) : 1,
+      limit: limit ? parseInt(limit, 10) : 10,
+      status,
+      sortBy,
+    });
+  }
+
   @Get(':id/reviews/:reviewId')
   @Auth()
   @ApiOkResponse({ description: 'Review retrieved successfully' })
@@ -709,6 +791,44 @@ export class TransportReviewsController {
       userId: user.id,
     });
   }
+
+  // Charts & Analytics Endpoints
+  @Get(':id/reviews/analytics/distribution')
+  @ApiOkResponse({ description: 'Reviews distribution by rating' })
+  getReviewsDistribution(@Param('id', ParseUUIDPipe) entityId: string) {
+    return this.entityReviewsService.getReviewsCountByRating(ReviewDomainsEnum.TRANSPORT, entityId);
+  }
+
+  @Get(':id/reviews/analytics/by-year')
+  @ApiOkResponse({ description: 'Reviews count by year' })
+  getReviewsByYear(@Param('id', ParseUUIDPipe) entityId: string) {
+    return this.entityReviewsService.getReviewsCountByYear(ReviewDomainsEnum.TRANSPORT, entityId);
+  }
+
+  @Get(':id/reviews/analytics/by-month')
+  @ApiOkResponse({ description: 'Reviews count by month (current year)' })
+  getReviewsByMonth(@Param('id', ParseUUIDPipe) entityId: string) {
+    return this.entityReviewsService.getReviewsCountByMonth(ReviewDomainsEnum.TRANSPORT, entityId);
+  }
+
+  @Get(':id/reviews/analytics/trend')
+  @ApiOkResponse({ description: 'Rating trend over time' })
+  getRatingTrend(@Param('id', ParseUUIDPipe) entityId: string) {
+    return this.entityReviewsService.getReviewsRatingTrend(ReviewDomainsEnum.TRANSPORT, entityId);
+  }
+
+  @Get(':id/reviews/analytics/metrics')
+  @ApiOkResponse({ description: 'Aggregate metrics for reviews' })
+  getReviewsMetrics(@Param('id', ParseUUIDPipe) entityId: string) {
+    return this.entityReviewsService.getReviewsMetrics(ReviewDomainsEnum.TRANSPORT, entityId);
+  }
+
+  @Post(':id/reviews/analytics/summary')
+  @Auth()
+  @ApiOkResponse({ description: 'Generate AI analysis of reviews' })
+  generateReviewSummary(@Param('id', ParseUUIDPipe) entityId: string) {
+    return this.entityReviewsService.generateReviewSummary(ReviewDomainsEnum.TRANSPORT, entityId);
+  }
 }
 
 // * ----------------------------------------------------------------------------------------------------------------
@@ -759,6 +879,71 @@ export class GuideReviewsController {
     });
   }
 
+  @Get(':id/reviews/owner')
+  @Auth()
+  @ApiOkResponse({ description: 'Owner reviews retrieved successfully' })
+  findAllForOwner(
+    @Param('id', ParseUUIDPipe) entityId: string,
+    @GetUser() user: User,
+    @Query('page') page?: string,
+    @Query('limit') limit?: string,
+    @Query('status') status?: ReviewStatusEnum,
+    @Query('sortBy') sortBy?: string,
+  ) {
+    return this.entityReviewsService.findAllForOwner({
+      entityType: ReviewDomainsEnum.GUIDES,
+      entityId,
+      userId: user.id,
+      page: page ? parseInt(page, 10) : 1,
+      limit: limit ? parseInt(limit, 10) : 10,
+      status,
+      sortBy,
+    });
+  }
+
+  // * ----------------------------------------------------------------------------------------------------------------
+  // * CHARTS & ANALYTICS ENDPOINTS
+  // * ----------------------------------------------------------------------------------------------------------------
+  @Get(':id/reviews/analytics/distribution')
+  @ApiOkResponse({ description: 'Reviews count by rating' })
+  getReviewsDistribution(@Param('id', ParseUUIDPipe) entityId: string) {
+    return this.entityReviewsService.getReviewsCountByRating(ReviewDomainsEnum.GUIDES, entityId);
+  }
+
+  @Get(':id/reviews/analytics/by-year')
+  @ApiOkResponse({ description: 'Reviews count by year' })
+  getReviewsByYear(@Param('id', ParseUUIDPipe) entityId: string) {
+    return this.entityReviewsService.getReviewsCountByYear(ReviewDomainsEnum.GUIDES, entityId);
+  }
+
+  @Get(':id/reviews/analytics/by-month')
+  @ApiOkResponse({ description: 'Reviews count by month (current year)' })
+  getReviewsByMonth(@Param('id', ParseUUIDPipe) entityId: string) {
+    return this.entityReviewsService.getReviewsCountByMonth(ReviewDomainsEnum.GUIDES, entityId);
+  }
+
+  @Get(':id/reviews/analytics/trend')
+  @ApiOkResponse({ description: 'Rating trend over time' })
+  getRatingTrend(@Param('id', ParseUUIDPipe) entityId: string) {
+    return this.entityReviewsService.getReviewsRatingTrend(ReviewDomainsEnum.GUIDES, entityId);
+  }
+
+  @Get(':id/reviews/analytics/metrics')
+  @ApiOkResponse({ description: 'Aggregate metrics for reviews' })
+  getReviewsMetrics(@Param('id', ParseUUIDPipe) entityId: string) {
+    return this.entityReviewsService.getReviewsMetrics(ReviewDomainsEnum.GUIDES, entityId);
+  }
+
+  @Post(':id/reviews/analytics/summary')
+  @Auth()
+  @ApiOkResponse({ description: 'Generate AI analysis of reviews' })
+  generateReviewSummary(@Param('id', ParseUUIDPipe) entityId: string) {
+    return this.entityReviewsService.generateReviewSummary(ReviewDomainsEnum.GUIDES, entityId);
+  }
+
+  // * ----------------------------------------------------------------------------------------------------------------
+  // * PARAMETERIZED ROUTES (must be last)
+  // * ----------------------------------------------------------------------------------------------------------------
   @Get(':id/reviews/:reviewId')
   @Auth()
   @ApiOkResponse({ description: 'Review retrieved successfully' })

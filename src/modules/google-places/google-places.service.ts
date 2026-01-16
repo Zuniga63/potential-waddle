@@ -55,7 +55,7 @@ export class GooglePlacesService {
     this.apifyToken = configService.get<string>('apify.apiKey', { infer: true });
 
     // Initialize Gemini AI
-    const geminiApiKey = configService.get<string>('GEMINI_API_KEY');
+    const geminiApiKey = configService.get<string>('gemini.apiKey', { infer: true });
     if (geminiApiKey) {
       const genAI = new GoogleGenerativeAI(geminiApiKey);
       this.geminiModel = genAI.getGenerativeModel({
@@ -649,7 +649,7 @@ export class GooglePlacesService {
   async reviewSummary(
     message: string,
     entityId: string,
-    entityType: 'lodging' | 'restaurant' | 'commerce' | 'experience' | 'place',
+    entityType: 'lodging' | 'restaurant' | 'commerce',
     type: 'general' | 'specific',
   ) {
     try {
@@ -713,7 +713,7 @@ export class GooglePlacesService {
     }
   }
 
-  async getReviewsSummary(entityId: string, entityType: 'lodging' | 'restaurant' | 'commerce' | 'experience' | 'place') {
+  async getReviewsSummary(entityId: string, entityType: 'lodging' | 'restaurant' | 'commerce') {
     const reviews = await this.googleReviewSummaryRepository.find({
       where: { entityId, entityType },
       order: { createdAt: 'DESC' },

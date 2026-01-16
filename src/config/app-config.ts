@@ -68,6 +68,9 @@ export interface EnvironmentVariables {
   turnstile: {
     secretKey: string;
   };
+  gemini: {
+    apiKey: string;
+  };
   frontendUrl: string;
 }
 
@@ -143,6 +146,9 @@ export const appConfig = (): EnvironmentVariables => ({
   },
   turnstile: {
     secretKey: process.env.TURNSTILE_SECRET_KEY || '',
+  },
+  gemini: {
+    apiKey: process.env.GEMINI_API_KEY || '',
   },
   frontendUrl: process.env.FRONTEND_URL || 'http://localhost:3000',
 });
