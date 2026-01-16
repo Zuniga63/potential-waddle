@@ -113,4 +113,44 @@ export class TownsService {
 
     return;
   }
+
+  async findAllForMap() {
+    const towns = await this.townRepository
+      .createQueryBuilder('town')
+      .leftJoinAndSelect('town.department', 'department')
+      .loadRelationCountAndMap('town.lodgingsCount', 'town.lodgings')
+      .loadRelationCountAndMap('town.restaurantsCount', 'town.restaurants')
+      .loadRelationCountAndMap('town.placesCount', 'town.places')
+      .loadRelationCountAndMap('town.experiencesCount', 'town.experiences')
+      .loadRelationCountAndMap('town.commercesCount', 'town.commerces')
+      .loadRelationCountAndMap('town.transportsCount', 'town.transports')
+      .where('town.isEnable = :isEnable', { isEnable: true })
+      .andWhere('town.location IS NOT NULL')
+      .getMany();
+
+    return towns.map(town => {
+      const point = town.location as any;
+      return {
+        id: town.id,
+        name: town.name,
+        slug: town.slug,
+        description: town.description,
+        department: town.department?.name || null,
+        coordinates: point
+          ? {
+              lat: point.coordinates[1],
+              lng: point.coordinates[0],
+            }
+          : null,
+        stats: {
+          lodgings: (town as any).lodgingsCount || 0,
+          restaurants: (town as any).restaurantsCount || 0,
+          places: (town as any).placesCount || 0,
+          experiences: (town as any).experiencesCount || 0,
+          commerces: (town as any).commercesCount || 0,
+          transports: (town as any).transportsCount || 0,
+        },
+      };
+    });
+  }
 }

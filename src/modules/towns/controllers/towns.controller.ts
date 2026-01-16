@@ -76,6 +76,12 @@ export class TownsController {
     return this.townsService.findAll();
   }
 
+  @Get('for-map')
+  @ApiOperation({ summary: 'Get all towns with coordinates for map display' })
+  findAllForMap() {
+    return this.townsService.findAllForMap();
+  }
+
   @Get(':id')
   findOne(@Param('id') id: string) {
     return this.townsService.findOne(id);
