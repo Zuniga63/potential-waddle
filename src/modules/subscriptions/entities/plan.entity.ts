@@ -42,7 +42,7 @@ export class Plan {
   currency: string;
 
   @Column('varchar', { length: 20, default: 'monthly', name: 'billing_interval' })
-  billingInterval: 'monthly' | 'yearly';
+  billingInterval: 'monthly' | 'yearly' | 'lifetime';
 
   @Column('boolean', { default: true, name: 'is_active' })
   isActive: boolean;

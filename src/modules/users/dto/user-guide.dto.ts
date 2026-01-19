@@ -119,6 +119,14 @@ export class UserGuideDto {
   })
   images?: string[];
 
+  @ApiProperty({
+    example: true,
+    description: 'Indicates if the guide is public',
+    readOnly: true,
+    required: false,
+  })
+  isPublic?: boolean;
+
   /*   @ApiProperty({
     example: true,
     description: 'Whether the guide is currently available',
@@ -161,6 +169,7 @@ export class UserGuideDto {
     this.tiktok = data.tiktok;
     this.languages = data.languages;
     this.images = data.images?.map(image => image.imageResource?.url).slice(0, 4);
+    this.isPublic = data.isPublic;
     // Map relationships
     this.userId = user?.id;
     this.categories = data.categories?.map(category => new CategoryDto(category));

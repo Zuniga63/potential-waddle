@@ -164,6 +164,14 @@ export class UserCommerceDto {
   })
   googleMapsUrl: string | null;
 
+  @ApiProperty({
+    example: true,
+    description: 'Indicates if the commerce is public',
+    readOnly: true,
+    required: false,
+  })
+  isPublic: boolean;
+
   constructor(commerce?: Commerce, userReview?: string) {
     if (!commerce) return;
     this.id = commerce.id;
@@ -190,5 +198,6 @@ export class UserCommerceDto {
     this.whatsappNumbers = commerce.whatsappNumbers || [];
     this.address = commerce.address;
     this.googleMapsUrl = commerce.googleMapsUrl;
+    this.isPublic = commerce.isPublic;
   }
 }

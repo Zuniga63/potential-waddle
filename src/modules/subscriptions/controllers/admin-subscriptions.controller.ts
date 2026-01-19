@@ -1,16 +1,20 @@
-import { Controller, Get, Post, Param, Query, ParseUUIDPipe } from '@nestjs/common';
+import { Controller, Get, Post, Delete, Param, Query, ParseUUIDPipe, Body } from '@nestjs/common';
 import { ApiTags, ApiOkResponse, ApiOperation, ApiQuery } from '@nestjs/swagger';
 
 import { SuperAdmin } from '../../auth/decorators';
 import { SubscriptionsService } from '../services';
-import { SubscriptionDto } from '../dto';
+import { SubscriptionDto, AdminCreateSubscriptionDto } from '../dto';
 import { EntityType } from '../entities';
+import { UsersService } from '../../users/services/users.service';
 
 @Controller('subscriptions/admin')
 @ApiTags('Admin - Subscriptions')
 @SuperAdmin()
 export class AdminSubscriptionsController {
-  constructor(private readonly subscriptionsService: SubscriptionsService) {}
+  constructor(
+    private readonly subscriptionsService: SubscriptionsService,
+    private readonly usersService: UsersService,
+  ) {}
 
   @Get('list')
   @ApiOperation({ summary: 'Get all subscriptions (admin)' })
@@ -42,10 +46,31 @@ export class AdminSubscriptionsController {
     });
   }
 
+  @Get('user-businesses/:userId')
+  @ApiOperation({ summary: 'Get all businesses for a user (for subscription creation)' })
+  @ApiOkResponse({ description: 'List of user businesses' })
+  getUserBusinesses(@Param('userId', ParseUUIDPipe) userId: string) {
+    return this.usersService.getUserBusinesses(userId);
+  }
+
+  @Post()
+  @ApiOperation({ summary: 'Create subscription manually (admin)' })
+  @ApiOkResponse({ description: 'Subscription created', type: SubscriptionDto })
+  create(@Body() dto: AdminCreateSubscriptionDto) {
+    return this.subscriptionsService.createManualSubscription(dto);
+  }
+
   @Post(':id/cancel')
   @ApiOperation({ summary: 'Cancel subscription (admin)' })
   @ApiOkResponse({ description: 'Subscription canceled', type: SubscriptionDto })
   cancel(@Param('id', ParseUUIDPipe) id: string) {
     return this.subscriptionsService.adminCancel(id);
+  }
+
+  @Delete(':id')
+  @ApiOperation({ summary: 'Delete subscription (admin, for testing purposes)' })
+  @ApiOkResponse({ description: 'Subscription deleted' })
+  delete(@Param('id', ParseUUIDPipe) id: string) {
+    return this.subscriptionsService.deleteSubscription(id);
   }
 }

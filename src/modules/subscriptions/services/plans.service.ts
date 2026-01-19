@@ -179,6 +179,54 @@ export class PlansService {
     return this.findOne(id);
   }
 
+  async duplicate(id: string): Promise<PlanDto> {
+    const originalPlan = await this.planRepository.findOne({
+      where: { id },
+      relations: { features: true },
+    });
+
+    if (!originalPlan) throw new NotFoundException(`Plan with id ${id} not found`);
+
+    // Generate unique slug
+    let newSlug = `${originalPlan.slug}-duplicado`;
+    let counter = 1;
+    while (await this.planRepository.findOne({ where: { slug: newSlug } })) {
+      newSlug = `${originalPlan.slug}-duplicado-${counter}`;
+      counter++;
+    }
+
+    // Create duplicated plan
+    const newPlan = this.planRepository.create({
+      name: `${originalPlan.name} (duplicado)`,
+      slug: newSlug,
+      description: originalPlan.description,
+      priceInCents: originalPlan.priceInCents,
+      currency: originalPlan.currency,
+      billingInterval: originalPlan.billingInterval,
+      isActive: false, // Start as inactive
+      sortOrder: originalPlan.sortOrder,
+    });
+
+    const savedPlan = await this.planRepository.save(newPlan);
+
+    // Duplicate features
+    if (originalPlan.features?.length) {
+      for (const originalFeature of originalPlan.features) {
+        const feature = this.featureRepository.create({
+          planId: savedPlan.id,
+          featureKey: originalFeature.featureKey,
+          featureName: originalFeature.featureName,
+          featureValue: originalFeature.featureValue,
+          isEnabled: originalFeature.isEnabled,
+          sortOrder: originalFeature.sortOrder,
+        });
+        await this.featureRepository.save(feature);
+      }
+    }
+
+    return this.findOne(savedPlan.id);
+  }
+
   // * ----------------------------------------------------------------------------------------------------------------
   // * ADMIN CRUD - FEATURES
   // * ----------------------------------------------------------------------------------------------------------------

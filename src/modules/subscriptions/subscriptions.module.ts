@@ -4,15 +4,17 @@ import { ConfigModule } from '@nestjs/config';
 
 import { Plan, PlanFeature, Subscription, Payment } from './entities';
 import { PlansService, SubscriptionsService, PaymentsService, WompiService } from './services';
-import { PlansController, AdminPlansController, SubscriptionsController, AdminSubscriptionsController, WebhooksController } from './controllers';
+import { PlansController, AdminPlansController, SubscriptionsController, AdminSubscriptionsController, AdminPaymentsController, WebhooksController } from './controllers';
 import { User } from '../users/entities';
+import { UsersModule } from '../users/users.module';
 
 @Module({
   imports: [
     ConfigModule,
     TypeOrmModule.forFeature([Plan, PlanFeature, Subscription, Payment, User]),
+    UsersModule,
   ],
-  controllers: [PlansController, AdminPlansController, SubscriptionsController, AdminSubscriptionsController, WebhooksController],
+  controllers: [PlansController, AdminPlansController, SubscriptionsController, AdminSubscriptionsController, AdminPaymentsController, WebhooksController],
   providers: [PlansService, SubscriptionsService, PaymentsService, WompiService],
   exports: [PlansService, SubscriptionsService, PaymentsService, WompiService],
 })

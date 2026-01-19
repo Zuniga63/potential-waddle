@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, ILike } from 'typeorm';
 
 import { Payment, PaymentStatus } from '../entities';
 import { PaymentDto } from '../dto';
@@ -95,5 +95,94 @@ export class PaymentsService {
     const timestamp = Date.now();
     const random = Math.random().toString(36).substring(2, 8).toUpperCase();
     return `BINNTU-PAY-${timestamp}-${random}`;
+  }
+
+  // * ----------------------------------------------------------------------------------------------------------------
+  // * ADMIN - LISTAR TODOS LOS PAGOS
+  // * ----------------------------------------------------------------------------------------------------------------
+
+  async findAllAdmin(filters: {
+    page?: number;
+    limit?: number;
+    search?: string;
+    status?: PaymentStatus;
+    sortBy?: 'createdAt' | 'updatedAt' | 'amountInCents';
+    sortOrder?: 'ASC' | 'DESC';
+  }): Promise<{ data: PaymentDto[]; count: number; pages: number; currentPage: number }> {
+    const page = filters.page || 1;
+    const limit = filters.limit || 10;
+    const skip = (page - 1) * limit;
+    const sortBy = filters.sortBy || 'createdAt';
+    const sortOrder = filters.sortOrder || 'DESC';
+
+    const where: any = {};
+
+    if (filters.search) {
+      where.reference = ILike(`%${filters.search}%`);
+    }
+
+    if (filters.status) {
+      where.status = filters.status;
+    }
+
+    const [payments, count] = await this.paymentRepository.findAndCount({
+      where,
+      relations: { subscriptions: { plan: true }, user: true },
+      order: { [sortBy]: sortOrder },
+      skip,
+      take: limit,
+    });
+
+    return {
+      data: payments.map(payment => new PaymentDto(payment)),
+      count,
+      pages: Math.ceil(count / limit),
+      currentPage: page,
+    };
+  }
+
+  // * ----------------------------------------------------------------------------------------------------------------
+  // * ADMIN - ELIMINAR PAGO
+  // * ----------------------------------------------------------------------------------------------------------------
+
+  async deletePayment(id: string): Promise<void> {
+    const payment = await this.paymentRepository.findOne({
+      where: { id },
+    });
+
+    if (!payment) throw new NotFoundException(`Payment with id ${id} not found`);
+
+    await this.paymentRepository.remove(payment);
+  }
+
+  // * ----------------------------------------------------------------------------------------------------------------
+  // * ADMIN - ACTUALIZAR ESTADO DE PAGO
+  // * ----------------------------------------------------------------------------------------------------------------
+
+  async adminUpdateStatus(
+    id: string,
+    status: PaymentStatus,
+    additionalData?: {
+      paymentMethod?: string;
+      failureReason?: string;
+    },
+  ): Promise<PaymentDto> {
+    const payment = await this.paymentRepository.findOne({
+      where: { id },
+      relations: { subscriptions: { plan: true } },
+    });
+    if (!payment) throw new NotFoundException(`Payment with id ${id} not found`);
+
+    payment.status = status;
+    if (status === 'approved' && !payment.paidAt) {
+      payment.paidAt = new Date();
+    }
+    if (additionalData) {
+      if (additionalData.paymentMethod) payment.paymentMethod = additionalData.paymentMethod;
+      if (additionalData.failureReason) payment.failureReason = additionalData.failureReason;
+    }
+
+    await this.paymentRepository.save(payment);
+    return new PaymentDto(payment);
   }
 }

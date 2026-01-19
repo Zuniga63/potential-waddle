@@ -51,6 +51,9 @@ export class SubscriptionDto {
   @ApiProperty({ example: false, description: 'If the subscription has expired' })
   isExpired: boolean;
 
+  @ApiProperty({ example: 'Wompi', description: 'Payment type: Wompi or Manual' })
+  paymentType: 'Wompi' | 'Manual';
+
   constructor(subscription?: Subscription) {
     if (!subscription) return;
     this.id = subscription.id;
@@ -71,5 +74,14 @@ export class SubscriptionDto {
     this.isExpired = now > subscription.currentPeriodEnd;
     this.isActive = subscription.status === 'active' && !this.isExpired;
     this.daysRemaining = Math.max(0, Math.ceil((subscription.currentPeriodEnd.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)));
+
+    // Determinar tipo de pago
+    if (!subscription.paymentId) {
+      this.paymentType = 'Manual';
+    } else if (subscription.payment?.wompiTransactionId) {
+      this.paymentType = 'Wompi';
+    } else {
+      this.paymentType = 'Manual';
+    }
   }
 }

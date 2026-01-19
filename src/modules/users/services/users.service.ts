@@ -422,6 +422,66 @@ export class UsersService {
   // * ----------------------------------------------------------------------------------------------------------------
   // * GET USER REVIEWS (lugares visitados)
   // * ----------------------------------------------------------------------------------------------------------------
+  // * ----------------------------------------------------------------------------------------------------------------
+  // * GET ALL USER BUSINESSES (for admin subscription creation)
+  // * ----------------------------------------------------------------------------------------------------------------
+  async getUserBusinesses(userId: string) {
+    const user = await this.usersRepository
+      .createQueryBuilder('user')
+      .leftJoinAndSelect('user.lodgings', 'lodgings')
+      .leftJoinAndSelect('user.restaurants', 'restaurants')
+      .leftJoinAndSelect('user.commerces', 'commerces')
+      .leftJoinAndSelect('user.guide', 'guide')
+      .leftJoinAndSelect('user.transport', 'transport')
+      .where('user.id = :userId', { userId })
+      .getOne();
+
+    if (!user) return [];
+
+    const businesses: Array<{ id: string; name: string; entityType: string }> = [];
+
+    // Add lodgings
+    if (user.lodgings) {
+      user.lodgings.forEach(lodging => {
+        businesses.push({ id: lodging.id, name: lodging.name, entityType: 'lodging' });
+      });
+    }
+
+    // Add restaurants
+    if (user.restaurants) {
+      user.restaurants.forEach(restaurant => {
+        businesses.push({ id: restaurant.id, name: restaurant.name, entityType: 'restaurant' });
+      });
+    }
+
+    // Add commerces
+    if (user.commerces) {
+      user.commerces.forEach(commerce => {
+        businesses.push({ id: commerce.id, name: commerce.name, entityType: 'commerce' });
+      });
+    }
+
+    // Add guide (OneToOne)
+    if (user.guide) {
+      businesses.push({
+        id: user.guide.id,
+        name: `${user.guide.firstName} ${user.guide.lastName}`,
+        entityType: 'guide',
+      });
+    }
+
+    // Add transport (OneToOne)
+    if (user.transport) {
+      businesses.push({
+        id: user.transport.id,
+        name: `${user.transport.firstName} ${user.transport.lastName}`,
+        entityType: 'transport',
+      });
+    }
+
+    return businesses;
+  }
+
   async getUserReviews(userId: string) {
     const reviews = await this.reviewRepository.find({
       where: { user: { id: userId } },

@@ -59,6 +59,13 @@ export class AdminPlansController {
     return this.plansService.toggleActive(id);
   }
 
+  @Post(':id/duplicate')
+  @ApiOperation({ summary: 'Duplicate a plan with all its features' })
+  @ApiCreatedResponse({ description: 'Plan duplicated', type: PlanDto })
+  duplicate(@Param('id', ParseUUIDPipe) id: string) {
+    return this.plansService.duplicate(id);
+  }
+
   // * ----------------------------------------------------------------------------------------------------------------
   // * FEATURES CRUD
   // * ----------------------------------------------------------------------------------------------------------------

@@ -5,7 +5,7 @@ import { ConfigService } from '@nestjs/config';
 import * as crypto from 'crypto';
 
 import { Subscription, Plan, Payment, EntityType } from '../entities';
-import { SubscriptionDto, CreateCheckoutDto, CheckoutResponseDto } from '../dto';
+import { SubscriptionDto, CreateCheckoutDto, CheckoutResponseDto, AdminCreateSubscriptionDto } from '../dto';
 import { PlansService } from './plans.service';
 import { PaymentsService } from './payments.service';
 
@@ -133,7 +133,10 @@ export class SubscriptionsService {
 
       // Calcular fecha de fin según el billing interval del plan
       const subscriptionEnd = new Date(now);
-      if (plan.billingInterval === 'yearly') {
+      if (plan.billingInterval === 'lifetime') {
+        // Suscripción vitalicia: fecha muy lejana
+        subscriptionEnd.setFullYear(2099, 11, 31);
+      } else if (plan.billingInterval === 'yearly') {
         subscriptionEnd.setFullYear(subscriptionEnd.getFullYear() + 1);
       } else {
         subscriptionEnd.setMonth(subscriptionEnd.getMonth() + 1);
@@ -196,7 +199,10 @@ export class SubscriptionsService {
       const plan = await this.planRepository.findOne({ where: { id: subscription.planId } });
       if (plan) {
         const periodEnd = new Date(now);
-        if (plan.billingInterval === 'yearly') {
+        if (plan.billingInterval === 'lifetime') {
+          // Suscripción vitalicia: fecha muy lejana
+          periodEnd.setFullYear(2099, 11, 31);
+        } else if (plan.billingInterval === 'yearly') {
           periodEnd.setFullYear(periodEnd.getFullYear() + 1);
         } else {
           periodEnd.setMonth(periodEnd.getMonth() + 1);
@@ -273,7 +279,7 @@ export class SubscriptionsService {
 
     const [subscriptions, count] = await this.subscriptionRepository.findAndCount({
       where,
-      relations: { plan: { features: true }, user: true },
+      relations: { plan: { features: true }, user: true, payment: true },
       order: { [sortBy]: sortOrder },
       skip,
       take: limit,
@@ -285,6 +291,74 @@ export class SubscriptionsService {
       pages: Math.ceil(count / limit),
       currentPage: page,
     };
+  }
+
+  // * ----------------------------------------------------------------------------------------------------------------
+  // * ADMIN - CREAR SUSCRIPCIÓN MANUAL
+  // * ----------------------------------------------------------------------------------------------------------------
+
+  async createManualSubscription(dto: AdminCreateSubscriptionDto): Promise<SubscriptionDto> {
+    // Verificar que el plan existe
+    const plan = await this.planRepository.findOne({
+      where: { id: dto.planId },
+      relations: { features: true },
+    });
+    if (!plan) throw new NotFoundException(`Plan con id ${dto.planId} no encontrado`);
+
+    // Calcular fechas si no se proporcionan
+    const now = new Date();
+    let periodStart = dto.currentPeriodStart ? new Date(dto.currentPeriodStart) : now;
+    let periodEnd: Date;
+
+    if (dto.currentPeriodEnd) {
+      periodEnd = new Date(dto.currentPeriodEnd);
+    } else {
+      // Calcular según billing interval del plan
+      periodEnd = new Date(periodStart);
+      if (plan.billingInterval === 'lifetime') {
+        periodEnd.setFullYear(2099, 11, 31);
+      } else if (plan.billingInterval === 'yearly') {
+        periodEnd.setFullYear(periodEnd.getFullYear() + 1);
+      } else {
+        periodEnd.setMonth(periodEnd.getMonth() + 1);
+      }
+    }
+
+    const subscription = this.subscriptionRepository.create({
+      userId: dto.userId,
+      planId: dto.planId,
+      paymentId: null, // Sin pago asociado (creación manual)
+      status: dto.status || 'active',
+      entityType: dto.entityType,
+      entityId: dto.entityId,
+      entityName: dto.entityName,
+      currentPeriodStart: periodStart,
+      currentPeriodEnd: periodEnd,
+    });
+
+    await this.subscriptionRepository.save(subscription);
+
+    // Recargar con relaciones
+    const savedSubscription = await this.subscriptionRepository.findOne({
+      where: { id: subscription.id },
+      relations: { plan: { features: true } },
+    });
+
+    return new SubscriptionDto(savedSubscription!);
+  }
+
+  // * ----------------------------------------------------------------------------------------------------------------
+  // * ADMIN - ELIMINAR SUSCRIPCIÓN (para pruebas)
+  // * ----------------------------------------------------------------------------------------------------------------
+
+  async deleteSubscription(id: string): Promise<void> {
+    const subscription = await this.subscriptionRepository.findOne({
+      where: { id },
+    });
+
+    if (!subscription) throw new NotFoundException(`Subscription with id ${id} not found`);
+
+    await this.subscriptionRepository.remove(subscription);
   }
 
   // * ----------------------------------------------------------------------------------------------------------------
