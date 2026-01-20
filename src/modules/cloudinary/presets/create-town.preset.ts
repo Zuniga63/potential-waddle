@@ -18,7 +18,7 @@ export async function createTownPreset() {
     overwrite: true,
     format: 'jpg',
 
-    transformation: [{ width: 1080, crop: 'scale', dpr: 'auto', quality: 'auto:best' }],
+    transformation: [{ width: 1920, crop: 'scale', quality: 'auto:best' }],
   };
 
   const presetExist = await verifyIfPresetExist(name);

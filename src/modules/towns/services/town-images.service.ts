@@ -321,4 +321,67 @@ export class TownImagesService {
       altitude: town.info?.altitude,
     };
   }
+
+  // ------------------------------------------------------------------------------------------------
+  // Get public counts (lodgings, restaurants, places, etc.) by slug or name
+  // ------------------------------------------------------------------------------------------------
+  async getPublicCounts(slugOrName: string): Promise<{
+    places: number;
+    lodgings: number;
+    restaurants: number;
+    experiences: number;
+    guides: number;
+    transports: number;
+    commerces: number;
+    ventures: number;
+  }> {
+    const emptyResult = {
+      places: 0,
+      lodgings: 0,
+      restaurants: 0,
+      experiences: 0,
+      guides: 0,
+      transports: 0,
+      commerces: 0,
+      ventures: 0,
+    };
+
+    // Try to find by slug first, then by name
+    let town = await this.townRepository
+      .createQueryBuilder('town')
+      .loadRelationCountAndMap('town.placesCount', 'town.places')
+      .loadRelationCountAndMap('town.lodgingsCount', 'town.lodgings')
+      .loadRelationCountAndMap('town.restaurantsCount', 'town.restaurants')
+      .loadRelationCountAndMap('town.experiencesCount', 'town.experiences')
+      .loadRelationCountAndMap('town.transportsCount', 'town.transports')
+      .loadRelationCountAndMap('town.commercesCount', 'town.commerces')
+      .where('town.slug = :slugOrName', { slugOrName })
+      .getOne();
+
+    if (!town) {
+      town = await this.townRepository
+        .createQueryBuilder('town')
+        .loadRelationCountAndMap('town.placesCount', 'town.places')
+        .loadRelationCountAndMap('town.lodgingsCount', 'town.lodgings')
+        .loadRelationCountAndMap('town.restaurantsCount', 'town.restaurants')
+        .loadRelationCountAndMap('town.experiencesCount', 'town.experiences')
+        .loadRelationCountAndMap('town.transportsCount', 'town.transports')
+        .loadRelationCountAndMap('town.commercesCount', 'town.commerces')
+        .where('town.name = :slugOrName', { slugOrName })
+        .getOne();
+    }
+
+    if (!town) return emptyResult;
+
+    return {
+      places: (town as any).placesCount || 0,
+      lodgings: (town as any).lodgingsCount || 0,
+      restaurants: (town as any).restaurantsCount || 0,
+      experiences: (town as any).experiencesCount || 0,
+      guides: 0,
+      transports: (town as any).transportsCount || 0,
+      commerces: (town as any).commercesCount || 0,
+      ventures: 0,
+    };
+  }
 }

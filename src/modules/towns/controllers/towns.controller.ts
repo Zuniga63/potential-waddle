@@ -202,6 +202,12 @@ export class TownsController {
     return this.townImagesService.getPublicTownInfo(slugOrName);
   }
 
+  @Get(':slugOrName/counts')
+  @ApiOperation({ summary: 'Get counts of places, lodgings, restaurants, etc. by slug or name' })
+  async getPublicCounts(@Param('slugOrName') slugOrName: string) {
+    return this.townImagesService.getPublicCounts(slugOrName);
+  }
+
   @Post()
   create(@Body() createTownDto: CreateTownDto) {
     return this.townsService.create(createTownDto);
