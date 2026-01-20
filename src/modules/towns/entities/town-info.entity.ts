@@ -40,6 +40,18 @@ export class TownInfo {
   @Column('smallint', { nullable: true })
   temperature?: number;
 
+  @Column('int', { nullable: true })
+  population?: number;
+
+  @Column('text', { name: 'distance_to_capital', nullable: true })
+  distanceToCapital?: string;
+
+  @Column('text', { nullable: true })
+  ubication?: string;
+
+  @Column('text', { name: 'official_name', nullable: true })
+  officialName?: string;
+
   @CreateDateColumn({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP', name: 'created_at' })
   createdAt: Date;
 

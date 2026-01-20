@@ -20,6 +20,7 @@ import { Experience } from 'src/modules/experiences/entities';
 import { Restaurant } from 'src/modules/restaurants/entities';
 import { Transport } from 'src/modules/transport/entities/transport.entity';
 import { Commerce } from 'src/modules/commerce/entities';
+import { TownImage } from './town-image.entity';
 
 @Entity({ name: 'town' })
 export class Town {
@@ -58,6 +59,9 @@ export class Town {
   @OneToMany(() => Commerce, commerce => commerce.town)
   commerces?: Commerce[];
 
+  @OneToMany(() => TownImage, townImage => townImage.town)
+  images?: TownImage[];
+
   // * ----------------------------------------------------------------------------------------------------------------
   // * MAIN FIELDS
   // * ----------------------------------------------------------------------------------------------------------------
@@ -72,6 +76,9 @@ export class Town {
 
   @Column('text', { nullable: true })
   description?: string;
+
+  @Column('text', { nullable: true })
+  slogan?: string;
 
   @Column('float', { name: 'urban_area', default: 0 })
   urbanArea: number;

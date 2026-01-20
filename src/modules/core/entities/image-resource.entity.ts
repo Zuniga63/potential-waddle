@@ -10,6 +10,7 @@ import { CommerceImage, CommerceProductImage } from 'src/modules/commerce/entiti
 import { GuideImage } from 'src/modules/guides/entities/guide-image.entity';
 import { LodgingRoomTypeImage } from 'src/modules/lodgings/entities/lodging-room-type-image.entity';
 import { Category } from './category.entity';
+import { TownImage } from 'src/modules/towns/entities/town-image.entity';
 
 @Entity({ name: 'image_resource' })
 export class ImageResource {
@@ -48,6 +49,9 @@ export class ImageResource {
 
   @OneToMany(() => Category, category => category.imageResource)
   categories: Category[];
+
+  @OneToMany(() => TownImage, townImage => townImage.imageResource)
+  townImages: TownImage[];
 
   // * ----------------------------------------------------------------------------------------------------------------
   // * MAIN FIELDS

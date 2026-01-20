@@ -7,3 +7,4 @@ export { createReviewPreset } from './create-review.preset';
 export { createCommercePreset } from './create-commerce.preset';
 export { createGuidePreset } from './create-guide.preste';
 export { createPublicEventPreset } from './create-public-event.preset';
+export { createTownPreset } from './create-town.preset';

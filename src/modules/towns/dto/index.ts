@@ -6,3 +6,5 @@ export { TownDto } from './town.dto';
 export { DepartmentDto } from './department.dto';
 export { AdminDepartmentsFiltersDto } from './admin-departments-filters.dto';
 export { AdminDepartmentsListDto } from './admin-departments-list.dto';
+export { TownImageDto, UpdateTownImageDto, SetHeroImagesDto, ReorderTownImagesDto } from './town-image.dto';
+export { AdminTownDto } from './admin-town.dto';

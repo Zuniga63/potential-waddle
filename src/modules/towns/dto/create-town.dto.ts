@@ -36,6 +36,14 @@ export class CreateTownDto {
   description?: string;
 
   @ApiPropertyOptional({
+    example: 'Donde la naturaleza te abraza',
+    description: 'The slogan for the town hero banner',
+  })
+  @IsOptional()
+  @IsString()
+  slogan?: string;
+
+  @ApiPropertyOptional({
     example: 100,
     description: 'Urban area in km²',
   })
@@ -68,4 +76,56 @@ export class CreateTownDto {
   @IsOptional()
   @IsUUID()
   municipalityId?: string;
+
+  // ============================================================================
+  // TOWN INFO FIELDS
+  // ============================================================================
+
+  @ApiPropertyOptional({
+    example: 50000,
+    description: 'Population of the town',
+  })
+  @IsOptional()
+  @IsNumber()
+  population?: number;
+
+  @ApiPropertyOptional({
+    example: '120 km de Medellin',
+    description: 'Distance to the capital city',
+  })
+  @IsOptional()
+  @IsString()
+  distanceToCapital?: string;
+
+  @ApiPropertyOptional({
+    example: 'Oriente Antioqueno',
+    description: 'Geographic location/region',
+  })
+  @IsOptional()
+  @IsString()
+  ubication?: string;
+
+  @ApiPropertyOptional({
+    example: 'San Carlos de las Minas',
+    description: 'Official name of the town',
+  })
+  @IsOptional()
+  @IsString()
+  officialName?: string;
+
+  @ApiPropertyOptional({
+    example: 1000,
+    description: 'Altitude in meters above sea level',
+  })
+  @IsOptional()
+  @IsNumber()
+  altitude?: number;
+
+  @ApiPropertyOptional({
+    example: 24,
+    description: 'Average temperature in Celsius',
+  })
+  @IsOptional()
+  @IsNumber()
+  temperature?: number;
 }

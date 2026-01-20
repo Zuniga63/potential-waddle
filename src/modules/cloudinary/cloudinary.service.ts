@@ -20,6 +20,7 @@ import {
   createRestaurantPreset,
   createReviewPreset,
   createPublicEventPreset,
+  createTownPreset,
 } from './presets';
 import { createCloudinaryImageAdapter } from './adapters';
 import { createCommercePreset } from './presets/create-commerce.preset';
@@ -89,6 +90,7 @@ export class CloudinaryService {
       createCommercePreset(),
       createGuidePreset(),
       createPublicEventPreset(),
+      createTownPreset(),
     ]);
     return promises;
   }

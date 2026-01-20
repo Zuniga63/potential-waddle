@@ -6,6 +6,7 @@ export const CLOUDINARY_FOLDERS = {
   RESTAURANT_GALLERY: 'restaurant_gallery',
   PLACE_GALLERY: 'place_gallery',
   LODGING_GALLERY: 'lodging_gallery',
+  TOWN_GALLERY: 'town_gallery',
   USER_PROFILE: 'user_profile',
   COMMERCE_GALLERY: 'commerce_gallery',
   GUIDE_GALLERY: 'guide_gallery',

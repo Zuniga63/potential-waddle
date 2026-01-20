@@ -2,7 +2,7 @@ import { BadRequestException, Injectable, NotFoundException } from '@nestjs/comm
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, Like, FindOptionsWhere, In } from 'typeorm';
 
-import { Department, Town } from '../entities';
+import { Department, Town, TownInfo } from '../entities';
 import { CreateTownDto, UpdateTownDto } from '../dto';
 import { AdminTownsFiltersDto } from '../dto/admin-towns-filters.dto';
 import { AdminTownsListDto } from '../dto/admin-towns-list.dto';
@@ -17,6 +17,8 @@ export class TownsService {
     private readonly municipalityRepository: Repository<Department>,
     @InjectRepository(User)
     private readonly userRepository: Repository<User>,
+    @InjectRepository(TownInfo)
+    private readonly townInfoRepository: Repository<TownInfo>,
   ) {}
 
   async create(createTownDto: CreateTownDto) {
@@ -52,7 +54,10 @@ export class TownsService {
 
     const queryBuilder = this.townRepository
       .createQueryBuilder('town')
-      .leftJoinAndSelect('town.department', 'department');
+      .leftJoinAndSelect('town.department', 'department')
+      .leftJoinAndSelect('town.images', 'images')
+      .leftJoinAndSelect('images.imageResource', 'imageResource')
+      .leftJoinAndSelect('town.info', 'info');
 
     if (search) {
       queryBuilder.andWhere('(town.name ILIKE :search OR town.code ILIKE :search)', {
@@ -86,14 +91,33 @@ export class TownsService {
   }
 
   async findOne(id: string) {
-    const town = await this.townRepository.findOne({ where: { id } });
+    const town = await this.townRepository.findOne({
+      where: { id },
+      relations: {
+        department: true,
+        images: { imageResource: true },
+        info: true,
+      },
+    });
     if (!town) throw new NotFoundException('Town not found');
 
     return town;
   }
 
   async update(id: string, updateTownDto: UpdateTownDto) {
-    const { lang = 'es', description, municipalityId, ...res } = updateTownDto;
+    const {
+      lang = 'es',
+      description,
+      municipalityId,
+      // TownInfo fields
+      population,
+      distanceToCapital,
+      ubication,
+      officialName,
+      altitude,
+      temperature,
+      ...res
+    } = updateTownDto;
 
     const town = await this.findOne(id);
     if (lang === 'es') town.description = description;
@@ -101,6 +125,30 @@ export class TownsService {
     if (municipalityId) {
       const municipality = await this.municipalityRepository.findOne({ where: { id: municipalityId } });
       if (municipality) town.department = municipality;
+    }
+
+    // Handle TownInfo update
+    const hasInfoFields = population !== undefined || distanceToCapital !== undefined ||
+      ubication !== undefined || officialName !== undefined ||
+      altitude !== undefined || temperature !== undefined;
+
+    if (hasInfoFields) {
+      let townInfo = town.info;
+
+      if (!townInfo) {
+        // Create new TownInfo if it doesn't exist
+        townInfo = this.townInfoRepository.create({ town });
+      }
+
+      if (population !== undefined) townInfo.population = population;
+      if (distanceToCapital !== undefined) townInfo.distanceToCapital = distanceToCapital;
+      if (ubication !== undefined) townInfo.ubication = ubication;
+      if (officialName !== undefined) townInfo.officialName = officialName;
+      if (altitude !== undefined) townInfo.altitude = altitude;
+      if (temperature !== undefined) townInfo.temperature = temperature;
+
+      await this.townInfoRepository.save(townInfo);
+      town.info = townInfo;
     }
 
     this.townRepository.merge(town, res);

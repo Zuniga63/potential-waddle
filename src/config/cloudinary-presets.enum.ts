@@ -9,4 +9,5 @@ export enum CloudinaryPresets {
   REVIEW_IMAGE = 'review_image',
   GUIDE_IMAGE = 'guide_image',
   PUBLIC_EVENT = 'public_event_image',
+  TOWN_IMAGE = 'town_image',
 }
