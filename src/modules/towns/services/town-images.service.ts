@@ -246,19 +246,21 @@ export class TownImagesService {
   // Get public hero data (images + slogan) by slug or name
   // ------------------------------------------------------------------------------------------------
   async getPublicHeroData(slugOrName: string): Promise<{
+    name?: string;
     slogan?: string;
+    department?: string;
     images: { url: string; position: number }[];
   }> {
     // Try to find by slug first, then by name
     let town = await this.townRepository.findOne({
       where: { slug: slugOrName },
-      relations: { images: { imageResource: true } },
+      relations: { images: { imageResource: true }, department: true },
     });
 
     if (!town) {
       town = await this.townRepository.findOne({
         where: { name: slugOrName },
-        relations: { images: { imageResource: true } },
+        relations: { images: { imageResource: true }, department: true },
       });
     }
 
@@ -275,7 +277,9 @@ export class TownImagesService {
       })) || [];
 
     return {
+      name: town.name,
       slogan: town.slogan,
+      department: town.department?.name,
       images: heroImages,
     };
   }

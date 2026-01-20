@@ -196,6 +196,12 @@ export class TownsController {
     return this.townImagesService.getPublicHeroData(slugOrName);
   }
 
+  @Get(':slugOrName/info')
+  @ApiOperation({ summary: 'Get town info (population, temperature, etc.) by slug or name' })
+  async getPublicTownInfo(@Param('slugOrName') slugOrName: string) {
+    return this.townImagesService.getPublicTownInfo(slugOrName);
+  }
+
   @Post()
   create(@Body() createTownDto: CreateTownDto) {
     return this.townsService.create(createTownDto);
