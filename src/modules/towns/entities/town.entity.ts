@@ -4,6 +4,7 @@ import {
   Entity,
   Index,
   JoinColumn,
+  ManyToMany,
   ManyToOne,
   OneToMany,
   OneToOne,
@@ -21,6 +22,7 @@ import { Restaurant } from 'src/modules/restaurants/entities';
 import { Transport } from 'src/modules/transport/entities/transport.entity';
 import { Commerce } from 'src/modules/commerce/entities';
 import { TownImage } from './town-image.entity';
+import { Guide } from 'src/modules/guides/entities';
 
 @Entity({ name: 'town' })
 export class Town {
@@ -61,6 +63,9 @@ export class Town {
 
   @OneToMany(() => TownImage, townImage => townImage.town)
   images?: TownImage[];
+
+  @ManyToMany(() => Guide, guide => guide.towns)
+  guides?: Guide[];
 
   // * ----------------------------------------------------------------------------------------------------------------
   // * MAIN FIELDS

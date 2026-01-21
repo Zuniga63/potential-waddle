@@ -8,10 +8,11 @@ import { MunicipalitiesService } from './services/municipalities.service';
 import { User } from '../users/entities/user.entity';
 import { ImageResource } from '../core/entities';
 import { CloudinaryModule } from '../cloudinary/cloudinary.module';
+import { Guide } from '../guides/entities';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([Department, Town, TownInfo, TownFestivity, TownImage, User, ImageResource]),
+    TypeOrmModule.forFeature([Department, Town, TownInfo, TownFestivity, TownImage, User, ImageResource, Guide]),
     CloudinaryModule,
   ],
   controllers: [TownsController, MucipalitiesController],

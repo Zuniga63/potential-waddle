@@ -355,6 +355,7 @@ export class TownImagesService {
       .loadRelationCountAndMap('town.experiencesCount', 'town.experiences')
       .loadRelationCountAndMap('town.transportsCount', 'town.transports')
       .loadRelationCountAndMap('town.commercesCount', 'town.commerces')
+      .loadRelationCountAndMap('town.guidesCount', 'town.guides')
       .where('town.slug = :slugOrName', { slugOrName })
       .getOne();
 
@@ -367,6 +368,7 @@ export class TownImagesService {
         .loadRelationCountAndMap('town.experiencesCount', 'town.experiences')
         .loadRelationCountAndMap('town.transportsCount', 'town.transports')
         .loadRelationCountAndMap('town.commercesCount', 'town.commerces')
+        .loadRelationCountAndMap('town.guidesCount', 'town.guides')
         .where('town.name = :slugOrName', { slugOrName })
         .getOne();
     }
@@ -378,7 +380,7 @@ export class TownImagesService {
       lodgings: (town as any).lodgingsCount || 0,
       restaurants: (town as any).restaurantsCount || 0,
       experiences: (town as any).experiencesCount || 0,
-      guides: 0,
+      guides: (town as any).guidesCount || 0,
       transports: (town as any).transportsCount || 0,
       commerces: (town as any).commercesCount || 0,
       ventures: 0,
