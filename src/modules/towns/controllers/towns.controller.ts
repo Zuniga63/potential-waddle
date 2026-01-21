@@ -208,6 +208,12 @@ export class TownsController {
     return this.townImagesService.getPublicCounts(slugOrName);
   }
 
+  @Get(':slugOrName/gallery')
+  @ApiOperation({ summary: 'Get all public images for a town by slug or name' })
+  async getPublicGallery(@Param('slugOrName') slugOrName: string) {
+    return this.townImagesService.getPublicGallery(slugOrName);
+  }
+
   @Post()
   create(@Body() createTownDto: CreateTownDto) {
     return this.townsService.create(createTownDto);

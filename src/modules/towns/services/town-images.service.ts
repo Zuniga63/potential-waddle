@@ -243,6 +243,48 @@ export class TownImagesService {
   }
 
   // ------------------------------------------------------------------------------------------------
+  // Get public gallery images by slug or name
+  // ------------------------------------------------------------------------------------------------
+  async getPublicGallery(slugOrName: string): Promise<{
+    townName: string;
+    images: {
+      id: string;
+      url: string;
+      order: number;
+      isHero: boolean;
+    }[];
+  }> {
+    // Try to find by slug first, then by name
+    let town = await this.townRepository.findOne({
+      where: { slug: slugOrName },
+      relations: { images: { imageResource: true } },
+    });
+
+    if (!town) {
+      town = await this.townRepository.findOne({
+        where: { name: slugOrName },
+        relations: { images: { imageResource: true } },
+      });
+    }
+
+    if (!town) {
+      return { townName: '', images: [] };
+    }
+
+    const images = town.images
+      ?.filter(img => img.isPublic)
+      .sort((a, b) => a.order - b.order)
+      .map(img => ({
+        id: img.id,
+        url: img.imageResource?.url || '',
+        order: img.order,
+        isHero: img.isHero,
+      })) || [];
+
+    return { townName: town.name, images };
+  }
+
+  // ------------------------------------------------------------------------------------------------
   // Get public hero data (images + slogan) by slug or name
   // ------------------------------------------------------------------------------------------------
   async getPublicHeroData(slugOrName: string): Promise<{
