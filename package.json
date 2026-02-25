@@ -53,6 +53,7 @@
     "class-validator": "0.14.1",
     "cloudinary": "2.4.0",
     "dotenv": "16.4.5",
+    "form-data": "^4.0.5",
     "google-auth-library": "9.14.0",
     "joi": "17.13.3",
     "langchain": "^0.3.24",

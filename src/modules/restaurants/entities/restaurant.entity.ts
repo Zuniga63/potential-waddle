@@ -16,6 +16,7 @@ import { Town } from 'src/modules/towns/entities';
 import { Place } from 'src/modules/places/entities';
 import { Category, Facility } from 'src/modules/core/entities';
 import { RestaurantImage } from './restaurant-image.entity';
+import { Menu } from './menu.entity';
 import { User } from 'src/modules/users/entities';
 import { Review } from 'src/modules/reviews/entities';
 
@@ -56,6 +57,9 @@ export class Restaurant {
 
   @OneToMany(() => Review, review => review.restaurant)
   reviews?: Review[];
+
+  @OneToMany(() => Menu, menu => menu.restaurant)
+  menus?: Menu[];
 
   @ManyToOne(() => User, user => user.restaurants, { nullable: true, onDelete: 'SET NULL' })
   @JoinColumn({ name: 'user_id' })

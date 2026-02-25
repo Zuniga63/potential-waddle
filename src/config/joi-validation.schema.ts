@@ -33,4 +33,8 @@ export const JoiValidationSchema = Joi.object({
   FRONTEND_URL: Joi.string().default('http://localhost:3000'),
 
   TURNSTILE_SECRET_KEY: Joi.string().optional(),
+
+  KMIZEN_API_KEY: Joi.string().optional(),
+  KMIZEN_BASE_URL: Joi.string().optional(),
+  KMIZEN_SCHEMA_ID: Joi.string().optional(),
 });

@@ -71,6 +71,10 @@ export interface EnvironmentVariables {
   gemini: {
     apiKey: string;
   };
+  kmizen: {
+    apiKey: string;
+    baseUrl: string;
+  };
   frontendUrl: string;
 }
 
@@ -149,6 +153,10 @@ export const appConfig = (): EnvironmentVariables => ({
   },
   gemini: {
     apiKey: process.env.GEMINI_API_KEY || '',
+  },
+  kmizen: {
+    apiKey: process.env.KMIZEN_API_KEY || '',
+    baseUrl: process.env.KMIZEN_BASE_URL || '',
   },
   frontendUrl: process.env.FRONTEND_URL || 'http://localhost:3000',
 });
