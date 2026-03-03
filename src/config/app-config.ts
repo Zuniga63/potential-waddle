@@ -75,6 +75,9 @@ export interface EnvironmentVariables {
     apiKey: string;
     baseUrl: string;
   };
+  analytics: {
+    apiKey: string;
+  };
   frontendUrl: string;
 }
 
@@ -157,6 +160,9 @@ export const appConfig = (): EnvironmentVariables => ({
   kmizen: {
     apiKey: process.env.KMIZEN_API_KEY || '',
     baseUrl: process.env.KMIZEN_BASE_URL || '',
+  },
+  analytics: {
+    apiKey: process.env.ANALYTICS_API_KEY || '',
   },
   frontendUrl: process.env.FRONTEND_URL || 'http://localhost:3000',
 });

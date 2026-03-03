@@ -35,6 +35,7 @@ import { TenantModule } from './modules/tenant/tenant.module';
 import { TenantInterceptor } from './modules/tenant/tenant.interceptor';
 import { DocumentsModule } from './modules/documents/documents.module';
 import { SubscriptionsModule } from './modules/subscriptions/subscriptions.module';
+import { AnalyticsModule } from './modules/analytics/analytics.module';
 
 @Module({
   imports: [
@@ -80,6 +81,7 @@ import { SubscriptionsModule } from './modules/subscriptions/subscriptions.modul
     TenantModule,
     DocumentsModule,
     SubscriptionsModule,
+    AnalyticsModule,
   ],
   controllers: [],
   providers: [

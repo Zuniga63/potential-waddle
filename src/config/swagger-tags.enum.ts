@@ -27,4 +27,5 @@ export enum SwaggerTags {
   Home = 'Home',
   Promotions = 'Promotions',
   PublicEvents = 'Public Events',
+  Analytics = 'Analytics',
 }
