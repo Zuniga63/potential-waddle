@@ -7,7 +7,7 @@ import { ApiKeyAuth } from './decorators/api-key-auth.decorator';
 
 @ApiTags(SwaggerTags.Analytics)
 @ApiKeyAuth()
-@Controller('api/analytics')
+@Controller('analytics')
 export class AnalyticsController {
   constructor(private readonly analyticsService: AnalyticsService) {}
 
