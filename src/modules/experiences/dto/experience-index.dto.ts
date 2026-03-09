@@ -17,6 +17,10 @@ export class ExperienceIndexDto {
 
   price: number;
 
+  priceLabel: string;
+
+  additionalPrices: { price: number; label: string }[];
+
   departure: {
     description?: string;
     longitude: number;
@@ -88,6 +92,8 @@ export class ExperienceIndexDto {
     this.description = data.description;
     this.difficultyLevel = data.difficultyLevel;
     this.price = data.price;
+    this.priceLabel = data.priceLabel || 'Persona';
+    this.additionalPrices = data.additionalPrices || [];
     this.departure = {
       description: data.departureDescription || undefined,
       longitude: data.departureLocation?.coordinates[0],

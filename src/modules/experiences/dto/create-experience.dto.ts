@@ -105,6 +105,26 @@ export class CreateExperienceDto {
   price: number;
 
   @ApiProperty({
+    description: 'Label for the main price (e.g. Persona, Pareja, Grupo)',
+    example: 'Persona',
+    required: false,
+    default: 'Persona',
+  })
+  @IsString()
+  @IsOptional()
+  @MaxLength(100)
+  priceLabel?: string;
+
+  @ApiProperty({
+    description: 'Additional prices with their labels',
+    example: [{ price: 80000, label: 'Pareja' }],
+    required: false,
+  })
+  @IsArray()
+  @IsOptional()
+  additionalPrices?: { price: number; label: string }[];
+
+  @ApiProperty({
     description: 'Departure location details',
     type: LocationDto,
     required: false,

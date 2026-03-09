@@ -17,6 +17,10 @@ export class ExperienceVectorDto {
 
   price: number;
 
+  priceLabel: string;
+
+  additionalPrices: { price: number; label: string }[];
+
   travelTime: number;
 
   totalDistance: number;
@@ -65,6 +69,8 @@ export class ExperienceVectorDto {
     this.description = data.description;
     this.difficultyLevel = data.difficultyLevel;
     this.price = data.price;
+    this.priceLabel = data.priceLabel || 'Persona';
+    this.additionalPrices = data.additionalPrices || [];
     this.guide = data.guide ? new GuideDto({ data: data.guide }) : undefined;
     this.travelTime = data.travelTime || 0;
     this.totalDistance = data.totalDistance || 0;

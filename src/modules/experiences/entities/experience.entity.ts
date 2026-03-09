@@ -74,6 +74,12 @@ export class Experience {
   @Column('decimal', { precision: 10, scale: 2 })
   price: number;
 
+  @Column('text', { name: 'price_label', default: 'Persona' })
+  priceLabel: string;
+
+  @Column('jsonb', { name: 'additional_prices', nullable: true, default: [] })
+  additionalPrices: { price: number; label: string }[];
+
   @Column('text', { name: 'departure_description', nullable: true })
   departureDescription: string | null;
 

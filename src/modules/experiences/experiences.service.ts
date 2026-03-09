@@ -315,6 +315,9 @@ export class ExperiencesService {
   async update(id: string, updateExperienceDto: UpdateExperienceDto) {
     const experience = await this.experienceRepository.findOne({ where: { id } });
     const guide = await this.guideRepository.findOne({ where: { id: updateExperienceDto?.guideId } });
+    const town = updateExperienceDto.townId
+      ? await this.townRepository.findOne({ where: { id: updateExperienceDto.townId } })
+      : undefined;
     const categories = updateExperienceDto.categoryIds
       ? await this.categoryRepository.findBy({ id: In(updateExperienceDto.categoryIds) })
       : [];
@@ -353,6 +356,7 @@ export class ExperiencesService {
       arrivalDescription,
       categories,
       guide: guide ?? undefined,
+      town: town ?? undefined,
       facilities,
     });
 
