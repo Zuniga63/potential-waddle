@@ -75,7 +75,7 @@ export class GuidesService {
       categories: { icon: true },
       images: { imageResource: true },
       user: true,
-      towns: true,
+      towns: { department: true },
     };
 
     const [guides, count] = await this.guideRepository.findAndCount({
@@ -148,7 +148,7 @@ export class GuidesService {
       categories: { icon: true },
       images: { imageResource: true },
       user: true,
-      towns: true,
+      towns: { department: true },
     };
 
     // Obtener guides y reviews del usuario en paralelo
@@ -200,7 +200,7 @@ export class GuidesService {
       categories: { icon: true },
       images: { imageResource: true },
       user: true,
-      towns: true,
+      towns: { department: true },
       experiences: {
         images: { imageResource: true },
         categories: { icon: true },
@@ -227,7 +227,7 @@ export class GuidesService {
       categories: { icon: true },
       user: true,
       images: { imageResource: true },
-      towns: true,
+      towns: { department: true },
       experiences: {
         images: { imageResource: true },
         categories: { icon: true },
@@ -260,7 +260,7 @@ export class GuidesService {
       categories: { icon: true },
       user: true,
       images: { imageResource: true },
-      towns: true,
+      towns: { department: true },
       experiences: {
         images: { imageResource: true },
         categories: { icon: true },
@@ -523,7 +523,7 @@ export class GuidesService {
       categories: { icon: true },
       images: { imageResource: true },
       user: true,
-      towns: true,
+      towns: { department: true },
     };
 
     const guides = await this.guideRepository.find({
