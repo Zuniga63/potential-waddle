@@ -134,7 +134,7 @@ export class LodgingsService {
           town: { department: true },
           categories: { icon: true },
           images: { imageResource: true },
-        },
+          },
         order,
         where: {
           ...where,

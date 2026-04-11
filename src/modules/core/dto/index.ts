@@ -11,6 +11,12 @@ export { FacilityDto } from './facility.dto';
 export { AppIconDto } from './app-icon.dto';
 export { ImageResourceDto } from './image-resource.dto';
 
+export { BadgeDto } from './badge.dto';
+export { CreateBadgeDto } from './create-badge.dto';
+export { UpdateBadgeDto } from './update-badge.dto';
+export { AdminBadgesFiltersDto } from './admin-badges-filters.dto';
+export { AdminBadgesListDto } from './admin-badges-list.dto';
+
 // Admin DTOs
 export { AdminModelsFiltersDto } from './admin-models-filters.dto';
 export { AdminModelsListDto } from './admin-models-list.dto';

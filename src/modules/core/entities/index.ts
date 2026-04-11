@@ -5,3 +5,5 @@ export { ImageResource } from './image-resource.entity';
 export { Language } from './language.entity';
 export { AppIcon } from './app-icon.entity';
 export { AppConfig } from './app-config.entity';
+export { Badge } from './badge.entity';
+export { EntityBadge } from './entity-badge.entity';
