@@ -29,23 +29,25 @@ import { SwaggerTags } from 'src/config';
 import { UserDto } from '../users/dto/user.dto';
 import { Auth } from './decorators';
 import { GetUser } from '../common/decorators/get-user.decorator';
-import { ProfilePhotoDto, UpdateProfileDto } from './dto';
+import { ProfilePhotoDto, ProfileResponseDto, UpdateProfileDto } from './dto';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { User } from '../users/entities/user.entity';
 import { ChangePasswordDto } from './dto/change-password.dto';
 import { SessionService } from './services';
 import { ContentTypes } from '../common/constants';
 import { UsersService } from '../users/services/users.service';
+import { TermsService } from '../terms/services';
 
 @Controller('auth/profile')
 @Auth()
-@ApiExtraModels(UserDto)
+@ApiExtraModels(UserDto, ProfileResponseDto)
 @ApiTags(SwaggerTags.Profile)
 export class ProfileController {
   constructor(
     private readonly authService: AuthService,
     private readonly sessionService: SessionService,
     private readonly usersService: UsersService,
+    private readonly termsService: TermsService,
   ) {}
 
   // * ----------------------------------------------------------------------------------------------------------------
@@ -54,15 +56,19 @@ export class ProfileController {
   @Get()
   @ApiOperation({
     summary: 'Get user profile',
-    description: 'This end recover the info of one user',
+    description: 'This endpoint returns the user profile + terms acceptance status',
   })
   @ApiOkResponse({
-    description: 'User Info',
+    description: 'User profile and terms status',
+    type: ProfileResponseDto,
   })
   async getProfile(@GetUser() user: User) {
-    const fullUser = await this.usersService.getFullUser(user.email);
+    const [fullUser, termsStatus] = await Promise.all([
+      this.usersService.getFullUser(user.email),
+      this.termsService.getStatusForUser(user.id),
+    ]);
     if (!fullUser) throw new NotFoundException('User not found');
-    return new UserDto(fullUser);
+    return new ProfileResponseDto({ user: new UserDto(fullUser), termsStatus });
   }
 
   // * ----------------------------------------------------------------------------------------------------------------

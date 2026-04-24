@@ -5,6 +5,7 @@ import * as request from 'supertest';
 
 import { AppModule } from '../src/app.module';
 import { TermsTypeEnum } from '../src/modules/terms/interfaces';
+import { getAuthToken } from './helpers/auth';
 
 describe('Terms (e2e)', () => {
   let app: INestApplication;
@@ -82,6 +83,34 @@ describe('Terms (e2e)', () => {
       ).rejects.toMatchObject({
         code: '23505',
       });
+    });
+  });
+
+  // * ----------------------------------------------------------------------------------------------------------------
+  // * GET /auth/profile (extended) — Plan 03 Task 1
+  // * ----------------------------------------------------------------------------------------------------------------
+  describe('GET /auth/profile (extended)', () => {
+    it('returns { user, termsStatus } when authenticated', async () => {
+      const { accessToken } = await getAuthToken(app);
+
+      const res = await request(app.getHttpServer())
+        .get('/auth/profile')
+        .set('Authorization', `Bearer ${accessToken}`)
+        .expect(200);
+
+      expect(res.body).toHaveProperty('user.id');
+      expect(res.body).toHaveProperty('user.email');
+      expect(res.body).toHaveProperty('termsStatus.hasAcceptedUserTerms');
+      expect(res.body).toHaveProperty('termsStatus.hasAcceptedLodgingTerms');
+      expect(res.body).toHaveProperty('termsStatus.hasAcceptedRestaurantTerms');
+      expect(res.body).toHaveProperty('termsStatus.hasAcceptedCommerceTerms');
+      expect(res.body).toHaveProperty('termsStatus.hasAcceptedTransportTerms');
+      expect(res.body).toHaveProperty('termsStatus.hasAcceptedGuideTerms');
+      expect(res.body).toHaveProperty('termsStatus.activeDocumentIds.user');
+    });
+
+    it('returns 401 when unauthenticated', async () => {
+      await request(app.getHttpServer()).get('/auth/profile').expect(401);
     });
   });
 });

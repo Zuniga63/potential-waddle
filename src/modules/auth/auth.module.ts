@@ -9,6 +9,7 @@ import { PasswordResetToken } from './entities/password-reset-token.entity';
 import { EnvironmentVariables } from 'src/config';
 import { AuthController } from './auth.controller';
 import { UsersModule } from '../users/users.module';
+import { TermsModule } from '../terms/terms.module';
 import { LocalStrategy, JwtStrategy, GoogleStrategy, OptionalJwtStrategy } from './strategies';
 import { ProfileController } from './profile.controller';
 
@@ -30,6 +31,8 @@ import { PasswordResetService } from './services/password-reset.service';
     }),
 
     TypeOrmModule.forFeature([Session, PasswordResetToken]),
+
+    TermsModule,
   ],
   providers: [AuthService, SessionService, PasswordResetService, LocalStrategy, JwtStrategy, GoogleStrategy, OptionalJwtStrategy],
   controllers: [AuthController, ProfileController],
