@@ -29,4 +29,5 @@ export enum SwaggerTags {
   PublicEvents = 'Public Events',
   Analytics = 'Analytics',
   Badges = 'Badges',
+  Terms = 'Terms',
 }
