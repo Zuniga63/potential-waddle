@@ -5,10 +5,10 @@ export class AddPublicEventTables1754753711969 implements MigrationInterface {
 
   public async up(queryRunner: QueryRunner): Promise<void> {
     await queryRunner.query(
-      `ALTER TABLE "lodging_room_type_image" DROP CONSTRAINT "FK_lodging_room_type_image_image_resource"`,
+      `ALTER TABLE "lodging_room_type_image" DROP CONSTRAINT IF EXISTS "FK_lodging_room_type_image_image_resource"`,
     );
     await queryRunner.query(
-      `ALTER TABLE "lodging_room_type_image" DROP CONSTRAINT "FK_lodging_room_type_image_room_type"`,
+      `ALTER TABLE "lodging_room_type_image" DROP CONSTRAINT IF EXISTS "FK_lodging_room_type_image_room_type"`,
     );
     await queryRunner.query(`DROP INDEX "public"."IDX_promotion_entity_type_entity_id"`);
     await queryRunner.query(
@@ -21,12 +21,16 @@ export class AddPublicEventTables1754753711969 implements MigrationInterface {
     await queryRunner.query(
       `CREATE INDEX "IDX_c5cc21635d1f8c631845274d72" ON "promotion" ("entity_type", "entity_id") `,
     );
-    await queryRunner.query(
-      `ALTER TABLE "lodging_room_type_image" ADD CONSTRAINT "FK_bb5d11cf0b996fe66c419c4885f" FOREIGN KEY ("room_type_id") REFERENCES "lodging_room_type"("id") ON DELETE CASCADE ON UPDATE NO ACTION`,
-    );
-    await queryRunner.query(
-      `ALTER TABLE "lodging_room_type_image" ADD CONSTRAINT "FK_9f26d98327ce8960246283b5b93" FOREIGN KEY ("image_resource_id") REFERENCES "image_resource"("id") ON DELETE RESTRICT ON UPDATE NO ACTION`,
-    );
+    await queryRunner.query(`
+      DO $$ BEGIN
+        ALTER TABLE "lodging_room_type_image" ADD CONSTRAINT "FK_bb5d11cf0b996fe66c419c4885f" FOREIGN KEY ("room_type_id") REFERENCES "lodging_room_type"("id") ON DELETE CASCADE ON UPDATE NO ACTION;
+      EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+    `);
+    await queryRunner.query(`
+      DO $$ BEGIN
+        ALTER TABLE "lodging_room_type_image" ADD CONSTRAINT "FK_9f26d98327ce8960246283b5b93" FOREIGN KEY ("image_resource_id") REFERENCES "image_resource"("id") ON DELETE RESTRICT ON UPDATE NO ACTION;
+      EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+    `);
     await queryRunner.query(
       `ALTER TABLE "public_event_image" ADD CONSTRAINT "FK_e51779043cd6b3be5f1b5662634" FOREIGN KEY ("public_event_id") REFERENCES "public_event"("id") ON DELETE CASCADE ON UPDATE NO ACTION`,
     );
