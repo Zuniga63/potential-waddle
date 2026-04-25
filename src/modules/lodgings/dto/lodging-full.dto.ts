@@ -107,6 +107,14 @@ export class LodgingFullDto {
   highestPrice?: number;
 
   @ApiProperty({
+    description: 'Unit shown after the price (e.g. "noche", "persona", "estadía")',
+    readOnly: true,
+    required: false,
+    example: 'noche',
+  })
+  priceUnit: string;
+
+  @ApiProperty({
     description: 'Indicates if the current user has review',
     example: 'uuid of the review',
     readOnly: true,
@@ -348,6 +356,7 @@ export class LodgingFullDto {
     this.user = new UserDto(lodging.user);
     this.lowestPrice = lodging.lowestPrice || undefined;
     this.highestPrice = lodging.highestPrice || undefined;
+    this.priceUnit = lodging.priceUnit || 'noche';
     this.userReview = userReview;
     this.openingHours = lodging.openingHours || undefined;
     this.urbanCenterDistance = lodging.urbanCenterDistance || 0;

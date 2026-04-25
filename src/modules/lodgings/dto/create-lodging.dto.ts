@@ -154,6 +154,15 @@ export class CreateLodgingDto {
   highestPrice?: number;
 
   @ApiProperty({
+    example: 'noche',
+    description: 'Unit shown after the price (e.g. "noche", "persona", "estadía")',
+    required: false,
+  })
+  @IsOptional()
+  @IsString()
+  priceUnit?: string;
+
+  @ApiProperty({
     example: ['English', 'Spanish'],
     description: 'List of languages spoken in the lodging',
     required: false,

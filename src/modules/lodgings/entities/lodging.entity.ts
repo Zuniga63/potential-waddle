@@ -100,6 +100,9 @@ export class Lodging {
   @Column('decimal', { name: 'highest_price', precision: 10, scale: 2, nullable: true })
   highestPrice: number | null;
 
+  @Column('text', { name: 'price_unit', default: 'noche' })
+  priceUnit: string;
+
   // * ----------------------------------------------------------------------------------------------------------------
   @Column('text', { nullable: true })
   address: string | null;
