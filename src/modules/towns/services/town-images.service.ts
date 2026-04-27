@@ -336,7 +336,7 @@ export class TownImagesService {
     temperature?: number;
     distanceToCapital?: string;
     altitude?: number;
-  } | null> {
+  }> {
     // Try to find by slug first, then by name
     let town = await this.townRepository.findOne({
       where: { slug: slugOrName },
@@ -351,7 +351,7 @@ export class TownImagesService {
     }
 
     if (!town) {
-      return null;
+      throw new NotFoundException(`Town "${slugOrName}" not found`);
     }
 
     return {
