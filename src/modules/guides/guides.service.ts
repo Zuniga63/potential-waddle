@@ -25,6 +25,8 @@ import { GuideVectorDto } from './dto/guide-vector.dto';
 import { EntityReviewsService } from '../reviews/services/entity-reviews.service';
 import { ReviewDomainsEnum } from '../reviews/enums';
 import { Review } from '../reviews/entities';
+import { TermsService } from '../terms/services';
+import { TermsTypeEnum } from '../terms/interfaces';
 
 @Injectable()
 export class GuidesService {
@@ -43,6 +45,7 @@ export class GuidesService {
 
     private readonly cloudinaryService: CloudinaryService,
     private readonly entityReviewsService: EntityReviewsService,
+    private readonly termsService: TermsService,
   ) {}
 
   // ------------------------------------------------------------------------------------------------
@@ -135,7 +138,22 @@ export class GuidesService {
     const [guides, count] = await queryBuilder.getManyAndCount();
     const pages = Math.ceil(count / limit);
 
-    return new AdminGuidesListDto({ currentPage: page, pages, count }, guides);
+    const result = new AdminGuidesListDto({ currentPage: page, pages, count }, guides);
+
+    // Admin-only enrichment: per-row T&C acceptance flag for the owner
+    const ownerIds = Array.from(
+      new Set(guides.map(g => g.user?.id).filter((id): id is string => !!id)),
+    );
+    const ownersWithAcceptance = await this.termsService.getOwnersWithAcceptance(
+      TermsTypeEnum.Guide,
+      ownerIds,
+    );
+    result.data.forEach((dto, i) => {
+      const ownerId = guides[i].user?.id;
+      dto.ownerHasAcceptedTerms = ownerId ? ownersWithAcceptance.has(ownerId) : false;
+    });
+
+    return result;
   }
 
   async findPublicGuides({ filters, user }: GuideFindAllParams = {}) {

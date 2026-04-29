@@ -181,6 +181,15 @@ export class CommerceIndexDto {
   isPublic: boolean;
 
   @ApiProperty({
+    example: true,
+    description:
+      'Admin-only: true when the commerce owner has accepted the active commerce T&C document. Undefined on public/non-admin endpoints.',
+    readOnly: true,
+    required: false,
+  })
+  ownerHasAcceptedTerms?: boolean;
+
+  @ApiProperty({
     example: 123.456,
     description: 'Latitude of the commerce',
     required: false,

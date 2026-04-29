@@ -12,6 +12,7 @@ import { CloudinaryModule } from '../cloudinary/cloudinary.module';
 import { CommerceProductsService } from './commerce-products.service';
 import { CommerceProductsController } from './commerce-products.controller';
 import { ReviewsModule } from '../reviews/reviews.module';
+import { TermsModule } from '../terms/terms.module';
 
 @Module({
   controllers: [CommerceController, CommerceProductsController],
@@ -20,6 +21,7 @@ import { ReviewsModule } from '../reviews/reviews.module';
     TypeOrmModule.forFeature([Commerce, CommerceProduct, CommerceProductImage, ImageResource, Category, Facility, Town, User]),
     CloudinaryModule,
     ReviewsModule,
+    TermsModule,
   ],
 })
 export class CommerceModule {}

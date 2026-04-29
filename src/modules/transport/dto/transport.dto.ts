@@ -56,6 +56,19 @@ export class TransportDto {
   isPublic?: boolean;
   userReview?: string;
 
+  /**
+   * Admin-only: true when the transport owner has accepted the active transport T&C document.
+   * Undefined on public/non-admin endpoints.
+   */
+  @ApiProperty({
+    example: true,
+    description:
+      'Admin-only: true when the transport owner has accepted the active transport T&C document. Undefined on public/non-admin endpoints.',
+    readOnly: true,
+    required: false,
+  })
+  ownerHasAcceptedTerms?: boolean;
+
   constructor({ data, userReview }: { data: Transport; userReview?: string }) {
     if (!data) return;
 

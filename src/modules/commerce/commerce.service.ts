@@ -18,6 +18,8 @@ import { generateCommerceQueryFiltersAndSort } from './logic/generate-commerce-q
 import { EntityReviewsService } from '../reviews/services';
 import { ReviewDomainsEnum } from '../reviews/enums';
 import { Review } from '../reviews/entities';
+import { TermsService } from '../terms/services';
+import { TermsTypeEnum } from '../terms/interfaces';
 
 @Injectable()
 export class CommerceService {
@@ -42,6 +44,7 @@ export class CommerceService {
 
     private readonly cloudinaryService: CloudinaryService,
     private readonly entityReviewsService: EntityReviewsService,
+    private readonly termsService: TermsService,
   ) {}
 
   async findAll({ filters }: CommerceFindAllParams = {}) {
@@ -104,7 +107,22 @@ export class CommerceService {
     const [commerces, count] = await queryBuilder.getManyAndCount();
     const pages = Math.ceil(count / limit);
 
-    return new AdminCommerceListDto({ currentPage: page, pages, count }, commerces);
+    const result = new AdminCommerceListDto({ currentPage: page, pages, count }, commerces);
+
+    // Admin-only enrichment: per-row T&C acceptance flag for the owner
+    const ownerIds = Array.from(
+      new Set(commerces.map(c => c.user?.id).filter((id): id is string => !!id)),
+    );
+    const ownersWithAcceptance = await this.termsService.getOwnersWithAcceptance(
+      TermsTypeEnum.Commerce,
+      ownerIds,
+    );
+    result.data.forEach((dto, i) => {
+      const ownerId = commerces[i].user?.id;
+      dto.ownerHasAcceptedTerms = ownerId ? ownersWithAcceptance.has(ownerId) : false;
+    });
+
+    return result;
   }
 
   async findPublicCommerce({ filters, user }: CommerceFindAllParams = {}) {

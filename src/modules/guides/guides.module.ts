@@ -10,6 +10,7 @@ import { GuideImage } from './entities/guide-image.entity';
 import { ImageResource } from '../core/entities';
 import { CloudinaryModule } from '../cloudinary/cloudinary.module';
 import { ReviewsModule } from '../reviews/reviews.module';
+import { TermsModule } from '../terms/terms.module';
 
 @Module({
   controllers: [GuidesController],
@@ -18,6 +19,7 @@ import { ReviewsModule } from '../reviews/reviews.module';
     TypeOrmModule.forFeature([Guide, Category, Town, User, ImageResource, GuideImage]),
     CloudinaryModule,
     ReviewsModule,
+    TermsModule,
   ],
 })
 export class GuidesModule {}

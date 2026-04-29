@@ -168,6 +168,19 @@ export class GuideDto {
   isPublic?: boolean;
   userReview?: string;
 
+  /**
+   * Admin-only: true when the guide owner has accepted the active guide T&C document.
+   * Undefined on public/non-admin endpoints.
+   */
+  @ApiProperty({
+    example: true,
+    description:
+      'Admin-only: true when the guide owner has accepted the active guide T&C document. Undefined on public/non-admin endpoints.',
+    readOnly: true,
+    required: false,
+  })
+  ownerHasAcceptedTerms?: boolean;
+
   constructor({ data, userReview }: { data: Guide; userReview?: string }) {
     if (!data) return;
 

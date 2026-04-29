@@ -117,4 +117,29 @@ export class TermsService {
     dto.activeDocumentIds = activeIds;
     return dto;
   }
+
+  // * ----------------------------------------------------------------------------------------------------------------
+  // * BATCH: WHICH OWNERS HAVE ACCEPTED THE ACTIVE DOC OF A TYPE?
+  // * ----------------------------------------------------------------------------------------------------------------
+  /**
+   * Returns the set of user ids (from `ownerIds`) that have an acceptance row
+   * pointing to the currently-active document of the given type. Used by admin
+   * listing endpoints to render a per-row "T&C ✓" indicator without N+1 queries.
+   *
+   * Returns an empty Set when:
+   *  - `ownerIds` is empty
+   *  - There is no active document for `type` (admin hasn't seeded it)
+   */
+  async getOwnersWithAcceptance(type: TermsTypeEnum, ownerIds: string[]): Promise<Set<string>> {
+    if (ownerIds.length === 0) return new Set();
+
+    const activeDoc = await this.docsRepo.findOne({ where: { type, isActive: true } });
+    if (!activeDoc) return new Set();
+
+    const rows = await this.acceptsRepo.find({
+      where: { termsDocumentId: activeDoc.id, userId: In(ownerIds) },
+      select: ['userId'],
+    });
+    return new Set(rows.map(r => r.userId));
+  }
 }

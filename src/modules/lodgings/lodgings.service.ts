@@ -26,6 +26,8 @@ import { PromotionsService } from '../promotions/promotions.service';
 import { EntityReviewsService } from '../reviews/services/entity-reviews.service';
 import { ReviewDomainsEnum } from '../reviews/enums';
 import { Review } from '../reviews/entities';
+import { TermsService } from '../terms/services';
+import { TermsTypeEnum } from '../terms/interfaces';
 @Injectable()
 export class LodgingsService {
   private readonly logger = new Logger(LodgingsService.name);
@@ -52,6 +54,7 @@ export class LodgingsService {
     private readonly lodgingRoomTypeRepository: Repository<LodgingRoomType>,
     private readonly promotionsService: PromotionsService,
     private readonly entityReviewsService: EntityReviewsService,
+    private readonly termsService: TermsService,
   ) {}
 
   // ------------------------------------------------------------------------------------------------
@@ -117,7 +120,22 @@ export class LodgingsService {
     const [lodgings, count] = await queryBuilder.getManyAndCount();
     const pages = Math.ceil(count / limit);
 
-    return new AdminLodgingsListDto({ currentPage: page, pages, count }, lodgings);
+    const result = new AdminLodgingsListDto({ currentPage: page, pages, count }, lodgings);
+
+    // Admin-only enrichment: per-row T&C acceptance flag for the owner
+    const ownerIds = Array.from(
+      new Set(lodgings.map(l => l.user?.id).filter((id): id is string => !!id)),
+    );
+    const ownersWithAcceptance = await this.termsService.getOwnersWithAcceptance(
+      TermsTypeEnum.Lodging,
+      ownerIds,
+    );
+    result.data.forEach((dto, i) => {
+      const ownerId = lodgings[i].user?.id;
+      dto.ownerHasAcceptedTerms = ownerId ? ownersWithAcceptance.has(ownerId) : false;
+    });
+
+    return result;
   }
 
   // ------------------------------------------------------------------------------------------------

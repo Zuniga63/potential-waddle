@@ -15,6 +15,7 @@ import { Town } from '../towns/entities';
 import { User } from '../users/entities';
 import { PromotionsModule } from '../promotions/promotions.module';
 import { ReviewsModule } from '../reviews/reviews.module';
+import { TermsModule } from '../terms/terms.module';
 
 @Module({
   controllers: [RestaurantsController, MenuController],
@@ -26,6 +27,7 @@ import { ReviewsModule } from '../reviews/reviews.module';
     CloudinaryModule,
     PromotionsModule,
     ReviewsModule,
+    TermsModule,
   ],
 })
 export class RestaurantsModule {}

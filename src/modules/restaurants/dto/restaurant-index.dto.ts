@@ -66,6 +66,12 @@ export class RestaurantIndexDto {
 
   userId?: string;
 
+  /**
+   * Admin-only: true when the restaurant owner has accepted the active restaurant T&C document.
+   * Undefined on public/non-admin endpoints.
+   */
+  ownerHasAcceptedTerms?: boolean;
+
   paymentMethods?: string[];
 
   googleMapsRating?: number;

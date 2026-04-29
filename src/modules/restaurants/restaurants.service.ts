@@ -22,6 +22,8 @@ import { PromotionsService } from '../promotions/promotions.service';
 import { EntityReviewsService } from '../reviews/services';
 import { ReviewDomainsEnum } from '../reviews/enums';
 import { Review } from '../reviews/entities';
+import { TermsService } from '../terms/services';
+import { TermsTypeEnum } from '../terms/interfaces';
 
 @Injectable()
 export class RestaurantsService {
@@ -44,6 +46,7 @@ export class RestaurantsService {
     private readonly cloudinaryService: CloudinaryService,
     private readonly promotionsService: PromotionsService,
     private readonly entityReviewsService: EntityReviewsService,
+    private readonly termsService: TermsService,
   ) {}
 
   async findAll({ filters }: RestaurantFindAllParams = {}) {
@@ -101,7 +104,22 @@ export class RestaurantsService {
     const [restaurants, count] = await queryBuilder.getManyAndCount();
     const pages = Math.ceil(count / limit);
 
-    return new AdminRestaurantsListDto({ currentPage: page, pages, count }, restaurants);
+    const result = new AdminRestaurantsListDto({ currentPage: page, pages, count }, restaurants);
+
+    // Admin-only enrichment: per-row T&C acceptance flag for the owner
+    const ownerIds = Array.from(
+      new Set(restaurants.map(r => r.user?.id).filter((id): id is string => !!id)),
+    );
+    const ownersWithAcceptance = await this.termsService.getOwnersWithAcceptance(
+      TermsTypeEnum.Restaurant,
+      ownerIds,
+    );
+    result.data.forEach((dto, i) => {
+      const ownerId = restaurants[i].user?.id;
+      dto.ownerHasAcceptedTerms = ownerId ? ownersWithAcceptance.has(ownerId) : false;
+    });
+
+    return result;
   }
 
   // ------------------------------------------------------------------------------------------------

@@ -14,6 +14,7 @@ import { Place } from '../places/entities';
 import { GooglePlacesModule } from '../google-places/google-places.module';
 import { PromotionsModule } from '../promotions/promotions.module';
 import { ReviewsModule } from '../reviews/reviews.module';
+import { TermsModule } from '../terms/terms.module';
 
 @Module({
   controllers: [LodgingsController, LodgingRoomTypesController],
@@ -35,6 +36,7 @@ import { ReviewsModule } from '../reviews/reviews.module';
     GooglePlacesModule,
     PromotionsModule,
     ReviewsModule,
+    TermsModule,
   ],
   exports: [LodgingRoomTypesService],
 })

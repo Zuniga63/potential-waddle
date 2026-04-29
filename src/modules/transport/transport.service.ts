@@ -16,6 +16,8 @@ import { AdminTransportListDto } from './dto/admin-transport-list.dto';
 import { EntityReviewsService } from '../reviews/services/entity-reviews.service';
 import { ReviewDomainsEnum } from '../reviews/enums';
 import { Review } from '../reviews/entities';
+import { TermsService } from '../terms/services';
+import { TermsTypeEnum } from '../terms/interfaces';
 
 @Injectable()
 export class TransportService {
@@ -33,6 +35,7 @@ export class TransportService {
     private readonly userRepo: Repository<User>,
 
     private readonly entityReviewsService: EntityReviewsService,
+    private readonly termsService: TermsService,
   ) {}
 
   async create(createTransportDto: CreateTransportDto, userId: string) {
@@ -120,7 +123,22 @@ export class TransportService {
     const [transports, count] = await queryBuilder.getManyAndCount();
     const pages = Math.ceil(count / limit);
 
-    return new AdminTransportListDto({ currentPage: page, pages, count }, transports);
+    const result = new AdminTransportListDto({ currentPage: page, pages, count }, transports);
+
+    // Admin-only enrichment: per-row T&C acceptance flag for the owner
+    const ownerIds = Array.from(
+      new Set(transports.map(t => t.user?.id).filter((id): id is string => !!id)),
+    );
+    const ownersWithAcceptance = await this.termsService.getOwnersWithAcceptance(
+      TermsTypeEnum.Transport,
+      ownerIds,
+    );
+    result.data.forEach((dto, i) => {
+      const ownerId = transports[i].user?.id;
+      dto.ownerHasAcceptedTerms = ownerId ? ownersWithAcceptance.has(ownerId) : false;
+    });
+
+    return result;
   }
 
   async findPublicTransports({ filters, user }: TransportFindAllParams = {}) {

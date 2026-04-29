@@ -162,6 +162,15 @@ export class LodgingIndexDto {
   isPublic: boolean;
 
   @ApiProperty({
+    example: true,
+    description:
+      'Admin-only: true when the lodging owner has accepted the active lodging T&C document. Undefined on public/non-admin endpoints.',
+    readOnly: true,
+    required: false,
+  })
+  ownerHasAcceptedTerms?: boolean;
+
+  @ApiProperty({
     example: 123.456,
     description: 'Latitude of the lodging',
     required: false,
