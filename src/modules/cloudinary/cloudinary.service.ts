@@ -63,6 +63,34 @@ export class CloudinaryService {
     return createCloudinaryImageAdapter(uploadedFile);
   }
 
+  /**
+   * Uploads a non-image file (PDF, etc) to Cloudinary as `resource_type: 'raw'`.
+   * Returns secure URL + public id, or undefined if upload fails.
+   */
+  async uploadRawFile({
+    file,
+    fileName,
+    folder,
+  }: {
+    file: Express.Multer.File;
+    fileName?: string;
+    folder?: string;
+  }): Promise<{ url: string; publicId: string } | undefined> {
+    const options: UploadApiOptions = { resource_type: 'raw', folder };
+    if (fileName) {
+      options.public_id = this.createUniqueFileName(fileName);
+    }
+    const uploaded = await new Promise<UploadApiResponse | undefined>((resolve, reject) => {
+      const upload = cloudinary.uploader.upload_stream(options, (error, result) => {
+        if (error) return reject(error);
+        resolve(result);
+      });
+      bufferToStream(file.buffer).pipe(upload);
+    });
+    if (!uploaded) return undefined;
+    return { url: uploaded.secure_url, publicId: uploaded.public_id };
+  }
+
   async uploadImageFromUrl(
     url: string,
     fileName?: string,
