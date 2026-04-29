@@ -1,6 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger';
 
-import { IsDateString, IsEmail, IsNotEmpty, IsOptional, IsString, MinLength } from 'class-validator';
+import { IsDateString, IsEmail, IsNotEmpty, IsOptional, IsString, IsUUID, MinLength } from 'class-validator';
 
 import { IsEqualTo } from 'src/modules/common/decorators/is-equal-to.decorator';
 
@@ -54,4 +54,13 @@ export class CreateUserDto {
   @IsString()
   @IsOptional()
   turnstileToken?: string;
+
+  @ApiProperty({
+    required: true,
+    description: 'ID of the active user T&C document the user is accepting at signup',
+    example: '550e8400-e29b-41d4-a716-446655440000',
+  })
+  @IsUUID()
+  @IsNotEmpty()
+  acceptedUserTermsId: string;
 }

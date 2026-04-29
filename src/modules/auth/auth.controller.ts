@@ -86,13 +86,17 @@ export class AuthController {
     description: 'Has not passed the validation for saving in the database',
     type: ValidationErrorDto,
   })
-  async localRegister(@Body() createUserDto: CreateUserDto, @Ip() ip: string) {
+  async localRegister(
+    @Body() createUserDto: CreateUserDto,
+    @Ip() ip: string,
+    @Headers('user-agent') userAgent: string,
+  ) {
     // Verify Turnstile token before registration
     if (createUserDto.turnstileToken) {
       await this.turnstileService.verify(createUserDto.turnstileToken, ip);
     }
 
-    return this.authService.signUp(createUserDto);
+    return this.authService.signUp(createUserDto, ip, userAgent);
   }
 
   // * ----------------------------------------------------------------------------------------------------------------
