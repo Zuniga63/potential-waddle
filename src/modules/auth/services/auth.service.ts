@@ -21,6 +21,7 @@ import { Transport } from 'src/modules/transport/entities/transport.entity';
 import { ResendService } from '../../email/services/resend.service';
 import { TermsService } from '../../terms/services';
 import { TermsTypeEnum, TermsContextEnum } from '../../terms/interfaces';
+import { isTermsEnforcementEnabled } from '../../terms/utils';
 
 @Injectable()
 export class AuthService {
@@ -53,12 +54,21 @@ export class AuthService {
   }
 
   async signUp(createUserDto: CreateUserDto, ip: string, userAgent: string | undefined) {
-    // Pre-validate the active user T&C — fail fast if the client sent a stale id (no user is created)
-    const activeDoc = await this.termsService.findActive(TermsTypeEnum.User);
-    if (createUserDto.acceptedUserTermsId !== activeDoc.id) {
-      throw new BadRequestException(
-        'TERMS_NOT_ACTIVE: acceptedUserTermsId must match the currently active user T&C document',
-      );
+    const enforcementEnabled = isTermsEnforcementEnabled();
+
+    if (enforcementEnabled) {
+      // Pre-validate the active user T&C — fail fast if the client sent a stale id (no user is created)
+      if (!createUserDto.acceptedUserTermsId) {
+        throw new BadRequestException(
+          'acceptedUserTermsId is required when T&C enforcement is enabled',
+        );
+      }
+      const activeDoc = await this.termsService.findActive(TermsTypeEnum.User);
+      if (createUserDto.acceptedUserTermsId !== activeDoc.id) {
+        throw new BadRequestException(
+          'TERMS_NOT_ACTIVE: acceptedUserTermsId must match the currently active user T&C document',
+        );
+      }
     }
 
     // Strip the T&C id before passing to user creation — User entity does not have this column
@@ -68,14 +78,16 @@ export class AuthService {
 
     const user = await this.usersService.create(userDto);
 
-    // Record T&C acceptance with audit data captured server-side (idempotent on (user_id, terms_document_id))
-    await this.termsService.accept({
-      termsId: acceptedUserTermsId,
-      user,
-      context: TermsContextEnum.Registration,
-      ip,
-      userAgent,
-    });
+    if (enforcementEnabled && acceptedUserTermsId) {
+      // Record T&C acceptance with audit data captured server-side (idempotent on (user_id, terms_document_id))
+      await this.termsService.accept({
+        termsId: acceptedUserTermsId,
+        user,
+        context: TermsContextEnum.Registration,
+        ip,
+        userAgent,
+      });
+    }
 
     // Send welcome email (async, don't wait for it)
     this.resendService.sendWelcomeEmail(user.email, user.username).catch(error => {

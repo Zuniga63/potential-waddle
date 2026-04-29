@@ -16,6 +16,7 @@ import {
   AdminTermsListDto,
   AdminAcceptancesListDto,
 } from '../dto';
+import { isTermsEnforcementEnabled } from '../utils';
 
 interface AcceptInput {
   termsId: string;
@@ -89,6 +90,34 @@ export class TermsService {
   // * GET STATUS FOR A USER (6 BOOLEANS + ACTIVE IDS)
   // * ----------------------------------------------------------------------------------------------------------------
   async getStatusForUser(userId: string): Promise<TermsStatusDto> {
+    // Feature flag short-circuit: when enforcement is off, return all-true so the
+    // frontend (PostLoginTermsGate, BusinessTermsAcceptance, UserTermsSection)
+    // doesn't gate any UI. activeDocumentIds still reflects DB state so admins
+    // can keep prepping content.
+    if (!isTermsEnforcementEnabled()) {
+      const actives = await this.docsRepo.find({ where: { isActive: true } });
+      const activeIds: TermsActiveIdsDto = {
+        user: null,
+        lodging: null,
+        restaurant: null,
+        commerce: null,
+        transport: null,
+        guide: null,
+      };
+      for (const doc of actives) {
+        activeIds[doc.type] = doc.id;
+      }
+      const dto = new TermsStatusDto();
+      dto.hasAcceptedUserTerms = true;
+      dto.hasAcceptedLodgingTerms = true;
+      dto.hasAcceptedRestaurantTerms = true;
+      dto.hasAcceptedCommerceTerms = true;
+      dto.hasAcceptedTransportTerms = true;
+      dto.hasAcceptedGuideTerms = true;
+      dto.activeDocumentIds = activeIds;
+      return dto;
+    }
+
     const actives = await this.docsRepo.find({ where: { isActive: true } });
 
     const activeIds: TermsActiveIdsDto = {

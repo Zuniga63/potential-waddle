@@ -56,11 +56,15 @@ export class CreateUserDto {
   turnstileToken?: string;
 
   @ApiProperty({
-    required: true,
-    description: 'ID of the active user T&C document the user is accepting at signup',
+    required: false,
+    description:
+      'ID of the active user T&C document the user is accepting at signup. ' +
+      'Required when TERMS_ENFORCEMENT_ENABLED is true (the default). ' +
+      'When the feature flag is off, this field is ignored if sent and not required if missing. ' +
+      'Service-level enforcement lives in AuthService.signUp.',
     example: '550e8400-e29b-41d4-a716-446655440000',
   })
+  @IsOptional()
   @IsUUID()
-  @IsNotEmpty()
-  acceptedUserTermsId: string;
+  acceptedUserTermsId?: string;
 }
