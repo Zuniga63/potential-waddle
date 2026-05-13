@@ -1,24 +1,33 @@
 ---
-status: in_progress
+status: complete
 last_activity: 2026-05-13
 milestone: v1.1 Lodging Onboarding Backend
 current_phase: 4
-current_focus: email-notifications
+current_focus: complete
 ---
 
 # State: Binntu Nest Backend
 
 ## Current Position
 
-- **Milestone:** v1.1 Lodging Onboarding Backend
-- **Phase:** 4 (Email notifications) — ready to plan
-- **Plan:** none yet (Phase 3 complete)
+- **Milestone:** v1.1 Lodging Onboarding Backend — COMPLETE
+- **Phase:** 4 (Email notifications) — done
+- **Plan:** 04-SUMMARY.md written
 
 ## Current Focus
 
-Phase 3 complete. Admin approve/reject endpoints landed: AdminLodgingsController at /admin/lodgings with @SuperAdmin() guard, approve/reject service methods with status transition guards and Phase 4 email TODO hooks, status filter through findAllPaginated, and submittedAt/status projected in admin list rows. Next: Phase 4 (email notifications).
+Milestone complete. All 4 phases delivered. Frontend Phase 4 wizard HUMAN-UAT items are now unblocked.
 
 ## Recently Completed
+
+- **Phase 4 (2026-05-13):** Email notifications for lodging onboarding
+  - 5 transactional email templates (business-welcome, lodging-submitted, lodging-approved, lodging-rejected, admin-lodging-pending)
+  - 5 ResendService dispatcher methods with fire-and-forget contract
+  - `ADMIN_NOTIFICATION_EMAIL` added to EnvironmentVariables + appConfig
+  - `NotificationsModule` + `NotificationsController` — `POST /notifications/welcome-business` (auth, 202)
+  - Fire-and-forget hooks wired in `submitForReview` / `approve` / `reject` (all TODO Phase 4 markers replaced)
+  - 23 total new/updated tests across 3 spec files; all Phase 4 tests pass
+  - Requirements satisfied: ONB-BE-10
 
 - **Phase 3 (2026-05-13):** Admin validation endpoints
   - `AdminLodgingsController` at `@Controller('admin/lodgings')` with `@SuperAdmin()` guard
@@ -51,6 +60,9 @@ Phase 3 complete. Admin approve/reject endpoints landed: AdminLodgingsController
 
 ## Decisions
 
+- Phase 4: fire-and-forget via void keyword — HTTP response never blocked by Resend
+- Phase 4: ADMIN_NOTIFICATION_EMAIL empty → warn + skip (not fallback to fromEmail) — admin notifications only meaningful if configured
+- Phase 4: Auth() composite decorator for welcome-business (not raw JwtAuthGuard) — consistent with existing pattern
 - Phase 3: @SuperAdmin() decorator used on AdminLodgingsController class (same pattern as AdminTermsController)
 - Phase 3: approve/reject in LodgingsService (no separate admin service) — DI simplicity
 - Phase 3: submittedAt + status added to LodgingIndexDto as optional admin-only fields (same pattern as ownerHasAcceptedTerms)
@@ -68,3 +80,9 @@ Phase 3 complete. Admin approve/reject endpoints landed: AdminLodgingsController
 ## Blockers
 
 - Pre-existing: `terms.service.spec.ts` fails because DataSource not mocked (added in Phase 1, spec not updated). Tracked in `.planning/phases/02-owner-endpoints/deferred-items.md`.
+- Pre-existing: `guides.controller.spec.ts` and `commerce.service.spec.ts` / `commerce.controller.spec.ts` fail — unrelated to this milestone.
+
+## Last session
+
+- Stopped at: Completed 04-email-notifications/04-PLAN.md
+- Date: 2026-05-13

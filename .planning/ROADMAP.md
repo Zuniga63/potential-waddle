@@ -12,7 +12,7 @@ Implementar el backend de Phase 4 del frontend (Lodging Onboarding Wizard). El f
 - [x] **Phase 1: Lodging status workflow + Plan Free seed** — Migrations: `status`, `submitted_at`, `rejection_reason` columns on Lodging (backfill legacy → published); seed `lodging-free` Plan; optional `is_default` column on Plan (completed 2026-05-13, commits 3f8bef8, 580fb8a)
 - [x] **Phase 2: Owner-facing endpoints** — Submit-for-review endpoint with T&C guard + 80% gate; computed completionPercentage + missingFields on owner GET /lodgings/:id; public list filter switch; Plan Free auto-subscription on POST /lodgings (completed 2026-05-13, commits 2cc2139, a0dab08, dfbf887, 972fde5, 239299f)
 - [x] **Phase 3: Admin validation endpoints** — Approve/reject admin endpoints; pending listing with submittedAt (completed 2026-05-13, commits 0f04932, 7e67901, fc78474)
-- [ ] **Phase 4: Email notifications** — Resend templates + dispatch hooks for welcome, submitted, approved, rejected, admin-pending
+- [x] **Phase 4: Email notifications** — Resend templates + dispatch hooks for welcome, submitted, approved, rejected, admin-pending (completed 2026-05-13, commits 12654e1, 06d6953, 5461177, 606900a)
 
 ## Phase Details
 
@@ -70,4 +70,4 @@ Implementar el backend de Phase 4 del frontend (Lodging Onboarding Wizard). El f
   9. Tests verifican que los hooks son llamados con los args correctos (mock Resend client)
 
 ---
-*Last updated: 2026-05-13 — Phase 3 complete*
+*Last updated: 2026-05-13 — Phase 4 complete — milestone v1.1 Lodging Onboarding Backend DONE*
