@@ -64,6 +64,7 @@ export interface EnvironmentVariables {
   resend: {
     apiKey: string;
     fromEmail: string;
+    adminNotificationEmail: string;
   };
   turnstile: {
     secretKey: string;
@@ -150,6 +151,7 @@ export const appConfig = (): EnvironmentVariables => ({
   resend: {
     apiKey: process.env.RESEND_API_KEY || '',
     fromEmail: process.env.RESEND_FROM_EMAIL || 'Binntu <noreply@binntu.com>',
+    adminNotificationEmail: process.env.ADMIN_NOTIFICATION_EMAIL || '',
   },
   turnstile: {
     secretKey: process.env.TURNSTILE_SECRET_KEY || '',
