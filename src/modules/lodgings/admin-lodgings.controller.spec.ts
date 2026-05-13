@@ -15,6 +15,7 @@ import { GooglePlacesService } from '../google-places/google-places.service';
 import { PromotionsService } from '../promotions/promotions.service';
 import { EntityReviewsService } from '../reviews/services/entity-reviews.service';
 import { TermsService } from '../terms/services';
+import { ResendService } from '../email/services/resend.service';
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -118,6 +119,12 @@ async function buildModule() {
     getOwnersWithAcceptance: jest.fn().mockResolvedValue(new Set()),
   };
   const dataSource: jest.Mocked<Partial<DataSource>> = { transaction: jest.fn() };
+  const resendService: jest.Mocked<Partial<ResendService>> = {
+    sendLodgingApprovedEmail: jest.fn().mockResolvedValue(true),
+    sendLodgingRejectedEmail: jest.fn().mockResolvedValue(true),
+    sendLodgingSubmittedEmail: jest.fn().mockResolvedValue(true),
+    sendAdminLodgingPendingNotification: jest.fn().mockResolvedValue(true),
+  };
 
   const module: TestingModule = await Test.createTestingModule({
     providers: [
@@ -149,10 +156,11 @@ async function buildModule() {
       { provide: EntityReviewsService, useValue: { getUserReviews: jest.fn(), findUserReview: jest.fn() } },
       { provide: TermsService, useValue: termsService },
       { provide: DataSource, useValue: dataSource },
+      { provide: ResendService, useValue: resendService },
     ],
   }).compile();
 
-  return { service: module.get<LodgingsService>(LodgingsService), lodgingRepo, termsService, dataSource };
+  return { service: module.get<LodgingsService>(LodgingsService), lodgingRepo, termsService, dataSource, resendService };
 }
 
 // ===========================================================================
@@ -162,12 +170,14 @@ async function buildModule() {
 describe('LodgingsService — approve', () => {
   let service: LodgingsService;
   let lodgingRepo: ReturnType<typeof makeRepo>;
+  let resendService: jest.Mocked<Partial<ResendService>>;
 
   beforeEach(async () => {
     jest.clearAllMocks();
     const ctx = await buildModule();
     service = ctx.service;
     lodgingRepo = ctx.lodgingRepo;
+    resendService = ctx.resendService;
   });
 
   // -------------------------------------------------------------------------
@@ -189,6 +199,30 @@ describe('LodgingsService — approve', () => {
     );
     expect(result.status).toBe('published');
     expect(result.rejectionReason).toBeNull();
+
+    // Email dispatcher called fire-and-forget
+    await new Promise(r => setImmediate(r));
+    expect(resendService.sendLodgingApprovedEmail).toHaveBeenCalledWith(
+      lodging.user.email,
+      lodging.name,
+      lodging.slug,
+    );
+  });
+
+  // -------------------------------------------------------------------------
+  // Test 1b: Email failure does NOT affect approve response (resilience)
+  // -------------------------------------------------------------------------
+  it('email failure does not affect approve response', async () => {
+    const lodging = buildLodging({ status: 'pending_review' });
+    const afterSave = buildLodging({ status: 'published', rejectionReason: null });
+
+    lodgingRepo.findOne.mockResolvedValueOnce(lodging).mockResolvedValueOnce(afterSave);
+    lodgingRepo.save.mockResolvedValueOnce(afterSave);
+    (resendService.sendLodgingApprovedEmail as jest.Mock).mockResolvedValueOnce(false);
+
+    const result = await service.approve({ identifier: LODGING_ID });
+
+    expect(result.status).toBe('published');
   });
 
   // -------------------------------------------------------------------------
@@ -231,12 +265,14 @@ describe('LodgingsService — approve', () => {
 describe('LodgingsService — reject', () => {
   let service: LodgingsService;
   let lodgingRepo: ReturnType<typeof makeRepo>;
+  let resendService: jest.Mocked<Partial<ResendService>>;
 
   beforeEach(async () => {
     jest.clearAllMocks();
     const ctx = await buildModule();
     service = ctx.service;
     lodgingRepo = ctx.lodgingRepo;
+    resendService = ctx.resendService;
   });
 
   // -------------------------------------------------------------------------
@@ -258,6 +294,30 @@ describe('LodgingsService — reject', () => {
     );
     expect(result.status).toBe('rejected');
     expect(result.rejectionReason).toBe('Missing price info');
+
+    // Email dispatcher called fire-and-forget
+    await new Promise(r => setImmediate(r));
+    expect(resendService.sendLodgingRejectedEmail).toHaveBeenCalledWith(
+      lodging.user.email,
+      lodging.name,
+      'Missing price info',
+    );
+  });
+
+  // -------------------------------------------------------------------------
+  // Test 4b: Email failure does NOT affect reject response (resilience)
+  // -------------------------------------------------------------------------
+  it('email failure does not affect reject response', async () => {
+    const lodging = buildLodging({ status: 'pending_review' });
+    const afterSave = buildLodging({ status: 'rejected', rejectionReason: 'some reason here' });
+
+    lodgingRepo.findOne.mockResolvedValueOnce(lodging).mockResolvedValueOnce(afterSave);
+    lodgingRepo.save.mockResolvedValueOnce(afterSave);
+    (resendService.sendLodgingRejectedEmail as jest.Mock).mockResolvedValueOnce(false);
+
+    const result = await service.reject({ identifier: LODGING_ID, reason: 'some reason here' });
+
+    expect(result.status).toBe('rejected');
   });
 
   // -------------------------------------------------------------------------

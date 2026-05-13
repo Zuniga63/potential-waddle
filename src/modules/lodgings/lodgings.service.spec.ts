@@ -15,6 +15,7 @@ import { GooglePlacesService } from '../google-places/google-places.service';
 import { PromotionsService } from '../promotions/promotions.service';
 import { EntityReviewsService } from '../reviews/services/entity-reviews.service';
 import { TermsService } from '../terms/services';
+import { ResendService } from '../email/services/resend.service';
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -131,6 +132,7 @@ describe('LodgingsService — submitForReview', () => {
   let lodgingRepo: ReturnType<typeof makeRepo>;
   let termsService: jest.Mocked<Partial<TermsService>>;
   let dataSource: jest.Mocked<Partial<DataSource>>;
+  let resendService: jest.Mocked<Partial<ResendService>>;
 
   beforeEach(async () => {
     jest.clearAllMocks();
@@ -142,6 +144,10 @@ describe('LodgingsService — submitForReview', () => {
     };
     dataSource = {
       transaction: jest.fn(),
+    };
+    resendService = {
+      sendLodgingSubmittedEmail: jest.fn().mockResolvedValue(true),
+      sendAdminLodgingPendingNotification: jest.fn().mockResolvedValue(true),
     };
 
     const module: TestingModule = await Test.createTestingModule({
@@ -164,6 +170,7 @@ describe('LodgingsService — submitForReview', () => {
         { provide: EntityReviewsService, useValue: { getUserReviews: jest.fn(), findUserReview: jest.fn() } },
         { provide: TermsService, useValue: termsService },
         { provide: DataSource, useValue: dataSource },
+        { provide: ResendService, useValue: resendService },
       ],
     }).compile();
 
@@ -194,6 +201,36 @@ describe('LodgingsService — submitForReview', () => {
     );
     expect(result.status).toBe('pending_review');
     expect(result.completionPercentage).toBeGreaterThanOrEqual(80);
+
+    // Email dispatchers called fire-and-forget (give void a tick to run)
+    await new Promise(r => setImmediate(r));
+    expect(resendService.sendLodgingSubmittedEmail).toHaveBeenCalledWith(mockUser.email, lodging.name);
+    expect(resendService.sendAdminLodgingPendingNotification).toHaveBeenCalledWith(lodging.name, mockUser.email);
+  });
+
+  // -------------------------------------------------------------------------
+  // Test 1b: Email send failure does NOT fail submitForReview (fire-and-forget resilience)
+  // -------------------------------------------------------------------------
+  it('email send failure does not affect submitForReview response', async () => {
+    const lodging = buildFullLodging({ status: 'draft' });
+    const updatedLodging = buildFullLodging({ status: 'pending_review', submittedAt: new Date() });
+
+    lodgingRepo.findOne.mockResolvedValueOnce(lodging).mockResolvedValueOnce(updatedLodging);
+    lodgingRepo.save.mockResolvedValueOnce(updatedLodging);
+
+    (termsService.getStatusForUser as jest.Mock).mockResolvedValueOnce({
+      hasAcceptedLodgingTerms: true,
+      activeDocumentIds: { lodging: TERMS_DOC_ID },
+    });
+
+    // Simulate dispatcher returning false (internal error caught by ResendService)
+    (resendService.sendLodgingSubmittedEmail as jest.Mock).mockResolvedValueOnce(false);
+    (resendService.sendAdminLodgingPendingNotification as jest.Mock).mockResolvedValueOnce(false);
+
+    const result = await service.submitForReview({ identifier: LODGING_ID, user: mockUser });
+
+    // Service must still succeed despite email failures
+    expect(result.status).toBe('pending_review');
   });
 
   // -------------------------------------------------------------------------
@@ -369,6 +406,10 @@ describe('LodgingsService — create', () => {
         { provide: EntityReviewsService, useValue: { getUserReviews: jest.fn() } },
         { provide: TermsService, useValue: termsService },
         { provide: DataSource, useValue: dataSource },
+        {
+          provide: ResendService,
+          useValue: { sendBusinessWelcomeEmail: jest.fn().mockResolvedValue(true) },
+        },
       ],
     }).compile();
 

@@ -31,6 +31,8 @@ import { Review } from '../reviews/entities';
 import { TermsService } from '../terms/services';
 import { TermsTypeEnum } from '../terms/interfaces';
 import { isTermsEnforcementEnabled } from '../terms/utils';
+import { ResendService } from '../email/services/resend.service';
+
 @Injectable()
 export class LodgingsService {
   private readonly logger = new Logger(LodgingsService.name);
@@ -63,6 +65,7 @@ export class LodgingsService {
     private readonly planRepository: Repository<Plan>,
     @InjectRepository(Subscription)
     private readonly subscriptionRepository: Repository<Subscription>,
+    private readonly resendService: ResendService,
   ) {}
 
   // ------------------------------------------------------------------------------------------------
@@ -859,7 +862,9 @@ export class LodgingsService {
     lodging.rejectionReason = null;
     await this.lodgingRespository.save(lodging);
 
-    // 7. TODO: notify admin of pending review (Phase 4 — LodgingNotificationsService)
+    // 7. Fire-and-forget email notifications — must not block the HTTP response
+    void this.resendService.sendLodgingSubmittedEmail(user.email, lodging.name);
+    void this.resendService.sendAdminLodgingPendingNotification(lodging.name, user.email);
 
     // 8. Return owner-enriched shape so frontend can update its query cache
     const updatedLodging = await this.lodgingRespository.findOne({ where: { id: lodging.id }, relations });
@@ -904,7 +909,8 @@ export class LodgingsService {
     lodging.rejectionReason = null; // clear any stale rejection reason
     await this.lodgingRespository.save(lodging);
 
-    // TODO Phase 4: emailService.notifyLodgingApproved(lodging.user.email, lodging.id)
+    // Fire-and-forget email notification — must not block the HTTP response
+    void this.resendService.sendLodgingApprovedEmail(lodging.user.email, lodging.name, lodging.slug);
 
     const updatedLodging = await this.lodgingRespository.findOne({ where: { id: lodging.id }, relations });
     if (!updatedLodging) throw new NotFoundException('Lodging not found after update');
@@ -949,7 +955,8 @@ export class LodgingsService {
     // submittedAt is preserved so the owner can see when they last submitted
     await this.lodgingRespository.save(lodging);
 
-    // TODO Phase 4: emailService.notifyLodgingRejected(lodging.user.email, lodging.id, reason)
+    // Fire-and-forget email notification — must not block the HTTP response
+    void this.resendService.sendLodgingRejectedEmail(lodging.user.email, lodging.name, reason);
 
     const updatedLodging = await this.lodgingRespository.findOne({ where: { id: lodging.id }, relations });
     if (!updatedLodging) throw new NotFoundException('Lodging not found after update');
