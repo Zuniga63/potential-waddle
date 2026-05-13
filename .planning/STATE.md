@@ -2,8 +2,8 @@
 status: in_progress
 last_activity: 2026-05-13
 milestone: v1.1 Lodging Onboarding Backend
-current_phase: 3
-current_focus: admin-review-endpoints
+current_phase: 4
+current_focus: email-notifications
 ---
 
 # State: Binntu Nest Backend
@@ -11,14 +11,25 @@ current_focus: admin-review-endpoints
 ## Current Position
 
 - **Milestone:** v1.1 Lodging Onboarding Backend
-- **Phase:** 3 (Admin review endpoints) — ready to plan
-- **Plan:** none yet (Phase 2 complete)
+- **Phase:** 4 (Email notifications) — ready to plan
+- **Plan:** none yet (Phase 3 complete)
 
 ## Current Focus
 
-Phase 2 complete. Owner-facing endpoints landed: computeLodgingCompletion util, owner-enriched GET /lodgings/:id, public list filtered by status='published', transactional POST /lodgings with Plan Free auto-subscription, and submit-for-review with 80%+critical+T&C guards. Next: Phase 3 (admin approve/reject endpoints).
+Phase 3 complete. Admin approve/reject endpoints landed: AdminLodgingsController at /admin/lodgings with @SuperAdmin() guard, approve/reject service methods with status transition guards and Phase 4 email TODO hooks, status filter through findAllPaginated, and submittedAt/status projected in admin list rows. Next: Phase 4 (email notifications).
 
 ## Recently Completed
+
+- **Phase 3 (2026-05-13):** Admin validation endpoints
+  - `AdminLodgingsController` at `@Controller('admin/lodgings')` with `@SuperAdmin()` guard
+  - `POST /admin/lodgings/:id/approve` — pending_review → published, clears rejectionReason
+  - `POST /admin/lodgings/:id/reject` — pending_review → rejected, persists reason (min 10 chars)
+  - `GET /admin/lodgings?status=pending_review` — status filter wired through findAllPaginated
+  - `LodgingIndexDto` extended with `submittedAt` and `status` for admin list rows
+  - `RejectLodgingDto` with `@MinLength(10)` + `@MaxLength(1000)` validation
+  - 9 unit tests (3 approve + 3 reject + 3 list); 22 total in module
+  - Task 4 (count endpoint) skipped — FE reuses list with limit=1 + data.total
+  - Requirements satisfied: ONB-BE-04, ONB-BE-09
 
 - **Phase 2 (2026-05-13):** Owner-facing endpoints for lodging onboarding wizard
   - `computeLodgingCompletion` util — 7 weighted buckets, criticalSatisfied, 5 tests
@@ -40,6 +51,10 @@ Phase 2 complete. Owner-facing endpoints landed: computeLodgingCompletion util, 
 
 ## Decisions
 
+- Phase 3: @SuperAdmin() decorator used on AdminLodgingsController class (same pattern as AdminTermsController)
+- Phase 3: approve/reject in LodgingsService (no separate admin service) — DI simplicity
+- Phase 3: submittedAt + status added to LodgingIndexDto as optional admin-only fields (same pattern as ownerHasAcceptedTerms)
+- Phase 3: Task 4 count endpoint skipped — FE reads data.total from list endpoint with limit=1
 - Milestone driven by frontend Phase 4 wizard already shipped in `binntu` repo
 - Phase 4 (frontend) HUMAN-UAT items are blocked on this milestone completing
 - All TypeORM-style migrations; pnpm test for verification
