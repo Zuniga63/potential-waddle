@@ -10,3 +10,4 @@ export { UploadLodgingImagesDto } from './upload-lodging-images.dto';
 export { LodgingImageDto } from './lodging-image.dto';
 export { AdminLodgingsFiltersDto } from './admin-lodgings-filters.dto';
 export { AdminLodgingsListDto } from './admin-lodgings-list.dto';
+export { RejectLodgingDto } from './reject-lodging.dto';
