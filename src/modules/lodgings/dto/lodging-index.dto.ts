@@ -171,6 +171,24 @@ export class LodgingIndexDto {
   ownerHasAcceptedTerms?: boolean;
 
   @ApiProperty({
+    example: '2026-05-13T22:00:00.000Z',
+    description: 'Admin-only: timestamp when the lodging was last submitted for review. Null if never submitted.',
+    readOnly: true,
+    required: false,
+    nullable: true,
+  })
+  submittedAt?: Date | null;
+
+  @ApiProperty({
+    example: 'pending_review',
+    description: 'Admin-only: current workflow status of the lodging.',
+    readOnly: true,
+    required: false,
+    enum: ['draft', 'pending_review', 'published', 'rejected'],
+  })
+  status?: string;
+
+  @ApiProperty({
     example: 123.456,
     description: 'Latitude of the lodging',
     required: false,
@@ -269,5 +287,8 @@ export class LodgingIndexDto {
     this.longitude = lodging.location?.coordinates[0] || 0;
     this.latitude = lodging.location?.coordinates[1] || 0;
     this.whatsappNumbers = lodging.whatsappNumbers || [];
+    // Admin-only fields — always projected so the admin list row carries them
+    this.submittedAt = lodging.submittedAt ?? null;
+    this.status = lodging.status;
   }
 }
