@@ -156,7 +156,7 @@ export class LodgingsService {
         order,
         where: {
           ...where,
-          isPublic: true,
+          status: 'published' as const,
         },
       }),
       user
@@ -207,7 +207,7 @@ export class LodgingsService {
       order,
       where: {
         ...where,
-        isPublic: true,
+        status: 'published' as const,
       },
     });
 
@@ -279,7 +279,7 @@ export class LodgingsService {
     };
 
     let lodging = await this.lodgingRespository.findOne({
-      where: { slug },
+      where: { slug, status: 'published' },
       relations,
       order: {
         images: { order: 'ASC' },
@@ -287,7 +287,7 @@ export class LodgingsService {
       },
     });
 
-    if (!lodging) lodging = await this.lodgingRespository.findOne({ where: { slug }, relations });
+    if (!lodging) lodging = await this.lodgingRespository.findOne({ where: { slug, status: 'published' }, relations });
     if (!lodging) throw new NotFoundException('Lodging not found');
 
     // Check for active promotions and user review
