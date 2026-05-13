@@ -37,6 +37,7 @@ import { DocumentsModule } from './modules/documents/documents.module';
 import { SubscriptionsModule } from './modules/subscriptions/subscriptions.module';
 import { AnalyticsModule } from './modules/analytics/analytics.module';
 import { TermsModule } from './modules/terms/terms.module';
+import { NotificationsModule } from './modules/notifications/notifications.module';
 
 @Module({
   imports: [
@@ -84,6 +85,7 @@ import { TermsModule } from './modules/terms/terms.module';
     SubscriptionsModule,
     AnalyticsModule,
     TermsModule,
+    NotificationsModule,
   ],
   controllers: [],
   providers: [
