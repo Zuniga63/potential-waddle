@@ -40,6 +40,19 @@ export class AllExceptionsFilter implements ExceptionFilter {
         errorMessage = 'Validation error in the request';
       }
 
+      // When the exception was constructed with a structured object payload
+      // (e.g. ForbiddenException({ errorCode: 'TERMS_NOT_ACCEPTED', ... })),
+      // spread the payload into the response so callers can read top-level keys
+      // like `body.errorCode` directly — matching the frontend's MutationErrorListener contract.
+      const exceptionResponse = exception.getResponse();
+      if (typeof exceptionResponse === 'object' && exceptionResponse !== null && !Array.isArray(exceptionResponse)) {
+        const structured = exceptionResponse as Record<string, unknown>;
+        // Only spread when the payload carries domain-specific keys beyond the standard NestJS fields
+        if ('errorCode' in structured) {
+          return this.sendStructuredErrorResponse(httpAdapter, ctx, request, httpStatus, errorType, structured);
+        }
+      }
+
       return this.sendErrorResponse(httpAdapter, ctx, request, httpStatus, errorType, errorMessage, validationErrors);
     }
 
@@ -90,6 +103,30 @@ export class AllExceptionsFilter implements ExceptionFilter {
       timestamp: new Date().toISOString(),
       errorMessage,
       errors: validationErrors,
+    };
+
+    httpAdapter.reply(ctx.getResponse(), responseBody, httpStatus);
+  }
+
+  /**
+   * Sends a structured error response for exceptions whose payload contains
+   * domain-specific keys (e.g. errorCode). The payload is spread at the top
+   * level so the frontend can read `body.errorCode` directly.
+   */
+  private sendStructuredErrorResponse(
+    httpAdapter: any,
+    ctx: any,
+    request: any,
+    httpStatus: number,
+    errorType: string,
+    payload: Record<string, unknown>,
+  ) {
+    const responseBody = {
+      statusCode: httpStatus,
+      path: request.url,
+      errorType,
+      timestamp: new Date().toISOString(),
+      ...payload,
     };
 
     httpAdapter.reply(ctx.getResponse(), responseBody, httpStatus);

@@ -11,6 +11,8 @@ import {
   UploadedFiles,
   Req,
   Query,
+  HttpCode,
+  HttpStatus,
 } from '@nestjs/common';
 import { ApiBadRequestResponse, ApiBody, ApiConsumes, ApiOkResponse, ApiTags } from '@nestjs/swagger';
 import { Request } from 'express';
@@ -180,6 +182,17 @@ export class LodgingsController {
     @Body() body: { showGoogleMapsReviews: boolean },
   ) {
     return this.lodgingsService.updateShowGoogleMapsReviews(identifier, body.showGoogleMapsReviews);
+  }
+
+  // * ----------------------------------------------------------------------------------------------------------------
+  // * SUBMIT LODGING FOR REVIEW
+  // * ----------------------------------------------------------------------------------------------------------------
+  @Post(':identifier/submit-for-review')
+  @Auth()
+  @HttpCode(HttpStatus.OK)
+  @ApiOkResponse({ description: 'Lodging submitted for review', type: LodgingFullDto })
+  submitForReview(@Param('identifier') identifier: string, @GetUser() user: User) {
+    return this.lodgingsService.submitForReview({ identifier, user });
   }
 
   // * ----------------------------------------------------------------------------------------------------------------

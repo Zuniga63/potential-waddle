@@ -1,0 +1,441 @@
+import { Test, TestingModule } from '@nestjs/testing';
+import { BadRequestException, ForbiddenException, NotFoundException, InternalServerErrorException } from '@nestjs/common';
+import { getRepositoryToken } from '@nestjs/typeorm';
+import { DataSource } from 'typeorm';
+
+import { LodgingsService } from './lodgings.service';
+import { Lodging, LodgingImage, LodgingPlace, LodgingRoomType } from './entities';
+import { Category, Facility } from '../core/entities';
+import { User } from '../users/entities';
+import { Town } from '../towns/entities';
+import { Place } from '../places/entities';
+import { Plan, Subscription } from '../subscriptions/entities';
+import { CloudinaryService } from '../cloudinary/cloudinary.service';
+import { GooglePlacesService } from '../google-places/google-places.service';
+import { PromotionsService } from '../promotions/promotions.service';
+import { EntityReviewsService } from '../reviews/services/entity-reviews.service';
+import { TermsService } from '../terms/services';
+
+// ---------------------------------------------------------------------------
+// Helpers
+// ---------------------------------------------------------------------------
+
+const USER_ID = '00000000-0000-0000-0000-000000000001';
+const LODGING_ID = '00000000-0000-0000-0000-000000000010';
+const PLAN_ID = '00000000-0000-0000-0000-000000000020';
+const TERMS_DOC_ID = '00000000-0000-0000-0000-000000000030';
+
+const NOW = new Date('2026-05-13T00:00:00Z');
+
+const mockUser = {
+  id: USER_ID,
+  email: 'owner@test.com',
+  createdAt: NOW,
+  updatedAt: NOW,
+  name: 'Test Owner',
+  hasPassword: true,
+  country: null,
+  location: null,
+  birthDate: null,
+  profileImage: null,
+  role: null,
+  town: null,
+} as unknown as User;
+
+function buildFullLodging(overrides: Partial<Lodging> = {}): Lodging {
+  return {
+    id: LODGING_ID,
+    name: 'Test Lodging',
+    slug: 'test-lodging',
+    status: 'draft',
+    submittedAt: null,
+    rejectionReason: null,
+    isPublic: false,
+    stateDB: true,
+    description: 'A'.repeat(60),
+    points: 0,
+    reviewCount: 0,
+    rating: 0,
+    roomTypes: [],
+    amenities: ['WiFi'],
+    roomCount: 0,
+    lowestPrice: 50000 as any,
+    highestPrice: null,
+    priceUnit: 'noche',
+    address: '123 Main St',
+    phoneNumbers: [],
+    email: 'contact@lodge.com',
+    website: null,
+    facebook: null,
+    instagram: null,
+    whatsappNumbers: ['+573001234567'],
+    openingHours: null,
+    spokenLanguages: [],
+    capacity: null,
+    location: { type: 'Point', coordinates: [-75.5, 6.2] } as any,
+    googleMapsUrl: null,
+    urbanCenterDistance: null,
+    howToGetThere: null,
+    arrivalReference: null,
+    paymentMethods: ['cash'],
+    googleMapsRating: null,
+    googleMapsId: null,
+    googleMapsReviewsCount: null,
+    showGoogleMapsReviews: true,
+    showBinntuReviews: true,
+    googleMapsName: null,
+    createdAt: new Date(),
+    updatedAt: new Date(),
+    user: mockUser,
+    town: { id: 'town-1', department: { id: 'dept-1' } } as any,
+    categories: [{ id: 'cat-1', name: 'Hostal', icon: null } as any],
+    images: [
+      { id: 'img-1', imageResource: { id: 'res-1', url: 'https://x.com/1.jpg' } as any, order: 1 } as any,
+      { id: 'img-2', imageResource: { id: 'res-2', url: 'https://x.com/2.jpg' } as any, order: 2 } as any,
+      { id: 'img-3', imageResource: { id: 'res-3', url: 'https://x.com/3.jpg' } as any, order: 3 } as any,
+    ],
+    facilities: [{ id: 'fac-1', name: 'Pool', icon: null } as any],
+    reviews: [],
+    places: [],
+    lodgingRoomTypes: [
+      {
+        id: 'rt-1',
+        name: 'Standard',
+        price: 50000 as any,
+        maxCapacity: 2,
+        images: [],
+      } as any,
+    ],
+    ...overrides,
+  } as Lodging;
+}
+
+// ---------------------------------------------------------------------------
+// Test module setup
+// ---------------------------------------------------------------------------
+
+const makeRepo = () => ({
+  findOne: jest.fn(),
+  findBy: jest.fn(),
+  find: jest.fn(),
+  save: jest.fn(),
+  create: jest.fn(),
+  delete: jest.fn(),
+  update: jest.fn(),
+  manager: { transaction: jest.fn(), create: jest.fn(), save: jest.fn() },
+  createQueryBuilder: jest.fn(),
+});
+
+describe('LodgingsService — submitForReview', () => {
+  let service: LodgingsService;
+  let lodgingRepo: ReturnType<typeof makeRepo>;
+  let termsService: jest.Mocked<Partial<TermsService>>;
+  let dataSource: jest.Mocked<Partial<DataSource>>;
+
+  beforeEach(async () => {
+    jest.clearAllMocks();
+
+    lodgingRepo = makeRepo();
+    termsService = {
+      getStatusForUser: jest.fn(),
+      getOwnersWithAcceptance: jest.fn(),
+    };
+    dataSource = {
+      transaction: jest.fn(),
+    };
+
+    const module: TestingModule = await Test.createTestingModule({
+      providers: [
+        LodgingsService,
+        { provide: getRepositoryToken(Lodging), useValue: lodgingRepo },
+        { provide: getRepositoryToken(LodgingImage), useValue: makeRepo() },
+        { provide: getRepositoryToken(Category), useValue: makeRepo() },
+        { provide: getRepositoryToken(User), useValue: makeRepo() },
+        { provide: getRepositoryToken(Town), useValue: makeRepo() },
+        { provide: getRepositoryToken(Facility), useValue: makeRepo() },
+        { provide: getRepositoryToken(Place), useValue: makeRepo() },
+        { provide: getRepositoryToken(LodgingPlace), useValue: makeRepo() },
+        { provide: getRepositoryToken(LodgingRoomType), useValue: makeRepo() },
+        { provide: getRepositoryToken(Plan), useValue: makeRepo() },
+        { provide: getRepositoryToken(Subscription), useValue: makeRepo() },
+        { provide: CloudinaryService, useValue: { uploadImage: jest.fn(), destroyFile: jest.fn(), destroyFolder: jest.fn() } },
+        { provide: GooglePlacesService, useValue: { getPlaceDetails: jest.fn() } },
+        { provide: PromotionsService, useValue: { hasActivePromotions: jest.fn(), getLatestActivePromotion: jest.fn(), getActivePromotions: jest.fn() } },
+        { provide: EntityReviewsService, useValue: { getUserReviews: jest.fn(), findUserReview: jest.fn() } },
+        { provide: TermsService, useValue: termsService },
+        { provide: DataSource, useValue: dataSource },
+      ],
+    }).compile();
+
+    service = module.get<LodgingsService>(LodgingsService);
+  });
+
+  // -------------------------------------------------------------------------
+  // Test 1: Happy path — draft lodging with full completion + T&C accepted
+  // -------------------------------------------------------------------------
+  it('happy path: transitions draft → pending_review, sets submittedAt, returns enriched DTO', async () => {
+    const lodging = buildFullLodging({ status: 'draft' });
+    const updatedLodging = buildFullLodging({ status: 'pending_review', submittedAt: new Date() });
+
+    // First findOne (load for guards), second findOne (reload after save)
+    lodgingRepo.findOne.mockResolvedValueOnce(lodging).mockResolvedValueOnce(updatedLodging);
+    lodgingRepo.save.mockResolvedValueOnce(updatedLodging);
+
+    // T&C accepted — enforcement on by default in test env (TERMS_ENFORCEMENT_ENABLED not set to 'false')
+    (termsService.getStatusForUser as jest.Mock).mockResolvedValueOnce({
+      hasAcceptedLodgingTerms: true,
+      activeDocumentIds: { lodging: TERMS_DOC_ID },
+    });
+
+    const result = await service.submitForReview({ identifier: LODGING_ID, user: mockUser });
+
+    expect(lodgingRepo.save).toHaveBeenCalledWith(
+      expect.objectContaining({ status: 'pending_review', rejectionReason: null }),
+    );
+    expect(result.status).toBe('pending_review');
+    expect(result.completionPercentage).toBeGreaterThanOrEqual(80);
+  });
+
+  // -------------------------------------------------------------------------
+  // Test 2: Non-owner → ForbiddenException
+  // -------------------------------------------------------------------------
+  it('non-owner throws ForbiddenException', async () => {
+    const lodging = buildFullLodging({ user: { id: 'other-user-id' } as User });
+    lodgingRepo.findOne.mockResolvedValueOnce(lodging);
+
+    await expect(
+      service.submitForReview({ identifier: LODGING_ID, user: mockUser }),
+    ).rejects.toBeInstanceOf(ForbiddenException);
+
+    expect(lodgingRepo.save).not.toHaveBeenCalled();
+  });
+
+  // -------------------------------------------------------------------------
+  // Test 3: status='published' → BadRequestException with INVALID_STATUS
+  // -------------------------------------------------------------------------
+  it("status='published' → BadRequestException with INVALID_STATUS", async () => {
+    const lodging = buildFullLodging({ status: 'published' });
+    lodgingRepo.findOne.mockResolvedValueOnce(lodging);
+
+    await expect(
+      service.submitForReview({ identifier: LODGING_ID, user: mockUser }),
+    ).rejects.toMatchObject(
+      expect.objectContaining({
+        response: expect.objectContaining({ message: 'INVALID_STATUS' }),
+      }),
+    );
+
+    expect(lodgingRepo.save).not.toHaveBeenCalled();
+  });
+
+  // -------------------------------------------------------------------------
+  // Test 4: completionPercentage < 80 → BadRequestException with INCOMPLETE payload
+  // -------------------------------------------------------------------------
+  it('incomplete lodging → BadRequestException with INCOMPLETE errorCode and missingFields', async () => {
+    // Strip images so completion drops below 80%
+    const lodging = buildFullLodging({
+      status: 'draft',
+      images: [], // missing images = 0 (critical)
+      lowestPrice: null, // also missing price (critical)
+      whatsappNumbers: [], // also missing whatsapp (critical)
+      lodgingRoomTypes: [], // also missing room types (critical)
+      amenities: [],
+      facilities: [],
+      paymentMethods: [],
+      location: null as any,
+    });
+    lodgingRepo.findOne.mockResolvedValueOnce(lodging);
+
+    await expect(
+      service.submitForReview({ identifier: LODGING_ID, user: mockUser }),
+    ).rejects.toMatchObject(
+      expect.objectContaining({
+        response: expect.objectContaining({
+          errorCode: 'INCOMPLETE',
+          missingFields: expect.arrayContaining(['images', 'lowestPrice', 'whatsappNumbers']),
+        }),
+      }),
+    );
+
+    expect(lodgingRepo.save).not.toHaveBeenCalled();
+  });
+
+  // -------------------------------------------------------------------------
+  // Test 5: T&C not accepted (enforcement on) → ForbiddenException with TERMS_NOT_ACCEPTED
+  // -------------------------------------------------------------------------
+  it('T&C not accepted (enforcement on) → ForbiddenException with exact TERMS_NOT_ACCEPTED payload', async () => {
+    // Set enforcement ON
+    const originalEnv = process.env.TERMS_ENFORCEMENT_ENABLED;
+    process.env.TERMS_ENFORCEMENT_ENABLED = 'true';
+
+    const lodging = buildFullLodging({ status: 'draft' });
+    lodgingRepo.findOne.mockResolvedValueOnce(lodging);
+
+    (termsService.getStatusForUser as jest.Mock).mockResolvedValueOnce({
+      hasAcceptedLodgingTerms: false,
+      activeDocumentIds: { lodging: TERMS_DOC_ID },
+    });
+
+    let caughtError: any;
+    try {
+      await service.submitForReview({ identifier: LODGING_ID, user: mockUser });
+    } catch (err) {
+      caughtError = err;
+    }
+
+    expect(caughtError).toBeInstanceOf(ForbiddenException);
+    expect(caughtError.response).toMatchObject({
+      errorCode: 'TERMS_NOT_ACCEPTED',
+      termsType: 'lodging',
+      activeTermsId: TERMS_DOC_ID,
+    });
+    expect(lodgingRepo.save).not.toHaveBeenCalled();
+
+    process.env.TERMS_ENFORCEMENT_ENABLED = originalEnv;
+  });
+
+  // -------------------------------------------------------------------------
+  // Test 6: T&C not accepted but TERMS_ENFORCEMENT_ENABLED=false → success
+  // -------------------------------------------------------------------------
+  it('T&C not accepted but TERMS_ENFORCEMENT_ENABLED=false → skips T&C check, succeeds', async () => {
+    const originalEnv = process.env.TERMS_ENFORCEMENT_ENABLED;
+    process.env.TERMS_ENFORCEMENT_ENABLED = 'false';
+
+    const lodging = buildFullLodging({ status: 'draft' });
+    const updatedLodging = buildFullLodging({ status: 'pending_review', submittedAt: new Date() });
+
+    lodgingRepo.findOne.mockResolvedValueOnce(lodging).mockResolvedValueOnce(updatedLodging);
+    lodgingRepo.save.mockResolvedValueOnce(updatedLodging);
+
+    const result = await service.submitForReview({ identifier: LODGING_ID, user: mockUser });
+
+    // Terms check must be skipped entirely
+    expect(termsService.getStatusForUser).not.toHaveBeenCalled();
+    expect(result.status).toBe('pending_review');
+
+    process.env.TERMS_ENFORCEMENT_ENABLED = originalEnv;
+  });
+});
+
+// ---------------------------------------------------------------------------
+// LodgingsService.create — transaction tests
+// ---------------------------------------------------------------------------
+describe('LodgingsService — create', () => {
+  let service: LodgingsService;
+  let lodgingRepo: ReturnType<typeof makeRepo>;
+  let planRepo: ReturnType<typeof makeRepo>;
+  let townRepo: ReturnType<typeof makeRepo>;
+  let userRepo: ReturnType<typeof makeRepo>;
+  let categoryRepo: ReturnType<typeof makeRepo>;
+  let facilityRepo: ReturnType<typeof makeRepo>;
+  let placeRepo: ReturnType<typeof makeRepo>;
+  let dataSource: { transaction: jest.Mock };
+  let termsService: jest.Mocked<Partial<TermsService>>;
+
+  const freePlan = { id: PLAN_ID, slug: 'lodging-free' } as Plan;
+  const town = { id: 'town-1' } as Town;
+  const user = mockUser;
+
+  beforeEach(async () => {
+    jest.clearAllMocks();
+
+    lodgingRepo = makeRepo();
+    planRepo = makeRepo();
+    townRepo = makeRepo();
+    userRepo = makeRepo();
+    categoryRepo = makeRepo();
+    facilityRepo = makeRepo();
+    placeRepo = makeRepo();
+    dataSource = { transaction: jest.fn() };
+    termsService = { getStatusForUser: jest.fn(), getOwnersWithAcceptance: jest.fn() };
+
+    const module: TestingModule = await Test.createTestingModule({
+      providers: [
+        LodgingsService,
+        { provide: getRepositoryToken(Lodging), useValue: lodgingRepo },
+        { provide: getRepositoryToken(LodgingImage), useValue: makeRepo() },
+        { provide: getRepositoryToken(Category), useValue: categoryRepo },
+        { provide: getRepositoryToken(User), useValue: userRepo },
+        { provide: getRepositoryToken(Town), useValue: townRepo },
+        { provide: getRepositoryToken(Facility), useValue: facilityRepo },
+        { provide: getRepositoryToken(Place), useValue: placeRepo },
+        { provide: getRepositoryToken(LodgingPlace), useValue: makeRepo() },
+        { provide: getRepositoryToken(LodgingRoomType), useValue: makeRepo() },
+        { provide: getRepositoryToken(Plan), useValue: planRepo },
+        { provide: getRepositoryToken(Subscription), useValue: makeRepo() },
+        { provide: CloudinaryService, useValue: { uploadImage: jest.fn(), destroyFile: jest.fn(), destroyFolder: jest.fn() } },
+        { provide: GooglePlacesService, useValue: { getPlaceDetails: jest.fn() } },
+        { provide: PromotionsService, useValue: { hasActivePromotions: jest.fn(), getLatestActivePromotion: jest.fn() } },
+        { provide: EntityReviewsService, useValue: { getUserReviews: jest.fn() } },
+        { provide: TermsService, useValue: termsService },
+        { provide: DataSource, useValue: dataSource },
+      ],
+    }).compile();
+
+    service = module.get<LodgingsService>(LodgingsService);
+  });
+
+  // -------------------------------------------------------------------------
+  // Test 7: happy path — transaction called, lodging + subscription persisted
+  // -------------------------------------------------------------------------
+  it('happy path: calls dataSource.transaction and resolves with lodging name message', async () => {
+    townRepo.findOne.mockResolvedValueOnce(town);
+    userRepo.findOne.mockResolvedValueOnce(user);
+    planRepo.findOne.mockResolvedValueOnce(freePlan);
+    categoryRepo.findBy.mockResolvedValueOnce([]);
+    facilityRepo.findBy.mockResolvedValueOnce([]);
+    placeRepo.findBy.mockResolvedValueOnce([]);
+
+    const newLodging = { id: LODGING_ID, name: 'My Lodge' } as Lodging;
+    // Mock the transaction to execute the callback immediately
+    dataSource.transaction.mockImplementationOnce(async (cb: (manager: any) => Promise<any>) => {
+      const manager = {
+        save: jest.fn().mockResolvedValueOnce(newLodging).mockResolvedValue({ id: 'sub-id' }),
+        create: jest.fn().mockReturnValue({}),
+      };
+      return cb(manager);
+    });
+
+    const dto: any = {
+      name: 'My Lodge',
+      townId: 'town-1',
+      latitude: null,
+      longitude: null,
+      categoryIds: [],
+      facilityIds: [],
+      placeIds: [],
+      lodgingRoomTypes: [],
+    };
+
+    const result = await service.create(dto, USER_ID);
+
+    expect(dataSource.transaction).toHaveBeenCalledTimes(1);
+    expect(result).toEqual({ message: 'My Lodge' });
+  });
+
+  // -------------------------------------------------------------------------
+  // Test 8: Plan Free missing → InternalServerErrorException before transaction
+  // -------------------------------------------------------------------------
+  it('Plan Free missing → throws InternalServerErrorException without calling transaction', async () => {
+    townRepo.findOne.mockResolvedValueOnce(town);
+    userRepo.findOne.mockResolvedValueOnce(user);
+    planRepo.findOne.mockResolvedValueOnce(null); // lodging-free not seeded
+    categoryRepo.findBy.mockResolvedValueOnce([]);
+    facilityRepo.findBy.mockResolvedValueOnce([]);
+    placeRepo.findBy.mockResolvedValueOnce([]);
+
+    const dto: any = {
+      name: 'My Lodge',
+      townId: 'town-1',
+      latitude: null,
+      longitude: null,
+      categoryIds: [],
+      facilityIds: [],
+      placeIds: [],
+      lodgingRoomTypes: [],
+    };
+
+    await expect(service.create(dto, USER_ID)).rejects.toBeInstanceOf(InternalServerErrorException);
+    expect(dataSource.transaction).not.toHaveBeenCalled();
+  });
+});

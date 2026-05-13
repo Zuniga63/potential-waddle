@@ -797,4 +797,78 @@ export class LodgingsService {
     await this.lodgingRespository.save(lodging);
     return { message: 'Lodging Google Maps Reviews visibility updated', data: showGoogleMapsReviews };
   }
+
+  // ------------------------------------------------------------------------------------------------
+  // Submit lodging for review
+  // ------------------------------------------------------------------------------------------------
+  async submitForReview({ identifier, user }: { identifier: string; user: User }) {
+    const relations: FindOptionsRelations<Lodging> = {
+      user: true,
+      categories: { icon: true },
+      facilities: { icon: true },
+      town: { department: true },
+      images: { imageResource: true },
+      places: { place: true },
+      lodgingRoomTypes: { images: { imageResource: true } },
+    };
+
+    // 1. Load lodging with all relations needed for completion check
+    const lodging = await this.lodgingRespository.findOne({ where: { id: identifier }, relations });
+    if (!lodging) throw new NotFoundException('Lodging not found');
+
+    // 2. Ownership check
+    if (lodging.user?.id !== user.id) {
+      throw new ForbiddenException('Not your lodging');
+    }
+
+    // 3. Status guard — only draft or rejected lodgings can be submitted
+    if (lodging.status !== 'draft' && lodging.status !== 'rejected') {
+      throw new BadRequestException({
+        message: 'INVALID_STATUS',
+        detail: 'Only draft or rejected lodgings can be submitted',
+      });
+    }
+
+    // 4. Completion guard — must be >= 80% AND all critical fields satisfied
+    const { completionPercentage, missingFields, criticalSatisfied } = computeLodgingCompletion(lodging);
+    if (completionPercentage < 80 || !criticalSatisfied) {
+      throw new BadRequestException({ errorCode: 'INCOMPLETE', completionPercentage, missingFields });
+    }
+
+    // 5. T&C guard — skip when enforcement is disabled
+    if (isTermsEnforcementEnabled()) {
+      const termsStatus = await this.termsService.getStatusForUser(user.id);
+      if (!termsStatus.hasAcceptedLodgingTerms) {
+        // Provide the active terms document id so the frontend can redirect the user to accept
+        const activeTermsId = termsStatus.activeDocumentIds?.lodging ?? null;
+        throw new ForbiddenException({
+          errorCode: 'TERMS_NOT_ACCEPTED',
+          termsType: 'lodging',
+          activeTermsId,
+        });
+      }
+    }
+
+    // 6. Transition lodging to pending_review
+    lodging.status = 'pending_review';
+    lodging.submittedAt = new Date();
+    lodging.rejectionReason = null;
+    await this.lodgingRespository.save(lodging);
+
+    // 7. TODO: notify admin of pending review (Phase 4 — LodgingNotificationsService)
+
+    // 8. Return owner-enriched shape so frontend can update its query cache
+    const updatedLodging = await this.lodgingRespository.findOne({ where: { id: lodging.id }, relations });
+    if (!updatedLodging) throw new NotFoundException('Lodging not found after update');
+
+    const dto = new LodgingFullDto(updatedLodging);
+    const completion = computeLodgingCompletion(updatedLodging);
+    dto.status = updatedLodging.status;
+    dto.completionPercentage = completion.completionPercentage;
+    dto.missingFields = completion.missingFields;
+    dto.submittedAt = updatedLodging.submittedAt;
+    dto.rejectionReason = updatedLodging.rejectionReason;
+
+    return dto;
+  }
 }
