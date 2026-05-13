@@ -15,6 +15,7 @@ import { GooglePlacesModule } from '../google-places/google-places.module';
 import { PromotionsModule } from '../promotions/promotions.module';
 import { ReviewsModule } from '../reviews/reviews.module';
 import { TermsModule } from '../terms/terms.module';
+import { Plan, Subscription } from '../subscriptions/entities';
 
 @Module({
   controllers: [LodgingsController, LodgingRoomTypesController],
@@ -31,6 +32,8 @@ import { TermsModule } from '../terms/terms.module';
       Place,
       LodgingRoomType,
       LodgingRoomTypeImage,
+      Plan,
+      Subscription,
     ]),
     CloudinaryModule,
     GooglePlacesModule,

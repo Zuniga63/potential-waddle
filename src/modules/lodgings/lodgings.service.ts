@@ -1,14 +1,16 @@
 import {
   BadRequestException,
+  ForbiddenException,
   Injectable,
-  NotFoundException,
   InternalServerErrorException,
   Logger,
+  NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { FindOptionsRelations, In, Point, Repository } from 'typeorm';
+import { DataSource, FindOptionsRelations, In, Point, Repository } from 'typeorm';
 
 import { Lodging, LodgingImage, LodgingPlace, LodgingRoomType } from './entities';
+import { Plan, Subscription } from '../subscriptions/entities';
 import { AdminLodgingsFiltersDto, AdminLodgingsListDto, CreateLodgingDto, LodgingFullDto, LodgingIndexDto, UpdateLodgingDto } from './dto';
 import { LodgingFindAllParams } from './interfaces';
 import { computeLodgingCompletion, generateLodgingQueryFilters } from './utils';
@@ -28,6 +30,7 @@ import { ReviewDomainsEnum } from '../reviews/enums';
 import { Review } from '../reviews/entities';
 import { TermsService } from '../terms/services';
 import { TermsTypeEnum } from '../terms/interfaces';
+import { isTermsEnforcementEnabled } from '../terms/utils';
 @Injectable()
 export class LodgingsService {
   private readonly logger = new Logger(LodgingsService.name);
@@ -55,6 +58,11 @@ export class LodgingsService {
     private readonly promotionsService: PromotionsService,
     private readonly entityReviewsService: EntityReviewsService,
     private readonly termsService: TermsService,
+    private readonly dataSource: DataSource,
+    @InjectRepository(Plan)
+    private readonly planRepository: Repository<Plan>,
+    @InjectRepository(Subscription)
+    private readonly subscriptionRepository: Repository<Subscription>,
   ) {}
 
   // ------------------------------------------------------------------------------------------------
@@ -313,7 +321,7 @@ export class LodgingsService {
   }
 
   // ------------------------------------------------------------------------------------------------
-  // Create lodging
+  // Create lodging (transactional: lodging + Plan Free subscription in one DB transaction)
   // ------------------------------------------------------------------------------------------------
   async create(createLodgingDto: CreateLodgingDto, userId: string) {
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -327,65 +335,80 @@ export class LodgingsService {
           }
         : null;
 
-    const categories = createLodgingDto.categoryIds
-      ? await this.categoryRepo.findBy({ id: In(createLodgingDto.categoryIds) })
-      : [];
-    const facilities = createLodgingDto.facilityIds
-      ? await this.facilityRepository.findBy({ id: In(createLodgingDto.facilityIds) })
-      : [];
-    const town = await this.townRepository.findOne({ where: { id: createLodgingDto.townId } });
-    // Usar userId del JWT, no del DTO (seguridad)
-    const user = await this.userRepository.findOne({ where: { id: userId } });
+    // Pre-load related entities outside the transaction (read-only, safe)
+    const [categories, facilities, town, user, places, freePlan] = await Promise.all([
+      createLodgingDto.categoryIds ? this.categoryRepo.findBy({ id: In(createLodgingDto.categoryIds) }) : [],
+      createLodgingDto.facilityIds ? this.facilityRepository.findBy({ id: In(createLodgingDto.facilityIds) }) : [],
+      this.townRepository.findOne({ where: { id: createLodgingDto.townId } }),
+      // Usar userId del JWT, no del DTO (seguridad)
+      this.userRepository.findOne({ where: { id: userId } }),
+      createLodgingDto.placeIds ? this.placeRepository.findBy({ id: In(createLodgingDto.placeIds) }) : [],
+      this.planRepository.findOne({ where: { slug: 'lodging-free' } }),
+    ]);
 
-    const places = createLodgingDto.placeIds
-      ? await this.placeRepository.findBy({ id: In(createLodgingDto.placeIds) })
-      : [];
+    if (!town) throw new NotFoundException('Town not found');
+    if (!user) throw new NotFoundException('User not found');
 
-    if (!town) {
-      throw new NotFoundException('Town not found');
-    }
-
-    if (!user) {
-      throw new NotFoundException('User not found');
+    // Plan Free must be seeded — it is a critical setup requirement
+    if (!freePlan) {
+      throw new InternalServerErrorException('Plan Free not seeded');
     }
 
     try {
-      // Primero guardamos el alojamiento
-      const newLodging = await this.lodgingRespository.save({
-        ...restCreateDto,
-        location: location as any,
-        categories,
-        facilities,
-        town,
-        user: user ?? undefined,
+      return await this.dataSource.transaction(async manager => {
+        // 1. Save the new lodging (status defaults to 'draft' from DB column default)
+        const newLodging = await manager.save(Lodging, {
+          ...restCreateDto,
+          location: location as any,
+          categories,
+          facilities,
+          town,
+          user,
+        });
+
+        // 2. Create LodgingPlace relations
+        if (places.length > 0) {
+          for (const [index, place] of places.entries()) {
+            const lodgingPlace = manager.create(LodgingPlace, {
+              lodging: newLodging,
+              place,
+              order: index + 1,
+              distance: 0,
+            });
+            await manager.save(LodgingPlace, lodgingPlace);
+          }
+        }
+
+        // 3. Create lodging room types if provided
+        if (lodgingRoomTypes && lodgingRoomTypes.length > 0) {
+          for (const roomTypeData of lodgingRoomTypes) {
+            const lodgingRoomType = manager.create(LodgingRoomType, {
+              ...roomTypeData,
+              lodging: newLodging,
+            });
+            await manager.save(LodgingRoomType, lodgingRoomType);
+          }
+        }
+
+        // 4. Auto-create Plan Free subscription for this lodging
+        const subscription = manager.create(Subscription, {
+          userId: user.id,
+          planId: freePlan.id,
+          entityType: 'lodging',
+          entityId: newLodging.id,
+          entityName: newLodging.name,
+          status: 'active',
+          currentPeriodStart: new Date(),
+          currentPeriodEnd: null,
+        });
+        await manager.save(Subscription, subscription);
+
+        return { message: restCreateDto.name };
       });
-
-      // Luego creamos las relaciones de lugares si hay lugares para guardar
-      if (places.length > 0) {
-        for (const [index, place] of places.entries()) {
-          const lodgingPlace = this.lodgingPlaceRepository.create({
-            lodging: newLodging,
-            place: place,
-            order: index + 1,
-            distance: 0,
-          });
-          await this.lodgingPlaceRepository.save(lodgingPlace);
-        }
-      }
-
-      // Crear lodging room types si se proporcionan
-      if (lodgingRoomTypes && lodgingRoomTypes.length > 0) {
-        for (const roomTypeData of lodgingRoomTypes) {
-          const lodgingRoomType = this.lodgingRoomTypeRepository.create({
-            ...roomTypeData,
-            lodging: newLodging,
-          });
-          await this.lodgingRoomTypeRepository.save(lodgingRoomType);
-        }
-      }
-
-      return { message: restCreateDto.name };
     } catch (error) {
+      if (error instanceof NotFoundException || error instanceof InternalServerErrorException) {
+        throw error;
+      }
       throw new BadRequestException(`Error creating lodging: ${error.message}`);
     }
   }
