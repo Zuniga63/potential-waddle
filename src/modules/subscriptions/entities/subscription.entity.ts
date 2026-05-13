@@ -61,8 +61,8 @@ export class Subscription {
   @Column('timestamp', { name: 'current_period_start' })
   currentPeriodStart: Date;
 
-  @Column('timestamp', { name: 'current_period_end' })
-  currentPeriodEnd: Date;
+  @Column('timestamp', { name: 'current_period_end', nullable: true })
+  currentPeriodEnd: Date | null;
 
   @Column('timestamp', { nullable: true, name: 'canceled_at' })
   canceledAt: Date | null;

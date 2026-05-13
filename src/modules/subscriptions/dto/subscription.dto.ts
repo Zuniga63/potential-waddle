@@ -33,8 +33,8 @@ export class SubscriptionDto {
   @ApiProperty({ example: '2024-01-01T00:00:00.000Z' })
   currentPeriodStart: Date;
 
-  @ApiProperty({ example: '2024-02-01T00:00:00.000Z' })
-  currentPeriodEnd: Date;
+  @ApiProperty({ example: '2024-02-01T00:00:00.000Z', nullable: true, required: false })
+  currentPeriodEnd: Date | null;
 
   @ApiProperty({ example: null, required: false })
   canceledAt: Date | null;
@@ -71,9 +71,13 @@ export class SubscriptionDto {
     this.createdAt = subscription.createdAt;
 
     const now = new Date();
-    this.isExpired = now > subscription.currentPeriodEnd;
+    // currentPeriodEnd is null for lifetime (Plan Free) subscriptions — they never expire
+    this.isExpired = subscription.currentPeriodEnd !== null && now > subscription.currentPeriodEnd;
     this.isActive = subscription.status === 'active' && !this.isExpired;
-    this.daysRemaining = Math.max(0, Math.ceil((subscription.currentPeriodEnd.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)));
+    this.daysRemaining =
+      subscription.currentPeriodEnd !== null
+        ? Math.max(0, Math.ceil((subscription.currentPeriodEnd.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)))
+        : Infinity;
 
     // Determinar tipo de pago
     if (!subscription.paymentId) {

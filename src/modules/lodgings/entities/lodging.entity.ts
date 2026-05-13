@@ -173,6 +173,22 @@ export class Lodging {
   googleMapsName: string | null;
 
   // * ----------------------------------------------------------------------------------------------------------------
+  // * STATUS WORKFLOW
+  // * ----------------------------------------------------------------------------------------------------------------
+  @Column('enum', {
+    enum: ['draft', 'pending_review', 'published', 'rejected'],
+    enumName: 'lodging_status',
+    default: 'draft',
+  })
+  status: 'draft' | 'pending_review' | 'published' | 'rejected';
+
+  @Column('timestamp', { name: 'submitted_at', nullable: true })
+  submittedAt: Date | null;
+
+  @Column('text', { name: 'rejection_reason', nullable: true })
+  rejectionReason: string | null;
+
+  // * ----------------------------------------------------------------------------------------------------------------
   @Column('boolean', { default: true, name: 'is_public' })
   isPublic: boolean;
 

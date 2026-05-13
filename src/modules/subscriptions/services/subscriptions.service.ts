@@ -63,8 +63,8 @@ export class SubscriptionsService {
       relations: { plan: { features: true } },
     });
 
-    // Verificar si no ha expirado
-    if (subscription && new Date() > subscription.currentPeriodEnd) {
+    // Verificar si no ha expirado. currentPeriodEnd is null for lifetime subscriptions — they never expire.
+    if (subscription && subscription.currentPeriodEnd !== null && new Date() > subscription.currentPeriodEnd) {
       // Marcar como expirada
       subscription.status = 'expired';
       await this.subscriptionRepository.save(subscription);
