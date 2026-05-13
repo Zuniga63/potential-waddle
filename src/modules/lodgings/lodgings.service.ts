@@ -88,7 +88,7 @@ export class LodgingsService {
   // Find all lodgings paginated (Admin)
   // ------------------------------------------------------------------------------------------------
   async findAllPaginated(filters: AdminLodgingsFiltersDto): Promise<AdminLodgingsListDto> {
-    const { page = 1, limit = 10, search, categoryId, townId, isPublic, sortBy = 'name', sortOrder = 'ASC' } = filters;
+    const { page = 1, limit = 10, search, categoryId, townId, isPublic, status, sortBy = 'name', sortOrder = 'ASC' } = filters;
 
     const queryBuilder = this.lodgingRespository
       .createQueryBuilder('lodging')
@@ -114,6 +114,10 @@ export class LodgingsService {
 
     if (isPublic !== undefined) {
       queryBuilder.andWhere('lodging.isPublic = :isPublic', { isPublic });
+    }
+
+    if (status !== undefined) {
+      queryBuilder.andWhere('lodging.status = :status', { status });
     }
 
     // Sorting
@@ -858,6 +862,95 @@ export class LodgingsService {
     // 7. TODO: notify admin of pending review (Phase 4 — LodgingNotificationsService)
 
     // 8. Return owner-enriched shape so frontend can update its query cache
+    const updatedLodging = await this.lodgingRespository.findOne({ where: { id: lodging.id }, relations });
+    if (!updatedLodging) throw new NotFoundException('Lodging not found after update');
+
+    const dto = new LodgingFullDto(updatedLodging);
+    const completion = computeLodgingCompletion(updatedLodging);
+    dto.status = updatedLodging.status;
+    dto.completionPercentage = completion.completionPercentage;
+    dto.missingFields = completion.missingFields;
+    dto.submittedAt = updatedLodging.submittedAt;
+    dto.rejectionReason = updatedLodging.rejectionReason;
+
+    return dto;
+  }
+
+  // ------------------------------------------------------------------------------------------------
+  // Approve lodging (admin action)
+  // ------------------------------------------------------------------------------------------------
+  async approve({ identifier }: { identifier: string }): Promise<LodgingFullDto> {
+    const relations: FindOptionsRelations<Lodging> = {
+      user: true,
+      categories: { icon: true },
+      facilities: { icon: true },
+      town: { department: true },
+      images: { imageResource: true },
+      places: { place: true },
+      lodgingRoomTypes: { images: { imageResource: true } },
+    };
+
+    const lodging = await this.lodgingRespository.findOne({ where: { id: identifier }, relations });
+    if (!lodging) throw new NotFoundException('Lodging not found');
+
+    if (lodging.status !== 'pending_review') {
+      throw new BadRequestException({
+        message: 'Only pending_review lodgings can be approved',
+        currentStatus: lodging.status,
+      });
+    }
+
+    lodging.status = 'published';
+    lodging.rejectionReason = null; // clear any stale rejection reason
+    await this.lodgingRespository.save(lodging);
+
+    // TODO Phase 4: emailService.notifyLodgingApproved(lodging.user.email, lodging.id)
+
+    const updatedLodging = await this.lodgingRespository.findOne({ where: { id: lodging.id }, relations });
+    if (!updatedLodging) throw new NotFoundException('Lodging not found after update');
+
+    const dto = new LodgingFullDto(updatedLodging);
+    const completion = computeLodgingCompletion(updatedLodging);
+    dto.status = updatedLodging.status;
+    dto.completionPercentage = completion.completionPercentage;
+    dto.missingFields = completion.missingFields;
+    dto.submittedAt = updatedLodging.submittedAt;
+    dto.rejectionReason = updatedLodging.rejectionReason;
+
+    return dto;
+  }
+
+  // ------------------------------------------------------------------------------------------------
+  // Reject lodging (admin action)
+  // ------------------------------------------------------------------------------------------------
+  async reject({ identifier, reason }: { identifier: string; reason: string }): Promise<LodgingFullDto> {
+    const relations: FindOptionsRelations<Lodging> = {
+      user: true,
+      categories: { icon: true },
+      facilities: { icon: true },
+      town: { department: true },
+      images: { imageResource: true },
+      places: { place: true },
+      lodgingRoomTypes: { images: { imageResource: true } },
+    };
+
+    const lodging = await this.lodgingRespository.findOne({ where: { id: identifier }, relations });
+    if (!lodging) throw new NotFoundException('Lodging not found');
+
+    if (lodging.status !== 'pending_review') {
+      throw new BadRequestException({
+        message: 'Only pending_review lodgings can be rejected',
+        currentStatus: lodging.status,
+      });
+    }
+
+    lodging.status = 'rejected';
+    lodging.rejectionReason = reason;
+    // submittedAt is preserved so the owner can see when they last submitted
+    await this.lodgingRespository.save(lodging);
+
+    // TODO Phase 4: emailService.notifyLodgingRejected(lodging.user.email, lodging.id, reason)
+
     const updatedLodging = await this.lodgingRespository.findOne({ where: { id: lodging.id }, relations });
     if (!updatedLodging) throw new NotFoundException('Lodging not found after update');
 

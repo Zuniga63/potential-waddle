@@ -4,6 +4,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { Lodging, LodgingImage, LodgingPlace, LodgingRoomType, LodgingRoomTypeImage } from './entities';
 import { LodgingsService } from './lodgings.service';
 import { LodgingsController } from './lodgings.controller';
+import { AdminLodgingsController } from './admin-lodgings.controller';
 import { LodgingRoomTypesService } from './lodging-room-types.service';
 import { LodgingRoomTypesController } from './lodging-room-types.controller';
 import { Category, Facility } from '../core/entities';
@@ -18,7 +19,7 @@ import { TermsModule } from '../terms/terms.module';
 import { Plan, Subscription } from '../subscriptions/entities';
 
 @Module({
-  controllers: [LodgingsController, LodgingRoomTypesController],
+  controllers: [LodgingsController, LodgingRoomTypesController, AdminLodgingsController],
   providers: [LodgingsService, LodgingRoomTypesService],
   imports: [
     TypeOrmModule.forFeature([
