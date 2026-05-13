@@ -334,6 +334,46 @@ export class LodgingFullDto {
   })
   places?: PlaceDto[];
 
+  // * ----------------------------------------------------------------------------------------------------------------
+  // * OWNER-SCOPED FIELDS (only populated when the requester is the owner)
+  // * ----------------------------------------------------------------------------------------------------------------
+  @ApiProperty({
+    required: false,
+    enum: ['draft', 'pending_review', 'published', 'rejected'],
+    description: 'Current workflow status of the lodging (owner-only)',
+  })
+  status?: 'draft' | 'pending_review' | 'published' | 'rejected';
+
+  @ApiProperty({
+    required: false,
+    type: Number,
+    description: 'Completion percentage 0-100 (owner-only)',
+  })
+  completionPercentage?: number;
+
+  @ApiProperty({
+    required: false,
+    type: [String],
+    description: 'Slugs of fields that still need to be filled (owner-only)',
+  })
+  missingFields?: string[];
+
+  @ApiProperty({
+    required: false,
+    type: Date,
+    nullable: true,
+    description: 'Timestamp when the lodging was submitted for review (owner-only)',
+  })
+  submittedAt?: Date | null;
+
+  @ApiProperty({
+    required: false,
+    type: String,
+    nullable: true,
+    description: 'Reason the lodging was rejected, if applicable (owner-only)',
+  })
+  rejectionReason?: string | null;
+
   constructor(lodging?: Lodging, userReview?: string) {
     if (!lodging) return;
 

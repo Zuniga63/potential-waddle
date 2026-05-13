@@ -11,7 +11,7 @@ import { FindOptionsRelations, In, Point, Repository } from 'typeorm';
 import { Lodging, LodgingImage, LodgingPlace, LodgingRoomType } from './entities';
 import { AdminLodgingsFiltersDto, AdminLodgingsListDto, CreateLodgingDto, LodgingFullDto, LodgingIndexDto, UpdateLodgingDto } from './dto';
 import { LodgingFindAllParams } from './interfaces';
-import { generateLodgingQueryFilters } from './utils';
+import { computeLodgingCompletion, generateLodgingQueryFilters } from './utils';
 import { Category, Facility, ImageResource } from '../core/entities';
 import { CloudinaryPresets, ResourceProvider } from 'src/config';
 import { CloudinaryService } from '../cloudinary/cloudinary.service';
@@ -219,8 +219,9 @@ export class LodgingsService {
   }
   // ------------------------------------------------------------------------------------------------
   // Find one lodging
+  // When ownerId matches the lodging's owner, the response is enriched with completion fields.
   // ------------------------------------------------------------------------------------------------
-  async findOne({ identifier }: { identifier: string }) {
+  async findOne({ identifier, ownerId }: { identifier: string; ownerId?: string }) {
     const relations: FindOptionsRelations<Lodging> = {
       categories: { icon: true },
       facilities: { icon: true },
@@ -230,6 +231,7 @@ export class LodgingsService {
       lodgingRoomTypes: {
         images: { imageResource: true },
       },
+      user: true,
     };
 
     let lodging = await this.lodgingRespository.findOne({
@@ -241,7 +243,19 @@ export class LodgingsService {
     if (!lodging) lodging = await this.lodgingRespository.findOne({ where: { id: identifier }, relations });
     if (!lodging) throw new NotFoundException('Lodging not found');
 
-    return new LodgingFullDto(lodging);
+    const dto = new LodgingFullDto(lodging);
+
+    // Enrich with owner-scoped fields when the caller is the lodging's owner
+    if (ownerId && lodging.user?.id === ownerId) {
+      const { completionPercentage, missingFields } = computeLodgingCompletion(lodging);
+      dto.status = lodging.status;
+      dto.completionPercentage = completionPercentage;
+      dto.missingFields = missingFields;
+      dto.submittedAt = lodging.submittedAt;
+      dto.rejectionReason = lodging.rejectionReason;
+    }
+
+    return dto;
   }
 
   // ------------------------------------------------------------------------------------------------
