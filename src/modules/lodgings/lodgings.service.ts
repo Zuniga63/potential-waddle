@@ -362,7 +362,7 @@ export class LodgingsService {
     }
 
     try {
-      return await this.dataSource.transaction(async manager => {
+      const newLodgingId = await this.dataSource.transaction(async manager => {
         // 1. Save the new lodging (status defaults to 'draft' from DB column default)
         const newLodging = await manager.save(Lodging, {
           ...restCreateDto,
@@ -410,8 +410,14 @@ export class LodgingsService {
         });
         await manager.save(Subscription, subscription);
 
-        return { message: restCreateDto.name };
+        return newLodging.id;
       });
+
+      // Re-fetch the lodging with the owner-view shape so the wizard can:
+      //   - redirect to /profile/negocios/lodgings/:id/onboarding using the new id
+      //   - render the header progress radial from completionPercentage + missingFields
+      //   - apply the typed adapter (createLodgingDetailAdapter) without crashing on undefined town
+      return await this.findOne({ identifier: newLodgingId, ownerId: userId });
     } catch (error) {
       if (error instanceof NotFoundException || error instanceof InternalServerErrorException) {
         throw error;
