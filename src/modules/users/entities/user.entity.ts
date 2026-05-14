@@ -106,6 +106,13 @@ export class User {
   @Column('boolean', { default: true, name: 'is_active' })
   isActive?: boolean;
 
+  // Set true when a user signs up with a business onboarding intent (via the
+  // welcome-business notification call). Cleared to false when they create
+  // their first business. Lets us follow up with users who intended to list
+  // a business but abandoned before creating one.
+  @Column('boolean', { default: false, name: 'interested_in_business' })
+  interestedInBusiness?: boolean;
+
   @CreateDateColumn({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP', name: 'created_at' })
   createdAt: Date;
 

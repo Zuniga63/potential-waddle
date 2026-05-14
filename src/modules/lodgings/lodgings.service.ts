@@ -410,6 +410,10 @@ export class LodgingsService {
         });
         await manager.save(Subscription, subscription);
 
+        // 5. Clear the business-interest follow-up flag — the user has now created
+        // their first business, so they no longer need the abandoned-intent nudge.
+        await manager.update(User, user.id, { interestedInBusiness: false });
+
         return newLodging.id;
       });
 
