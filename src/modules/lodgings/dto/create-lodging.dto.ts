@@ -197,6 +197,15 @@ export class CreateLodgingDto {
   googleMapsUrl?: string;
 
   @ApiProperty({
+    example: 'ChIJRT_bIQ0HRI4Rl-hUu01FErs',
+    description: 'Google Places place_id — set by the onboarding location search',
+    required: false,
+  })
+  @IsOptional()
+  @IsString()
+  googleMapsId?: string;
+
+  @ApiProperty({
     example: ['123456789', '987654321'],
     description: 'List of WhatsApps of the lodging',
     required: false,
