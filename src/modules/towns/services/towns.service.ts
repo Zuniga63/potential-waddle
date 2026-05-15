@@ -22,7 +22,7 @@ export class TownsService {
   ) {}
 
   async create(createTownDto: CreateTownDto) {
-    const { lang = 'es', description, municipalityId, ...res } = createTownDto;
+    const { lang = 'es', description, municipalityId, latitude, longitude, ...res } = createTownDto;
     const town = this.townRepository.create({ ...res });
 
     if (lang === 'es') town.description = description;
@@ -30,6 +30,10 @@ export class TownsService {
     if (municipalityId) {
       const municipality = await this.municipalityRepository.findOne({ where: { id: municipalityId } });
       if (municipality) town.department = municipality;
+    }
+
+    if (latitude !== undefined && longitude !== undefined) {
+      town.location = { type: 'Point', coordinates: [longitude, latitude] } as any;
     }
 
     return this.townRepository.save(town);
@@ -109,6 +113,8 @@ export class TownsService {
       lang = 'es',
       description,
       municipalityId,
+      latitude,
+      longitude,
       // TownInfo fields
       population,
       distanceToCapital,
@@ -125,6 +131,10 @@ export class TownsService {
     if (municipalityId) {
       const municipality = await this.municipalityRepository.findOne({ where: { id: municipalityId } });
       if (municipality) town.department = municipality;
+    }
+
+    if (latitude !== undefined && longitude !== undefined) {
+      town.location = { type: 'Point', coordinates: [longitude, latitude] } as any;
     }
 
     // Handle TownInfo update

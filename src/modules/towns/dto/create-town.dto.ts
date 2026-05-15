@@ -52,6 +52,22 @@ export class CreateTownDto {
   urbanArea?: number;
 
   @ApiPropertyOptional({
+    example: 6.295145676,
+    description: 'Latitude of the urban center (used by lodging wizard for map centering)',
+  })
+  @IsOptional()
+  @IsNumber()
+  latitude?: number;
+
+  @ApiPropertyOptional({
+    example: -75.027964772,
+    description: 'Longitude of the urban center (used by lodging wizard for map centering)',
+  })
+  @IsOptional()
+  @IsNumber()
+  longitude?: number;
+
+  @ApiPropertyOptional({
     example: true,
     description: 'Whether the town is enabled',
     default: true,

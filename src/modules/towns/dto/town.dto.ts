@@ -1,4 +1,4 @@
-import { ApiProperty } from '@nestjs/swagger';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { DepartmentDto } from './department.dto';
 import { Town } from '../entities';
 
@@ -35,6 +35,18 @@ export class TownDto {
   })
   description?: string;
 
+  @ApiPropertyOptional({
+    example: 6.295145676,
+    description: 'Latitude of the town urban center',
+  })
+  latitude?: number;
+
+  @ApiPropertyOptional({
+    example: -75.027964772,
+    description: 'Longitude of the town urban center',
+  })
+  longitude?: number;
+
   @ApiProperty({
     format: 'date-time',
     example: '2021-09-03T00:00:00.000Z',
@@ -54,6 +66,11 @@ export class TownDto {
     this.department = new DepartmentDto(town.department);
     this.name = town.name;
     this.description = town.description;
+    const point = town.location as any;
+    if (point?.coordinates?.length === 2) {
+      this.longitude = point.coordinates[0];
+      this.latitude = point.coordinates[1];
+    }
     this.createdAt = town.createdAt;
     this.updatedAt = town.updatedAt;
   }

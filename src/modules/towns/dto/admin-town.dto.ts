@@ -24,6 +24,12 @@ export class AdminTownDto {
   @ApiProperty()
   urbanArea: number;
 
+  @ApiPropertyOptional()
+  latitude?: number;
+
+  @ApiPropertyOptional()
+  longitude?: number;
+
   @ApiProperty()
   isEnable: boolean;
 
@@ -70,6 +76,11 @@ export class AdminTownDto {
     this.slogan = town.slogan;
     this.urbanArea = town.urbanArea;
     this.isEnable = town.isEnable;
+    const point = town.location as any;
+    if (point?.coordinates?.length === 2) {
+      this.longitude = point.coordinates[0];
+      this.latitude = point.coordinates[1];
+    }
     this.departmentId = town.department?.id;
     this.departmentName = town.department?.name;
     this.createdAt = town.createdAt;
