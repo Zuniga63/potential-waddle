@@ -1,6 +1,7 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { CategoryDto } from 'src/modules/core/dto';
 import { Lodging } from 'src/modules/lodgings/entities';
+import { computeLodgingCompletion } from 'src/modules/lodgings/utils/compute-lodging-completion';
 import { TownDto } from 'src/modules/towns/dto';
 
 export class UserLodgingDto {
@@ -112,6 +113,23 @@ export class UserLodgingDto {
   })
   categories: CategoryDto[];
 
+  @ApiProperty({
+    example: 'draft',
+    enum: ['draft', 'pending_review', 'published', 'rejected'],
+    description: 'Onboarding lifecycle status of the lodging',
+    readOnly: true,
+    required: false,
+  })
+  status?: 'draft' | 'pending_review' | 'published' | 'rejected';
+
+  @ApiProperty({
+    example: 80,
+    description: 'Onboarding completion percentage (0-100). Computed from the lodging entity.',
+    readOnly: true,
+    required: false,
+  })
+  completionPercentage?: number;
+
   constructor(lodging?: Lodging) {
     if (!lodging) return;
     this.id = lodging.id;
@@ -131,5 +149,8 @@ export class UserLodgingDto {
     this.openingHours = lodging.openingHours || undefined;
     this.urbanCenterDistance = lodging.urbanCenterDistance || 0;
     this.isPublic = lodging.isPublic;
+    this.status = lodging.status;
+    const { completionPercentage } = computeLodgingCompletion(lodging);
+    this.completionPercentage = completionPercentage;
   }
 }

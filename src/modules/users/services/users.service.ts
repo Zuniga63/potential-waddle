@@ -297,6 +297,8 @@ export class UsersService {
       .leftJoinAndSelect('images.imageResource', 'imageResource')
       .leftJoinAndSelect('lodgings.town', 'town')
       .leftJoinAndSelect('town.department', 'department')
+      .leftJoinAndSelect('lodgings.facilities', 'facilities')
+      .leftJoinAndSelect('lodgings.lodgingRoomTypes', 'lodgingRoomTypes')
       .where('user.id = :id', { id })
       .getOne();
 
