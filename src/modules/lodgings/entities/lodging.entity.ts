@@ -163,6 +163,9 @@ export class Lodging {
   @Column('integer', { name: 'google_maps_reviews_count', nullable: true })
   googleMapsReviewsCount: number | null;
 
+  @Column('boolean', { name: 'rooms_not_applicable', default: false })
+  roomsNotApplicable: boolean;
+
   @Column('boolean', { name: 'show_google_maps_reviews', default: true })
   showGoogleMapsReviews: boolean;
 

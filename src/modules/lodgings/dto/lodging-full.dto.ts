@@ -374,6 +374,14 @@ export class LodgingFullDto {
   })
   rejectionReason?: string | null;
 
+  @ApiProperty({
+    required: false,
+    type: Boolean,
+    example: false,
+    description: 'Owner-opt-out flag for room types. When true, the Rooms bucket is treated as satisfied.',
+  })
+  roomsNotApplicable?: boolean;
+
   constructor(lodging?: Lodging, userReview?: string) {
     if (!lodging) return;
 
@@ -393,6 +401,7 @@ export class LodgingFullDto {
     this.googleMapsReviewsCount = lodging.googleMapsReviewsCount || undefined;
     this.showGoogleMapsReviews = lodging.showGoogleMapsReviews;
     this.showBinntuReviews = lodging.showBinntuReviews;
+    this.roomsNotApplicable = lodging.roomsNotApplicable ?? false;
     this.user = new UserDto(lodging.user);
     this.lowestPrice = lodging.lowestPrice || undefined;
     this.highestPrice = lodging.highestPrice || undefined;

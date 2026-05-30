@@ -73,11 +73,13 @@ export function computeLodgingCompletion(lodging: Lodging): LodgingCompletionRes
   // ------------------------------------------------------------------------------------------------
   // Bucket 4: Habitaciones (weight 20)
   // At least 1 room type with name + price + maxCapacity (critical)
+  // — UNLESS the owner explicitly opted out via roomsNotApplicable=true (apartments,
+  // whole-house rentals, hotels that don't want to enumerate room types).
   // ------------------------------------------------------------------------------------------------
   const validRoomTypes = (lodging.lodgingRoomTypes ?? []).filter(
     rt => rt.name && rt.name.trim().length > 0 && Number(rt.price) > 0 && rt.maxCapacity > 0,
   );
-  const hasRoomTypes = validRoomTypes.length >= 1;
+  const hasRoomTypes = validRoomTypes.length >= 1 || lodging.roomsNotApplicable === true;
 
   totalScore += hasRoomTypes ? 20 : 0;
 
