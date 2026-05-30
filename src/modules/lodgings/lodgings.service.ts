@@ -440,12 +440,17 @@ export class LodgingsService {
     });
     if (!lodging) throw new NotFoundException('Lodging not found');
 
-    const categories = updateLodgingDto.categoryIds
-      ? await this.categoryRepo.findBy({ id: In(updateLodgingDto.categoryIds) })
-      : [];
-    const facilities = updateLodgingDto.facilityIds
-      ? await this.facilityRepository.findBy({ id: In(updateLodgingDto.facilityIds) })
-      : [];
+    // PATCH semantics: when a relation array is omitted from the body, leave the
+    // existing relation untouched. Use `undefined` as the sentinel — the `categories`
+    // / `facilities` keys are spread conditionally into the save call below.
+    const categories =
+      updateLodgingDto.categoryIds !== undefined
+        ? await this.categoryRepo.findBy({ id: In(updateLodgingDto.categoryIds) })
+        : undefined;
+    const facilities =
+      updateLodgingDto.facilityIds !== undefined
+        ? await this.facilityRepository.findBy({ id: In(updateLodgingDto.facilityIds) })
+        : undefined;
 
     // Cargar town si townId está presente
     let town = lodging.town; // Preservar el town actual por defecto
@@ -460,40 +465,40 @@ export class LodgingsService {
     }
 
     // Extraer lat y lng del DTO y crear el Point
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { latitude, longitude, lodgingRoomTypes, ...restUpdateDto } = updateLodgingDto;
+    // PATCH semantics: only build a new Point when BOTH coords were provided.
+    // Otherwise leave the location relation untouched (undefined → omitted in save).
     const location =
-      latitude && longitude
+      latitude !== undefined && longitude !== undefined && latitude !== null && longitude !== null
         ? {
             type: 'Point',
             coordinates: [longitude, latitude], // GeoJSON usa [longitude, latitude]
           }
-        : null;
+        : undefined;
 
-    // 1. Obtener los IDs de los places del DTO
-    const placeIds = updateLodgingDto.placeIds || []; // Asegura que sea un array
+    // Only touch the lodging↔place join table when the request explicitly sent
+    // placeIds. An omitted field is a no-op, NOT a "clear all places" signal.
+    if (updateLodgingDto.placeIds !== undefined) {
+      const placeIds = updateLodgingDto.placeIds;
+      const places = placeIds.length > 0 ? await this.placeRepository.findBy({ id: In(placeIds) }) : [];
 
-    // 2. Buscar las entidades Place correspondientes
-    const places = placeIds.length > 0 ? await this.placeRepository.findBy({ id: In(placeIds) }) : [];
-
-    // 3. Eliminar todas las relaciones existentes para este lodging
-    try {
-      await this.lodgingPlaceRepository.delete({ lodging: { id: lodging.id } });
-      // 4. Crear nuevas relaciones solo si hay places para guardar
-      if (places.length > 0) {
-        for (const [index, place] of places.entries()) {
-          const lodgingPlace = this.lodgingPlaceRepository.create({
-            lodging: lodging,
-            place: place,
-            order: index + 1,
-            distance: 0,
-          });
-          await this.lodgingPlaceRepository.save(lodgingPlace);
+      try {
+        await this.lodgingPlaceRepository.delete({ lodging: { id: lodging.id } });
+        if (places.length > 0) {
+          for (const [index, place] of places.entries()) {
+            const lodgingPlace = this.lodgingPlaceRepository.create({
+              lodging: lodging,
+              place: place,
+              order: index + 1,
+              distance: 0,
+            });
+            await this.lodgingPlaceRepository.save(lodgingPlace);
+          }
         }
+      } catch (error) {
+        this.logger.error(`Error updating lodging places for ID ${id}: ${error.message}`, error.stack);
+        throw new InternalServerErrorException(`Error updating lodging places: ${error.message}`);
       }
-    } catch (error) {
-      this.logger.error(`Error updating lodging places for ID ${id}: ${error.message}`, error.stack);
-      throw new InternalServerErrorException(`Error updating lodging places: ${error.message}`);
     }
 
     // Manejar lodgingRoomTypes si se proporcionan
@@ -540,13 +545,16 @@ export class LodgingsService {
     }
 
     try {
+      // Conditional spread: only include `categories` / `facilities` when the
+      // caller actually sent them. Otherwise TypeORM's save would persist the
+      // resolved value (was wiping the existing relation to []).
       await this.lodgingRespository.save({
         id: lodging.id,
         ...restUpdateDto,
-        location: location as any,
-        categories,
+        ...(location !== undefined && { location: location as any }),
+        ...(categories !== undefined && { categories }),
+        ...(facilities !== undefined && { facilities }),
         user: lodging.user, // Ensure user is preserved if not updated
-        facilities,
         town, // Update town when townId is provided
       });
     } catch (error) {
