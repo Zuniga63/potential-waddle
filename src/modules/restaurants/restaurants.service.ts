@@ -1,6 +1,6 @@
 import { Repository } from 'typeorm';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException, ForbiddenException } from '@nestjs/common';
 import { FindOptionsRelations, In, Point } from 'typeorm';
 
 import { RestaurantDto, CreateRestaurantDto, UpdateRestaurantDto, AdminRestaurantsFiltersDto, AdminRestaurantsListDto } from './dto';
@@ -24,6 +24,16 @@ import { ReviewDomainsEnum } from '../reviews/enums';
 import { Review } from '../reviews/entities';
 import { TermsService } from '../terms/services';
 import { TermsTypeEnum } from '../terms/interfaces';
+import { isTermsEnforcementEnabled } from '../terms/utils';
+import { DocumentService } from '../documents/services';
+import { DocumentEntityType } from '../documents/enums';
+import {
+  computeRestaurantCompletion,
+  computeRestaurantTermsStatus,
+  computeRestaurantDocsStatus,
+  RestaurantTermsStatus,
+  RestaurantDocsStatus,
+} from './utils/compute-restaurant-completion';
 
 @Injectable()
 export class RestaurantsService {
@@ -47,6 +57,7 @@ export class RestaurantsService {
     private readonly promotionsService: PromotionsService,
     private readonly entityReviewsService: EntityReviewsService,
     private readonly termsService: TermsService,
+    private readonly documentService: DocumentService,
   ) {}
 
   async findAll({ filters }: RestaurantFindAllParams = {}) {
@@ -199,7 +210,7 @@ export class RestaurantsService {
   // ------------------------------------------------------------------------------------------------
   // Find one restaurant
   // ------------------------------------------------------------------------------------------------
-  async findOne(id: string) {
+  async findOne(id: string, ownerId?: string) {
     const restaurant = await this.restaurantRepository.findOne({
       where: { id },
       relations: {
@@ -207,11 +218,207 @@ export class RestaurantsService {
         categories: { icon: true },
         images: { imageResource: true },
         facilities: { icon: true },
+        menus: true,
+        user: true,
       },
     });
 
     if (!restaurant) throw new NotFoundException(`Restaurant with id ${id} not found`);
-    return new RestaurantDto({ data: restaurant });
+
+    const dto = new RestaurantDto({ data: restaurant });
+
+    if (ownerId && restaurant.user?.id === ownerId) {
+      await this.applyOwnerEnrichment(dto, restaurant);
+    }
+
+    return dto;
+  }
+
+  // ------------------------------------------------------------------------------------------------
+  // Resolve the 3-indicator context (T&C + docs). Mirror of LodgingsService.resolveOwnerCompletionContext.
+  // ------------------------------------------------------------------------------------------------
+  async resolveOwnerCompletionContext(
+    restaurant: Restaurant,
+  ): Promise<{ termsStatus: RestaurantTermsStatus; docsStatus: RestaurantDocsStatus }> {
+    const userId = restaurant.user?.id;
+    const townId = restaurant.town?.id;
+    const categoryIds = restaurant.categories?.map(c => c.id) ?? [];
+
+    const [termsDto, docsList] = await Promise.all([
+      userId ? this.termsService.getStatusForUser(userId) : Promise.resolve(null),
+      townId
+        ? this.documentService.getEntityDocumentStatus(townId, DocumentEntityType.RESTAURANT, restaurant.id, categoryIds)
+        : Promise.resolve([]),
+    ]);
+
+    const activeTermsId = termsDto?.activeDocumentIds?.restaurant ?? null;
+    const termsStatus = computeRestaurantTermsStatus({
+      hasActiveRestaurantTerms: activeTermsId !== null,
+      hasAcceptedRestaurantTerms: termsDto?.hasAcceptedRestaurantTerms ?? false,
+      activeTermsId,
+    });
+    const docsStatus = computeRestaurantDocsStatus(
+      docsList.map(d => ({
+        documentTypeName: d.documentType.name,
+        isRequired: d.isRequired,
+        isUploaded: d.isUploaded,
+        isExpired: d.isExpired,
+      })),
+    );
+
+    return { termsStatus, docsStatus };
+  }
+
+  // ------------------------------------------------------------------------------------------------
+  // Populate owner-scoped fields on a RestaurantDto. Mirror of LodgingsService.applyOwnerEnrichment.
+  // ------------------------------------------------------------------------------------------------
+  private async applyOwnerEnrichment(dto: RestaurantDto, restaurant: Restaurant): Promise<void> {
+    const context = await this.resolveOwnerCompletionContext(restaurant);
+    const result = computeRestaurantCompletion(restaurant, context);
+    dto.status = restaurant.status;
+    dto.completionPercentage = result.completionPercentage;
+    dto.missingFields = result.missingFields;
+    dto.infoPercentage = result.infoPercentage;
+    dto.infoMissingFields = result.infoMissingFields;
+    dto.infoCriticalSatisfied = result.infoCriticalSatisfied;
+    dto.termsStatus = result.termsStatus;
+    dto.docsStatus = result.docsStatus;
+    dto.readyToSubmit = result.readyToSubmit;
+    dto.submittedAt = restaurant.submittedAt;
+    dto.rejectionReason = restaurant.rejectionReason;
+    dto.menuNotApplicable = restaurant.menuNotApplicable;
+  }
+
+  // ------------------------------------------------------------------------------------------------
+  // Submit restaurant for review. Mirror of LodgingsService.submitForReview with 3 gates.
+  // ------------------------------------------------------------------------------------------------
+  async submitForReview({ identifier, user }: { identifier: string; user: User }) {
+    const relations: FindOptionsRelations<Restaurant> = {
+      user: true,
+      categories: { icon: true },
+      facilities: { icon: true },
+      town: { department: true },
+      images: { imageResource: true },
+      menus: true,
+    };
+    const restaurant = await this.restaurantRepository.findOne({ where: { id: identifier }, relations });
+    if (!restaurant) throw new NotFoundException('Restaurant not found');
+
+    if (restaurant.user?.id !== user.id) {
+      throw new ForbiddenException('Not your restaurant');
+    }
+
+    if (restaurant.status !== 'draft' && restaurant.status !== 'rejected') {
+      throw new BadRequestException({
+        message: 'INVALID_STATUS',
+        detail: 'Only draft or rejected restaurants can be submitted',
+      });
+    }
+
+    const context = await this.resolveOwnerCompletionContext(restaurant);
+    const completion = computeRestaurantCompletion(restaurant, context);
+
+    if (completion.infoPercentage < 80 || !completion.infoCriticalSatisfied) {
+      throw new BadRequestException({
+        errorCode: 'INCOMPLETE',
+        infoPercentage: completion.infoPercentage,
+        infoMissingFields: completion.infoMissingFields,
+        completionPercentage: completion.completionPercentage,
+        missingFields: completion.missingFields,
+      });
+    }
+
+    if (isTermsEnforcementEnabled() && context.termsStatus.state === 'pendientes') {
+      throw new ForbiddenException({
+        errorCode: 'TERMS_NOT_ACCEPTED',
+        termsType: 'restaurant',
+        activeTermsId: context.termsStatus.activeTermsId ?? null,
+      });
+    }
+
+    if (context.docsStatus.state === 'incompletos') {
+      throw new BadRequestException({
+        errorCode: 'DOCS_INCOMPLETE',
+        docsStatus: context.docsStatus,
+      });
+    }
+
+    restaurant.status = 'pending_review';
+    restaurant.submittedAt = new Date();
+    restaurant.rejectionReason = null;
+    await this.restaurantRepository.save(restaurant);
+
+    const updated = await this.restaurantRepository.findOne({ where: { id: restaurant.id }, relations });
+    if (!updated) throw new NotFoundException('Restaurant not found after update');
+    const dto = new RestaurantDto({ data: updated });
+    await this.applyOwnerEnrichment(dto, updated);
+    return dto;
+  }
+
+  // ------------------------------------------------------------------------------------------------
+  // Approve restaurant (admin).
+  // ------------------------------------------------------------------------------------------------
+  async approve({ identifier }: { identifier: string }) {
+    const relations: FindOptionsRelations<Restaurant> = {
+      user: true,
+      categories: { icon: true },
+      facilities: { icon: true },
+      town: { department: true },
+      images: { imageResource: true },
+      menus: true,
+    };
+    const restaurant = await this.restaurantRepository.findOne({ where: { id: identifier }, relations });
+    if (!restaurant) throw new NotFoundException('Restaurant not found');
+
+    if (restaurant.status !== 'pending_review') {
+      throw new BadRequestException({
+        message: 'Only pending_review restaurants can be approved',
+        currentStatus: restaurant.status,
+      });
+    }
+
+    restaurant.status = 'published';
+    restaurant.rejectionReason = null;
+    await this.restaurantRepository.save(restaurant);
+
+    const updated = await this.restaurantRepository.findOne({ where: { id: restaurant.id }, relations });
+    if (!updated) throw new NotFoundException('Restaurant not found after update');
+    const dto = new RestaurantDto({ data: updated });
+    await this.applyOwnerEnrichment(dto, updated);
+    return dto;
+  }
+
+  // ------------------------------------------------------------------------------------------------
+  // Reject restaurant (admin).
+  // ------------------------------------------------------------------------------------------------
+  async reject({ identifier, reason }: { identifier: string; reason: string }) {
+    const relations: FindOptionsRelations<Restaurant> = {
+      user: true,
+      categories: { icon: true },
+      facilities: { icon: true },
+      town: { department: true },
+      images: { imageResource: true },
+      menus: true,
+    };
+    const restaurant = await this.restaurantRepository.findOne({ where: { id: identifier }, relations });
+    if (!restaurant) throw new NotFoundException('Restaurant not found');
+
+    if (restaurant.status !== 'pending_review') {
+      throw new BadRequestException({
+        message: 'Only pending_review restaurants can be rejected',
+        currentStatus: restaurant.status,
+      });
+    }
+
+    restaurant.status = 'rejected';
+    restaurant.rejectionReason = reason;
+    await this.restaurantRepository.save(restaurant);
+
+    const updated = await this.restaurantRepository.findOne({ where: { id: restaurant.id }, relations });
+    if (!updated) throw new NotFoundException('Restaurant not found after update');
+    const dto = new RestaurantDto({ data: updated });
+    await this.applyOwnerEnrichment(dto, updated);
+    return dto;
   }
 
   // ------------------------------------------------------------------------------------------------
@@ -225,13 +432,14 @@ export class RestaurantsService {
       images: { imageResource: true },
     };
 
+    // Published guard — draft/pending/rejected restaurants must not leak to public pages.
     let restaurant = await this.restaurantRepository.findOne({
-      where: { slug },
+      where: { slug, status: 'published' },
       relations,
       order: { images: { order: 'ASC' } },
     });
 
-    if (!restaurant) restaurant = await this.restaurantRepository.findOne({ where: { slug }, relations });
+    if (!restaurant) restaurant = await this.restaurantRepository.findOne({ where: { slug, status: 'published' }, relations });
     if (!restaurant) throw new NotFoundException('Restaurant not found');
 
     // Check for active promotions and user review in parallel
@@ -304,33 +512,51 @@ export class RestaurantsService {
   // Update restaurant
   // ------------------------------------------------------------------------------------------------
   async update(id: string, updateRestaurantDto: UpdateRestaurantDto) {
-    const restaurant = await this.restaurantRepository.findOne({ where: { id } });
-    const categories = updateRestaurantDto.categoryIds
-      ? await this.categoryRepository.findBy({ id: In(updateRestaurantDto.categoryIds) })
-      : [];
-    const facilities = updateRestaurantDto.facilityIds
-      ? await this.facilityRepository.findBy({ id: In(updateRestaurantDto.facilityIds) })
-      : [];
+    const restaurant = await this.restaurantRepository.findOne({
+      where: { id },
+      relations: ['town'],
+    });
     if (!restaurant) throw new NotFoundException('Restaurant not found');
-    const town = await this.townRepository.findOne({ where: { id: updateRestaurantDto.townId } });
 
-    // Extract lat and lng from DTO and create Point
+    // PATCH semantics: an omitted relation array is "leave alone" (use `undefined`
+    // sentinel + conditional spread), not "clear". Same fix as 8266a33 lodgings + 6dbab14 commerce.
+    const categories =
+      updateRestaurantDto.categoryIds !== undefined
+        ? await this.categoryRepository.findBy({ id: In(updateRestaurantDto.categoryIds) })
+        : undefined;
+    const facilities =
+      updateRestaurantDto.facilityIds !== undefined
+        ? await this.facilityRepository.findBy({ id: In(updateRestaurantDto.facilityIds) })
+        : undefined;
+
+    // Preserve current town by default; only override when townId is explicitly provided.
+    let town = restaurant.town;
+    if (updateRestaurantDto.townId) {
+      const foundTown = await this.townRepository.findOne({
+        where: { id: updateRestaurantDto.townId },
+      });
+      if (!foundTown) {
+        throw new NotFoundException(`Town with ID ${updateRestaurantDto.townId} not found`);
+      }
+      town = foundTown;
+    }
+
     const { latitude, longitude, ...restUpdateDto } = updateRestaurantDto;
-    const restaurantLocation: Point | null =
-      latitude && longitude
-        ? {
+    const restaurantLocation =
+      latitude !== undefined && longitude !== undefined && latitude !== null && longitude !== null
+        ? ({
             type: 'Point',
             coordinates: [Number(longitude), Number(latitude)],
-          }
-        : null;
+          } as Point)
+        : undefined;
 
     await this.restaurantRepository.save({
       id: restaurant.id,
       ...restUpdateDto,
-      location: restaurantLocation ?? undefined,
-      categories,
-      facilities,
-      town: town ?? undefined,
+      ...(restaurantLocation !== undefined && { location: restaurantLocation }),
+      ...(categories !== undefined && { categories }),
+      ...(facilities !== undefined && { facilities }),
+      town,
     });
 
     const relations: FindOptionsRelations<Restaurant> = {

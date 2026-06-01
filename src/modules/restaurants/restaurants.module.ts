@@ -16,6 +16,7 @@ import { User } from '../users/entities';
 import { PromotionsModule } from '../promotions/promotions.module';
 import { ReviewsModule } from '../reviews/reviews.module';
 import { TermsModule } from '../terms/terms.module';
+import { DocumentsModule } from '../documents/documents.module';
 
 @Module({
   controllers: [RestaurantsController, MenuController],
@@ -28,6 +29,7 @@ import { TermsModule } from '../terms/terms.module';
     PromotionsModule,
     ReviewsModule,
     TermsModule,
+    DocumentsModule,
   ],
 })
 export class RestaurantsModule {}

@@ -2,6 +2,35 @@ import type { Restaurant } from '../entities';
 import { TownDto } from 'src/modules/towns/dto';
 import { PlaceDto } from 'src/modules/places/dto';
 import { CategoryDto, FacilityDto } from 'src/modules/core/dto';
+import { ApiProperty } from '@nestjs/swagger';
+import type {
+  RestaurantTermsStatusState,
+  RestaurantDocsStatusState,
+} from '../utils/compute-restaurant-completion';
+
+// Owner-scoped sub-DTOs surfacing the 3-indicator completion model (mirror of LodgingFullDto).
+
+export class RestaurantTermsStatusDto {
+  @ApiProperty({ enum: ['no_aplica', 'aceptados', 'pendientes'] })
+  state: RestaurantTermsStatusState;
+
+  @ApiProperty({ type: String, nullable: true, required: false })
+  activeTermsId?: string | null;
+}
+
+export class RestaurantDocsStatusDto {
+  @ApiProperty({ enum: ['no_requeridos', 'opcionales', 'incompletos', 'completos'] })
+  state: RestaurantDocsStatusState;
+
+  @ApiProperty({ example: 2 })
+  uploaded: number;
+
+  @ApiProperty({ example: 3 })
+  required: number;
+
+  @ApiProperty({ type: [String] })
+  missing: string[];
+}
 
 export class RestaurantDto {
   id: string;
@@ -84,6 +113,48 @@ export class RestaurantDto {
 
   userReview?: string;
 
+  // * ----------------------------------------------------------------------------------------------------------------
+  // * OWNER-SCOPED FIELDS (only populated when the requester is the owner — see applyOwnerEnrichment)
+  // * ----------------------------------------------------------------------------------------------------------------
+  @ApiProperty({ required: false, enum: ['draft', 'pending_review', 'published', 'rejected'] })
+  status?: 'draft' | 'pending_review' | 'published' | 'rejected';
+
+  @ApiProperty({ required: false, type: Number })
+  completionPercentage?: number;
+
+  @ApiProperty({ required: false, type: [String] })
+  missingFields?: string[];
+
+  @ApiProperty({ required: false, type: Date, nullable: true })
+  submittedAt?: Date | null;
+
+  @ApiProperty({ required: false, type: String, nullable: true })
+  rejectionReason?: string | null;
+
+  @ApiProperty({ required: false, type: Boolean })
+  menuNotApplicable?: boolean;
+
+  @ApiProperty({ required: false, type: Number })
+  infoPercentage?: number;
+
+  @ApiProperty({ required: false, type: [String] })
+  infoMissingFields?: string[];
+
+  @ApiProperty({ required: false, type: Boolean })
+  infoCriticalSatisfied?: boolean;
+
+  @ApiProperty({ required: false, type: RestaurantTermsStatusDto })
+  termsStatus?: RestaurantTermsStatusDto;
+
+  @ApiProperty({ required: false, type: RestaurantDocsStatusDto })
+  docsStatus?: RestaurantDocsStatusDto;
+
+  @ApiProperty({ required: false, type: Boolean })
+  readyToSubmit?: boolean;
+
+  @ApiProperty({ required: false, type: [String] })
+  skippedOptionalFields?: string[];
+
   constructor({ data, userReview }: { data?: Restaurant | null; userReview?: string }) {
     if (!data) return;
 
@@ -124,5 +195,9 @@ export class RestaurantDto {
     this.googleMapsReviewsCount = data.googleMapsReviewsCount ?? undefined;
     this.showGoogleMapsReviews = data.showGoogleMapsReviews ?? undefined;
     this.showBinntuReviews = data.showBinntuReviews ?? undefined;
+    this.menuNotApplicable = data.menuNotApplicable ?? false;
+    this.skippedOptionalFields = data.skippedOptionalFields ?? [];
+    // status / completionPercentage / 3-indicator fields are populated by the
+    // service via applyOwnerEnrichment when the caller is the owner.
   }
 }

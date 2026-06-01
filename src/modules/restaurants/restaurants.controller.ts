@@ -95,9 +95,40 @@ export class RestaurantsController {
   // * GET RESTAURANT BY IDENTIFIER
   // * ----------------------------------------------------------------------------------------------------------------
   @Get(':identifier')
+  @OptionalAuth()
   @ApiOkResponse({ description: 'Restaurant Detail', type: RestaurantDto })
-  findOne(@Param('identifier') identifier: string) {
-    return this.restaurantsService.findOne(identifier);
+  findOne(@Param('identifier') identifier: string, @GetUser() user?: User) {
+    return this.restaurantsService.findOne(identifier, user?.id);
+  }
+
+  // * ----------------------------------------------------------------------------------------------------------------
+  // * SUBMIT RESTAURANT FOR REVIEW (owner)
+  // * ----------------------------------------------------------------------------------------------------------------
+  @Post(':identifier/submit-for-review')
+  @Auth()
+  @ApiOkResponse({ description: 'Restaurant submitted for review', type: RestaurantDto })
+  submitForReview(@Param('identifier') identifier: string, @GetUser() user: User) {
+    return this.restaurantsService.submitForReview({ identifier, user });
+  }
+
+  // * ----------------------------------------------------------------------------------------------------------------
+  // * APPROVE RESTAURANT (admin)
+  // * ----------------------------------------------------------------------------------------------------------------
+  @Post('admin/:identifier/approve')
+  @Auth()
+  @ApiOkResponse({ description: 'Restaurant approved', type: RestaurantDto })
+  approve(@Param('identifier') identifier: string) {
+    return this.restaurantsService.approve({ identifier });
+  }
+
+  // * ----------------------------------------------------------------------------------------------------------------
+  // * REJECT RESTAURANT (admin)
+  // * ----------------------------------------------------------------------------------------------------------------
+  @Post('admin/:identifier/reject')
+  @Auth()
+  @ApiOkResponse({ description: 'Restaurant rejected', type: RestaurantDto })
+  reject(@Param('identifier') identifier: string, @Body() body: { reason: string }) {
+    return this.restaurantsService.reject({ identifier, reason: body.reason });
   }
 
   // * ----------------------------------------------------------------------------------------------------------------
