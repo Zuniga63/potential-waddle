@@ -265,35 +265,59 @@ export class CommerceService {
   // Update commerce
   // ------------------------------------------------------------------------------------------------
   async update(id: string, updateCommerceDto: UpdateCommerceDto) {
-    const commerce = await this.commerceRepository.findOne({ where: { id } });
-    const categories = updateCommerceDto.categoryIds
-      ? await this.categoryRepository.findBy({ id: In(updateCommerceDto.categoryIds) })
-      : [];
-    const facilities = updateCommerceDto.facilityIds
-      ? await this.facilityRepository.findBy({ id: In(updateCommerceDto.facilityIds) })
-      : [];
+    const commerce = await this.commerceRepository.findOne({
+      where: { id },
+      relations: ['town'], // Load town relation to preserve it if not updated
+    });
     if (!commerce) throw new NotFoundException('Commerce not found');
-    const town = await this.townRepository.findOne({ where: { id: updateCommerceDto.townId } });
 
-    // Extract lat and lng from DTO and create Point
-    // Note: commerceProducts is extracted but ignored - products are now managed
+    // PATCH semantics: when a relation array is omitted from the body, leave the
+    // existing relation untouched. Use `undefined` as the sentinel — the `categories`
+    // / `facilities` keys are spread conditionally into the save call below.
+    const categories =
+      updateCommerceDto.categoryIds !== undefined
+        ? await this.categoryRepository.findBy({ id: In(updateCommerceDto.categoryIds) })
+        : undefined;
+    const facilities =
+      updateCommerceDto.facilityIds !== undefined
+        ? await this.facilityRepository.findBy({ id: In(updateCommerceDto.facilityIds) })
+        : undefined;
+
+    // Preserve current town by default; only override when townId is provided
+    let town = commerce.town;
+    if (updateCommerceDto.townId) {
+      const foundTown = await this.townRepository.findOne({
+        where: { id: updateCommerceDto.townId },
+      });
+      if (!foundTown) {
+        throw new NotFoundException(`Town with ID ${updateCommerceDto.townId} not found`);
+      }
+      town = foundTown;
+    }
+
+    // Note: commerceProducts is extracted but ignored — products are now managed
     // independently via CommerceProductsController
     const { latitude, longitude, commerceProducts, ...restUpdateDto } = updateCommerceDto;
-    const commerceLocation: Point | null =
-      latitude && longitude
-        ? {
+    // PATCH semantics: only build a new Point when BOTH coords were provided.
+    // Otherwise leave the location relation untouched (undefined → omitted in save).
+    const commerceLocation =
+      latitude !== undefined && longitude !== undefined && latitude !== null && longitude !== null
+        ? ({
             type: 'Point',
             coordinates: [Number(longitude), Number(latitude)],
-          }
-        : null;
+          } as Point)
+        : undefined;
 
+    // Conditional spread: only include relations when the caller actually sent
+    // them. Otherwise TypeORM's save would persist the resolved [] and wipe the
+    // existing relation (the bug this block fixes).
     await this.commerceRepository.save({
       id: commerce.id,
       ...restUpdateDto,
-      location: commerceLocation ?? undefined,
-      categories,
-      facilities,
-      town: town ?? undefined,
+      ...(commerceLocation !== undefined && { location: commerceLocation }),
+      ...(categories !== undefined && { categories }),
+      ...(facilities !== undefined && { facilities }),
+      town,
     });
 
     const relations: FindOptionsRelations<Commerce> = {
