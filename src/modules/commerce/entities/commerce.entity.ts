@@ -165,6 +165,13 @@ export class Commerce {
   @Column('text', { name: 'rejection_reason', nullable: true })
   rejectionReason: string | null;
 
+  /**
+   * Slugs of optional fields the owner explicitly marked "No tengo" from the wizard.
+   * Mirror of lodging.skippedOptionalFields — see that column for design rationale.
+   */
+  @Column('text', { name: 'skipped_optional_fields', array: true, default: [] })
+  skippedOptionalFields: string[];
+
   // * ----------------------------------------------------------------------------------------------------------------
   @Column('boolean', { default: true, name: 'is_public' })
   isPublic: boolean;

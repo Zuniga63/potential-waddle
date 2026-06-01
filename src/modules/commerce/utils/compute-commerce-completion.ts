@@ -1,13 +1,18 @@
 import { Commerce } from '../entities';
 
-export interface CommerceCompletionResult {
-  completionPercentage: number;
-  missingFields: string[];
-  criticalSatisfied: boolean;
+// =================================================================================================
+// Info completion — gradual % across data buckets (mirror of computeLodgingInfoCompletion)
+// =================================================================================================
+
+export interface CommerceInfoCompletionResult {
+  infoPercentage: number;
+  infoMissingFields: string[];
+  infoCriticalSatisfied: boolean;
 }
 
 /**
- * Computes the completion status of a commerce for the owner onboarding wizard.
+ * Data-fields completion of a commerce (Info / Contact / Products / Photos / Services / Location).
+ * Does NOT consider Terms or Documents — those are separate, binary gates with their own functions.
  *
  * Weighted buckets (sum to 100):
  *  - Información básica (20%): name, description>=50, townId, address, categories>=1
@@ -15,20 +20,13 @@ export interface CommerceCompletionResult {
  *  - Productos        (20%): commerceProducts>=1 with name + price>0 (critical)
  *  - Fotos            (20%): images>=3 (critical)
  *  - Servicios        (10%): services>=1 AND facilities>=1 AND paymentMethods>=1
- *  - Ubicación        (15%): location non-null AND address non-empty
- *
- * Critical fields for `criticalSatisfied`: whatsappNumbers, commerceProducts, images.
- *
- * @param commerce - The Commerce entity with relations loaded (categories, facilities, products, images)
- * @returns Completion percentage (0-100), missing field slugs, and critical satisfied flag
+ *  - Ubicación        (15%): location non-null
  */
-export function computeCommerceCompletion(commerce: Commerce): CommerceCompletionResult {
-  const missingFields: string[] = [];
+export function computeCommerceInfoCompletion(commerce: Commerce): CommerceInfoCompletionResult {
+  const infoMissingFields: string[] = [];
   let totalScore = 0;
 
-  // ------------------------------------------------------------------------------------------------
-  // Bucket 1: Información básica (weight 20)
-  // ------------------------------------------------------------------------------------------------
+  // Bucket 1: Información básica (20)
   const basicConditions = {
     name: !!(commerce.name && commerce.name.trim().length > 0),
     description: !!(commerce.description && commerce.description.trim().length >= 50),
@@ -36,92 +34,158 @@ export function computeCommerceCompletion(commerce: Commerce): CommerceCompletio
     address: !!(commerce.address && commerce.address.trim().length > 0),
     categories: !!(commerce.categories && commerce.categories.length >= 1),
   };
-
   const basicSatisfied = Object.values(basicConditions).filter(Boolean).length;
-  const basicTotal = Object.keys(basicConditions).length;
-  totalScore += (basicSatisfied / basicTotal) * 20;
+  totalScore += (basicSatisfied / 5) * 20;
+  if (!basicConditions.name) infoMissingFields.push('name');
+  if (!basicConditions.description) infoMissingFields.push('description');
+  if (!basicConditions.townId) infoMissingFields.push('townId');
+  if (!basicConditions.address) infoMissingFields.push('address');
+  if (!basicConditions.categories) infoMissingFields.push('categories');
 
-  if (!basicConditions.name) missingFields.push('name');
-  if (!basicConditions.description) missingFields.push('description');
-  if (!basicConditions.townId) missingFields.push('townId');
-  if (!basicConditions.address) missingFields.push('address');
-  if (!basicConditions.categories) missingFields.push('categories');
-
-  // ------------------------------------------------------------------------------------------------
-  // Bucket 2: Contacto (weight 15)
-  // whatsappNumbers>=1 is critical; email OR phoneNumbers>=1 is a separate sub-condition
-  // ------------------------------------------------------------------------------------------------
+  // Bucket 2: Contacto (15) — whatsapp critical + (email OR phone)
   const hasWhatsapp = !!(commerce.whatsappNumbers && commerce.whatsappNumbers.length >= 1);
   const hasEmailOrPhone =
     !!(commerce.email && commerce.email.trim().length > 0) ||
     !!(commerce.phoneNumbers && commerce.phoneNumbers.length >= 1);
+  totalScore += ((hasWhatsapp ? 1 : 0) + (hasEmailOrPhone ? 1 : 0)) / 2 * 15;
+  if (!hasWhatsapp) infoMissingFields.push('whatsappNumbers');
 
-  const contactSatisfied = (hasWhatsapp ? 1 : 0) + (hasEmailOrPhone ? 1 : 0);
-  const contactTotal = 2;
-  totalScore += (contactSatisfied / contactTotal) * 15;
-
-  if (!hasWhatsapp) missingFields.push('whatsappNumbers');
-
-  // ------------------------------------------------------------------------------------------------
-  // Bucket 3: Productos / Servicios (weight 20)
-  // At least 1 commerce_product with name + price>0 (critical). Type (product|service) is irrelevant
-  // for the gate — both count.
-  // ------------------------------------------------------------------------------------------------
+  // Bucket 3: Productos / Servicios (20) — at least 1 valid product (name + price>0) critical
   const validProducts = (commerce.products ?? []).filter(
     p => p.name && p.name.trim().length > 0 && Number(p.price) > 0,
   );
   const hasProducts = validProducts.length >= 1;
-
   totalScore += hasProducts ? 20 : 0;
+  if (!hasProducts) infoMissingFields.push('commerceProducts');
 
-  if (!hasProducts) missingFields.push('commerceProducts');
-
-  // ------------------------------------------------------------------------------------------------
-  // Bucket 4: Fotos (weight 20)
-  // images>=3 is critical
-  // ------------------------------------------------------------------------------------------------
+  // Bucket 4: Fotos (20) — images>=3 critical
   const imageCount = (commerce.images ?? []).filter(img => img.imageResource != null).length;
   const hasImages = imageCount >= 3;
-
   totalScore += hasImages ? 20 : 0;
+  if (!hasImages) infoMissingFields.push('images');
 
-  if (!hasImages) missingFields.push('images');
-
-  // ------------------------------------------------------------------------------------------------
-  // Bucket 5: Servicios secundarios (weight 10)
-  // services>=1 AND facilities>=1 AND paymentMethods>=1 (no single critical field)
-  // ------------------------------------------------------------------------------------------------
+  // Bucket 5: Servicios secundarios (10) — services + facilities + paymentMethods
   const hasServices = !!(commerce.services && commerce.services.length >= 1);
   const hasFacilities = !!(commerce.facilities && commerce.facilities.length >= 1);
   const hasPaymentMethods = !!(commerce.paymentMethods && commerce.paymentMethods.length >= 1);
+  totalScore += ((hasServices ? 1 : 0) + (hasFacilities ? 1 : 0) + (hasPaymentMethods ? 1 : 0)) / 3 * 10;
+  if (!hasServices) infoMissingFields.push('services');
+  if (!hasFacilities) infoMissingFields.push('facilities');
+  if (!hasPaymentMethods) infoMissingFields.push('paymentMethods');
 
-  const servicesSatisfied = (hasServices ? 1 : 0) + (hasFacilities ? 1 : 0) + (hasPaymentMethods ? 1 : 0);
-  const servicesTotal = 3;
-  totalScore += (servicesSatisfied / servicesTotal) * 10;
-
-  if (!hasServices) missingFields.push('services');
-  if (!hasFacilities) missingFields.push('facilities');
-  if (!hasPaymentMethods) missingFields.push('paymentMethods');
-
-  // ------------------------------------------------------------------------------------------------
-  // Bucket 6: Ubicación (weight 15)
-  // location (PostGIS point) non-null AND address non-empty (already counted in basic, but the
-  // bucket needs a point to be considered complete on the map)
-  // ------------------------------------------------------------------------------------------------
+  // Bucket 6: Ubicación (15)
   const hasLocation = !!(commerce.location && commerce.location.coordinates);
-
   totalScore += hasLocation ? 15 : 0;
+  if (!hasLocation) infoMissingFields.push('location');
 
-  if (!hasLocation) missingFields.push('location');
+  // Critical: whatsapp, commerceProducts, images>=3
+  const infoCriticalSatisfied = hasWhatsapp && hasProducts && hasImages;
+  const infoPercentage = Math.round(Math.min(100, Math.max(0, totalScore)));
 
-  // ------------------------------------------------------------------------------------------------
-  // Critical fields: must ALL be satisfied for criticalSatisfied=true
-  // ★ whatsappNumbers>=1, commerceProducts>=1 valid, images>=3
-  // ------------------------------------------------------------------------------------------------
-  const criticalSatisfied = hasWhatsapp && hasProducts && hasImages;
+  return { infoPercentage, infoMissingFields, infoCriticalSatisfied };
+}
 
-  // Clamp to [0, 100]
-  const completionPercentage = Math.round(Math.min(100, Math.max(0, totalScore)));
+// =================================================================================================
+// Terms status — binary gate (per-user globally). Mirror of computeLodgingTermsStatus.
+// =================================================================================================
 
-  return { completionPercentage, missingFields, criticalSatisfied };
+export type CommerceTermsStatusState = 'no_aplica' | 'aceptados' | 'pendientes';
+
+export interface CommerceTermsStatus {
+  state: CommerceTermsStatusState;
+  activeTermsId?: string | null;
+}
+
+export function computeCommerceTermsStatus(args: {
+  hasActiveCommerceTerms: boolean;
+  hasAcceptedCommerceTerms: boolean;
+  activeTermsId?: string | null;
+}): CommerceTermsStatus {
+  if (!args.hasActiveCommerceTerms) return { state: 'no_aplica', activeTermsId: null };
+  return {
+    state: args.hasAcceptedCommerceTerms ? 'aceptados' : 'pendientes',
+    activeTermsId: args.activeTermsId ?? null,
+  };
+}
+
+// =================================================================================================
+// Docs status — checklist gate per (town × categories). Mirror of computeLodgingDocsStatus.
+// =================================================================================================
+
+export type CommerceDocsStatusState = 'no_requeridos' | 'opcionales' | 'incompletos' | 'completos';
+
+export interface CommerceDocsStatus {
+  state: CommerceDocsStatusState;
+  uploaded: number;
+  required: number;
+  missing: string[];
+}
+
+export interface CommerceDocStatusInput {
+  documentTypeName: string;
+  isRequired: boolean;
+  isUploaded: boolean;
+  isExpired: boolean;
+}
+
+export function computeCommerceDocsStatus(docs: CommerceDocStatusInput[]): CommerceDocsStatus {
+  const required = docs.filter(d => d.isRequired);
+  if (required.length === 0) {
+    return {
+      state: docs.length === 0 ? 'no_requeridos' : 'opcionales',
+      uploaded: 0,
+      required: 0,
+      missing: [],
+    };
+  }
+  const validRequired = required.filter(d => d.isUploaded && !d.isExpired);
+  const missing = required.filter(d => !d.isUploaded || d.isExpired).map(d => d.documentTypeName);
+  return {
+    state: missing.length === 0 ? 'completos' : 'incompletos',
+    uploaded: validRequired.length,
+    required: required.length,
+    missing,
+  };
+}
+
+// =================================================================================================
+// Combined wrapper — backward-compat shape + 3-indicator + readyToSubmit
+// =================================================================================================
+
+export interface CommerceCompletionResult {
+  infoPercentage: number;
+  infoMissingFields: string[];
+  infoCriticalSatisfied: boolean;
+  termsStatus?: CommerceTermsStatus;
+  docsStatus?: CommerceDocsStatus;
+  readyToSubmit?: boolean;
+  // Backwards-compat aliases
+  completionPercentage: number;
+  missingFields: string[];
+  criticalSatisfied: boolean;
+}
+
+export function computeCommerceCompletion(
+  commerce: Commerce,
+  context?: { termsStatus: CommerceTermsStatus; docsStatus: CommerceDocsStatus },
+): CommerceCompletionResult {
+  const info = computeCommerceInfoCompletion(commerce);
+  const base: CommerceCompletionResult = {
+    ...info,
+    completionPercentage: info.infoPercentage,
+    missingFields: info.infoMissingFields,
+    criticalSatisfied: info.infoCriticalSatisfied,
+  };
+  if (!context) return base;
+
+  const infoOK = info.infoPercentage >= 80 && info.infoCriticalSatisfied;
+  const termsOK = context.termsStatus.state !== 'pendientes';
+  const docsOK = context.docsStatus.state !== 'incompletos';
+
+  return {
+    ...base,
+    termsStatus: context.termsStatus,
+    docsStatus: context.docsStatus,
+    readyToSubmit: infoOK && termsOK && docsOK,
+  };
 }
