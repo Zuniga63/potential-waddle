@@ -1,5 +1,5 @@
 import { PartialType, OmitType, ApiProperty } from '@nestjs/swagger';
-import { IsArray, IsBoolean, IsOptional, ValidateNested } from 'class-validator';
+import { IsArray, IsBoolean, IsOptional, IsString, ValidateNested } from 'class-validator';
 import { Type } from 'class-transformer';
 import { CreateLodgingDto } from './create-lodging.dto';
 import { UpdateLodgingRoomTypeDto } from './update-lodging-room-type.dto';
@@ -26,4 +26,16 @@ export class UpdateLodgingDto extends PartialType(OmitType(CreateLodgingDto, ['s
   @IsOptional()
   @IsBoolean()
   roomsNotApplicable?: boolean;
+
+  @ApiProperty({
+    description:
+      'Slugs of optional fields the owner explicitly marked "No tengo / No aplica" from the wizard. Persisted so the badge survives logout. Slugs match `OptionalFieldWithSkip.fieldName` on the frontend.',
+    required: false,
+    type: [String],
+    example: ['facebook', 'instagram'],
+  })
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  skippedOptionalFields?: string[];
 }

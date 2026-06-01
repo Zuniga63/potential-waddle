@@ -166,6 +166,16 @@ export class Lodging {
   @Column('boolean', { name: 'rooms_not_applicable', default: false })
   roomsNotApplicable: boolean;
 
+  /**
+   * Slugs of optional fields the owner has explicitly marked "No tengo / No aplica"
+   * from the wizard. Persisted server-side so the state survives logout and is in
+   * sync across devices. Slugs match the `fieldName` prop on `OptionalFieldWithSkip`
+   * (website, facebook, instagram, openingHours, spokenLanguages, arrivalReference,
+   * howToGetThere, places).
+   */
+  @Column('text', { name: 'skipped_optional_fields', array: true, default: [] })
+  skippedOptionalFields: string[];
+
   @Column('boolean', { name: 'show_google_maps_reviews', default: true })
   showGoogleMapsReviews: boolean;
 
