@@ -13,7 +13,16 @@ import { Lodging, LodgingImage, LodgingPlace, LodgingRoomType } from './entities
 import { Plan, Subscription } from '../subscriptions/entities';
 import { AdminLodgingsFiltersDto, AdminLodgingsListDto, CreateLodgingDto, LodgingFullDto, LodgingIndexDto, UpdateLodgingDto } from './dto';
 import { LodgingFindAllParams } from './interfaces';
-import { computeLodgingCompletion, generateLodgingQueryFilters } from './utils';
+import {
+  computeLodgingCompletion,
+  computeLodgingTermsStatus,
+  computeLodgingDocsStatus,
+  generateLodgingQueryFilters,
+  LodgingTermsStatus,
+  LodgingDocsStatus,
+} from './utils';
+import { DocumentService } from '../documents/services';
+import { DocumentEntityType } from '../documents/enums';
 import { Category, Facility, ImageResource } from '../core/entities';
 import { CloudinaryPresets, ResourceProvider } from 'src/config';
 import { CloudinaryService } from '../cloudinary/cloudinary.service';
@@ -60,6 +69,7 @@ export class LodgingsService {
     private readonly promotionsService: PromotionsService,
     private readonly entityReviewsService: EntityReviewsService,
     private readonly termsService: TermsService,
+    private readonly documentService: DocumentService,
     private readonly dataSource: DataSource,
     @InjectRepository(Plan)
     private readonly planRepository: Repository<Plan>,
@@ -260,17 +270,71 @@ export class LodgingsService {
 
     const dto = new LodgingFullDto(lodging);
 
-    // Enrich with owner-scoped fields when the caller is the lodging's owner
+    // Enrich with owner-scoped fields when the caller is the lodging's owner.
     if (ownerId && lodging.user?.id === ownerId) {
-      const { completionPercentage, missingFields } = computeLodgingCompletion(lodging);
-      dto.status = lodging.status;
-      dto.completionPercentage = completionPercentage;
-      dto.missingFields = missingFields;
-      dto.submittedAt = lodging.submittedAt;
-      dto.rejectionReason = lodging.rejectionReason;
+      await this.applyOwnerEnrichment(dto, lodging);
     }
 
     return dto;
+  }
+
+  // ------------------------------------------------------------------------------------------------
+  // Apply owner-scoped enrichment to an already-built LodgingFullDto. Resolves the 3-indicator
+  // context (T&C + docs), runs the compute, and writes both new + legacy fields onto the DTO.
+  // Used by findOne, submitForReview, approve, reject — anywhere we return an owner-scoped DTO.
+  // ------------------------------------------------------------------------------------------------
+  private async applyOwnerEnrichment(dto: LodgingFullDto, lodging: Lodging): Promise<void> {
+    const context = await this.resolveOwnerCompletionContext(lodging);
+    const result = computeLodgingCompletion(lodging, context);
+    dto.status = lodging.status;
+    dto.completionPercentage = result.completionPercentage;
+    dto.missingFields = result.missingFields;
+    dto.infoPercentage = result.infoPercentage;
+    dto.infoMissingFields = result.infoMissingFields;
+    dto.infoCriticalSatisfied = result.infoCriticalSatisfied;
+    dto.termsStatus = result.termsStatus;
+    dto.docsStatus = result.docsStatus;
+    dto.readyToSubmit = result.readyToSubmit;
+    dto.submittedAt = lodging.submittedAt;
+    dto.rejectionReason = lodging.rejectionReason;
+  }
+
+  // ------------------------------------------------------------------------------------------------
+  // Resolve the per-owner completion context (T&C acceptance + docs requirements).
+  // Exposed as a single helper so findOne, getUserLodgings, and submitForReview share the same
+  // resolution path. Returns "no gate" defaults (no_aplica / no_requeridos) when prerequisite
+  // relations are missing — the compute functions are pure so the caller can still get a result.
+  // ------------------------------------------------------------------------------------------------
+  async resolveOwnerCompletionContext(
+    lodging: Lodging,
+  ): Promise<{ termsStatus: LodgingTermsStatus; docsStatus: LodgingDocsStatus }> {
+    const userId = lodging.user?.id;
+    const townId = lodging.town?.id;
+    const categoryIds = lodging.categories?.map(c => c.id) ?? [];
+
+    const [termsDto, docsList] = await Promise.all([
+      userId ? this.termsService.getStatusForUser(userId) : Promise.resolve(null),
+      townId
+        ? this.documentService.getEntityDocumentStatus(townId, DocumentEntityType.LODGING, lodging.id, categoryIds)
+        : Promise.resolve([]),
+    ]);
+
+    const activeTermsId = termsDto?.activeDocumentIds?.lodging ?? null;
+    const termsStatus = computeLodgingTermsStatus({
+      hasActiveLodgingTerms: activeTermsId !== null,
+      hasAcceptedLodgingTerms: termsDto?.hasAcceptedLodgingTerms ?? false,
+      activeTermsId,
+    });
+    const docsStatus = computeLodgingDocsStatus(
+      docsList.map(d => ({
+        documentTypeName: d.documentType.name,
+        isRequired: d.isRequired,
+        isUploaded: d.isUploaded,
+        isExpired: d.isExpired,
+      })),
+    );
+
+    return { termsStatus, docsStatus };
   }
 
   // ------------------------------------------------------------------------------------------------
@@ -854,24 +918,41 @@ export class LodgingsService {
       });
     }
 
-    // 4. Completion guard — must be >= 80% AND all critical fields satisfied
-    const { completionPercentage, missingFields, criticalSatisfied } = computeLodgingCompletion(lodging);
-    if (completionPercentage < 80 || !criticalSatisfied) {
-      throw new BadRequestException({ errorCode: 'INCOMPLETE', completionPercentage, missingFields });
+    // 4. Resolve the 3-indicator completion context (info + terms + docs) and gate per indicator.
+    //    Each gate throws a distinct errorCode so the frontend can route to the right UI:
+    //    - INCOMPLETE       → wizard step with infoMissingFields
+    //    - TERMS_NOT_ACCEPTED → T&C acceptance screen (legacy errorCode kept for FE compat)
+    //    - DOCS_INCOMPLETE  → Documentos step with missing list
+    const context = await this.resolveOwnerCompletionContext(lodging);
+    const completion = computeLodgingCompletion(lodging, context);
+
+    // 4a. Info gate
+    if (completion.infoPercentage < 80 || !completion.infoCriticalSatisfied) {
+      throw new BadRequestException({
+        errorCode: 'INCOMPLETE',
+        infoPercentage: completion.infoPercentage,
+        infoMissingFields: completion.infoMissingFields,
+        // Legacy aliases preserved for older frontend builds.
+        completionPercentage: completion.completionPercentage,
+        missingFields: completion.missingFields,
+      });
     }
 
-    // 5. T&C guard — skip when enforcement is disabled
-    if (isTermsEnforcementEnabled()) {
-      const termsStatus = await this.termsService.getStatusForUser(user.id);
-      if (!termsStatus.hasAcceptedLodgingTerms) {
-        // Provide the active terms document id so the frontend can redirect the user to accept
-        const activeTermsId = termsStatus.activeDocumentIds?.lodging ?? null;
-        throw new ForbiddenException({
-          errorCode: 'TERMS_NOT_ACCEPTED',
-          termsType: 'lodging',
-          activeTermsId,
-        });
-      }
+    // 4b. T&C gate — only when enforcement is enabled. Preserves the legacy TERMS_NOT_ACCEPTED shape.
+    if (isTermsEnforcementEnabled() && context.termsStatus.state === 'pendientes') {
+      throw new ForbiddenException({
+        errorCode: 'TERMS_NOT_ACCEPTED',
+        termsType: 'lodging',
+        activeTermsId: context.termsStatus.activeTermsId ?? null,
+      });
+    }
+
+    // 4c. Docs gate — block when required docs are missing or expired
+    if (context.docsStatus.state === 'incompletos') {
+      throw new BadRequestException({
+        errorCode: 'DOCS_INCOMPLETE',
+        docsStatus: context.docsStatus,
+      });
     }
 
     // 6. Transition lodging to pending_review
@@ -889,13 +970,7 @@ export class LodgingsService {
     if (!updatedLodging) throw new NotFoundException('Lodging not found after update');
 
     const dto = new LodgingFullDto(updatedLodging);
-    const completion = computeLodgingCompletion(updatedLodging);
-    dto.status = updatedLodging.status;
-    dto.completionPercentage = completion.completionPercentage;
-    dto.missingFields = completion.missingFields;
-    dto.submittedAt = updatedLodging.submittedAt;
-    dto.rejectionReason = updatedLodging.rejectionReason;
-
+    await this.applyOwnerEnrichment(dto, updatedLodging);
     return dto;
   }
 
@@ -934,13 +1009,7 @@ export class LodgingsService {
     if (!updatedLodging) throw new NotFoundException('Lodging not found after update');
 
     const dto = new LodgingFullDto(updatedLodging);
-    const completion = computeLodgingCompletion(updatedLodging);
-    dto.status = updatedLodging.status;
-    dto.completionPercentage = completion.completionPercentage;
-    dto.missingFields = completion.missingFields;
-    dto.submittedAt = updatedLodging.submittedAt;
-    dto.rejectionReason = updatedLodging.rejectionReason;
-
+    await this.applyOwnerEnrichment(dto, updatedLodging);
     return dto;
   }
 
@@ -980,13 +1049,7 @@ export class LodgingsService {
     if (!updatedLodging) throw new NotFoundException('Lodging not found after update');
 
     const dto = new LodgingFullDto(updatedLodging);
-    const completion = computeLodgingCompletion(updatedLodging);
-    dto.status = updatedLodging.status;
-    dto.completionPercentage = completion.completionPercentage;
-    dto.missingFields = completion.missingFields;
-    dto.submittedAt = updatedLodging.submittedAt;
-    dto.rejectionReason = updatedLodging.rejectionReason;
-
+    await this.applyOwnerEnrichment(dto, updatedLodging);
     return dto;
   }
 }

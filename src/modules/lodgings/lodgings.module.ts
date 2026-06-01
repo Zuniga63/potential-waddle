@@ -16,6 +16,7 @@ import { GooglePlacesModule } from '../google-places/google-places.module';
 import { PromotionsModule } from '../promotions/promotions.module';
 import { ReviewsModule } from '../reviews/reviews.module';
 import { TermsModule } from '../terms/terms.module';
+import { DocumentsModule } from '../documents/documents.module';
 import { Plan, Subscription } from '../subscriptions/entities';
 
 @Module({
@@ -41,6 +42,7 @@ import { Plan, Subscription } from '../subscriptions/entities';
     PromotionsModule,
     ReviewsModule,
     TermsModule,
+    DocumentsModule,
   ],
   exports: [LodgingRoomTypesService],
 })

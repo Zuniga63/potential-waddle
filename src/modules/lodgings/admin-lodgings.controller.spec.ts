@@ -15,6 +15,7 @@ import { GooglePlacesService } from '../google-places/google-places.service';
 import { PromotionsService } from '../promotions/promotions.service';
 import { EntityReviewsService } from '../reviews/services/entity-reviews.service';
 import { TermsService } from '../terms/services';
+import { DocumentService } from '../documents/services';
 import { ResendService } from '../email/services/resend.service';
 
 // ---------------------------------------------------------------------------
@@ -155,6 +156,7 @@ async function buildModule() {
       },
       { provide: EntityReviewsService, useValue: { getUserReviews: jest.fn(), findUserReview: jest.fn() } },
       { provide: TermsService, useValue: termsService },
+      { provide: DocumentService, useValue: { getEntityDocumentStatus: jest.fn().mockResolvedValue([]) } },
       { provide: DataSource, useValue: dataSource },
       { provide: ResendService, useValue: resendService },
     ],

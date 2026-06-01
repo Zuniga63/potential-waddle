@@ -11,9 +11,16 @@ import { Lodging } from '../lodgings/entities';
 import { Experience } from '../experiences/entities';
 import { Town } from '../towns/entities/town.entity';
 import { Review } from '../reviews/entities';
+import { TermsModule } from '../terms/terms.module';
+import { DocumentsModule } from '../documents/documents.module';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([User, UserPoint, Place, Restaurant, Lodging, Experience, Town, Review]), CloudinaryModule],
+  imports: [
+    TypeOrmModule.forFeature([User, UserPoint, Place, Restaurant, Lodging, Experience, Town, Review]),
+    CloudinaryModule,
+    TermsModule,
+    DocumentsModule,
+  ],
   controllers: [UsersController, ExplorersController, AdminUsersController],
   providers: [UsersService, ExplorersService],
   exports: [UsersService],

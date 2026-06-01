@@ -6,6 +6,37 @@ import { LodgingRoomTypeDto } from './lodging-room-type.dto';
 import { LodgingImageDto } from './lodging-image.dto';
 import { TownDto } from 'src/modules/towns/dto';
 import { UserDto } from 'src/modules/users/dto/user.dto';
+import type { LodgingTermsStatusState, LodgingDocsStatusState } from '../utils/compute-lodging-completion';
+
+// Owner-scoped sub-DTOs surfacing the 3-indicator completion model. Each one is
+// independent: info is gradual %, terms is binary, docs is a checklist.
+
+export class LodgingTermsStatusDto {
+  @ApiProperty({ enum: ['no_aplica', 'aceptados', 'pendientes'] })
+  state: LodgingTermsStatusState;
+
+  @ApiProperty({
+    type: String,
+    nullable: true,
+    required: false,
+    description: 'ID of the active lodging T&C version. Used to redirect to accept-terms when pendientes.',
+  })
+  activeTermsId?: string | null;
+}
+
+export class LodgingDocsStatusDto {
+  @ApiProperty({ enum: ['no_requeridos', 'opcionales', 'incompletos', 'completos'] })
+  state: LodgingDocsStatusState;
+
+  @ApiProperty({ example: 2, description: 'Required docs uploaded and valid' })
+  uploaded: number;
+
+  @ApiProperty({ example: 3, description: 'Total required docs' })
+  required: number;
+
+  @ApiProperty({ type: [String], description: 'Names of required docs still missing or expired' })
+  missing: string[];
+}
 
 export class LodgingFullDto {
   @ApiProperty({
@@ -382,6 +413,61 @@ export class LodgingFullDto {
   })
   roomsNotApplicable?: boolean;
 
+  @ApiProperty({
+    required: false,
+    type: [String],
+    example: ['facebook', 'instagram'],
+    description:
+      'Optional-field slugs the owner marked "No tengo". Persisted so the FE skip-penalty + "No aplica" badge survive logout.',
+  })
+  skippedOptionalFields?: string[];
+
+  // ------------------------------------------------------------------------------------------------
+  // 3-indicator completion model (owner-only). `completionPercentage` above is preserved as an
+  // alias of `infoPercentage` for backwards-compat — old clients keep reading it.
+  // ------------------------------------------------------------------------------------------------
+  @ApiProperty({
+    required: false,
+    type: Number,
+    description: 'Info-only completion 0-100 (data fields, not gates). Owner-only.',
+  })
+  infoPercentage?: number;
+
+  @ApiProperty({
+    required: false,
+    type: [String],
+    description: 'Slugs of info-bucket fields still missing. Owner-only.',
+  })
+  infoMissingFields?: string[];
+
+  @ApiProperty({
+    required: false,
+    type: Boolean,
+    description: 'All info-bucket critical fields satisfied (whatsapp, price, rooms, photos≥3). Owner-only.',
+  })
+  infoCriticalSatisfied?: boolean;
+
+  @ApiProperty({
+    required: false,
+    type: LodgingTermsStatusDto,
+    description: 'T&C acceptance status (per-user-globally for lodging T&C). Owner-only.',
+  })
+  termsStatus?: LodgingTermsStatusDto;
+
+  @ApiProperty({
+    required: false,
+    type: LodgingDocsStatusDto,
+    description: 'Documents checklist status (filtered by town × categories). Owner-only.',
+  })
+  docsStatus?: LodgingDocsStatusDto;
+
+  @ApiProperty({
+    required: false,
+    type: Boolean,
+    description: 'True iff info ≥80 + critical + terms not-pendientes + docs not-incompletos. Owner-only.',
+  })
+  readyToSubmit?: boolean;
+
   constructor(lodging?: Lodging, userReview?: string) {
     if (!lodging) return;
 
@@ -402,6 +488,7 @@ export class LodgingFullDto {
     this.showGoogleMapsReviews = lodging.showGoogleMapsReviews;
     this.showBinntuReviews = lodging.showBinntuReviews;
     this.roomsNotApplicable = lodging.roomsNotApplicable ?? false;
+    this.skippedOptionalFields = lodging.skippedOptionalFields ?? [];
     this.user = new UserDto(lodging.user);
     this.lowestPrice = lodging.lowestPrice || undefined;
     this.highestPrice = lodging.highestPrice || undefined;

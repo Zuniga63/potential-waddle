@@ -22,6 +22,13 @@ import { AdminUsersFiltersDto, AdminUsersListDto, AdminUserDto } from '../dto';
 import { generateAdminUsersQueryFilters } from '../utils';
 import { Town } from 'src/modules/towns/entities/town.entity';
 import { Review } from 'src/modules/reviews/entities';
+import { TermsService } from 'src/modules/terms/services';
+import { DocumentService } from 'src/modules/documents/services';
+import { DocumentEntityType } from 'src/modules/documents/enums';
+import {
+  computeLodgingTermsStatus,
+  computeLodgingDocsStatus,
+} from 'src/modules/lodgings/utils/compute-lodging-completion';
 
 interface AdminUsersFindAllParams {
   filters?: AdminUsersFiltersDto;
@@ -39,6 +46,8 @@ export class UsersService {
     @InjectRepository(Review)
     private readonly reviewRepository: Repository<Review>,
     private readonly cloudinaryService: CloudinaryService,
+    private readonly termsService: TermsService,
+    private readonly documentService: DocumentService,
   ) {}
 
   async create(createUserDto: CreateUserDto) {
@@ -299,11 +308,46 @@ export class UsersService {
       .leftJoinAndSelect('town.department', 'department')
       .leftJoinAndSelect('lodgings.facilities', 'facilities')
       .leftJoinAndSelect('lodgings.lodgingRoomTypes', 'lodgingRoomTypes')
+      // places joined so UserLodgingDto can surface a placesCount > 0 for the skip-penalty
+      .leftJoinAndSelect('lodgings.places', 'lodgingPlaces')
       .where('user.id = :id', { id })
       .getOne();
 
-    const lodgings = user?.lodgings ? user?.lodgings.map(lodging => new UserLodgingDto(lodging)) : [];
-    return lodgings ?? [];
+    if (!user?.lodgings || user.lodgings.length === 0) return [];
+
+    // T&C acceptance is per-user-globally — fetch once and reuse across all lodgings the user owns.
+    const termsDto = await this.termsService.getStatusForUser(id);
+    const termsStatus = computeLodgingTermsStatus({
+      hasActiveLodgingTerms: termsDto.activeDocumentIds.lodging !== null,
+      hasAcceptedLodgingTerms: termsDto.hasAcceptedLodgingTerms,
+    });
+
+    // Docs requirements are per (town × categories) — must fetch per lodging. Parallelize.
+    const docsLists = await Promise.all(
+      user.lodgings.map(lodging => {
+        const townId = lodging.town?.id;
+        if (!townId) return Promise.resolve([]);
+        const categoryIds = lodging.categories?.map(c => c.id) ?? [];
+        return this.documentService.getEntityDocumentStatus(
+          townId,
+          DocumentEntityType.LODGING,
+          lodging.id,
+          categoryIds,
+        );
+      }),
+    );
+
+    return user.lodgings.map((lodging, i) => {
+      const docsStatus = computeLodgingDocsStatus(
+        docsLists[i].map(d => ({
+          documentTypeName: d.documentType.name,
+          isRequired: d.isRequired,
+          isUploaded: d.isUploaded,
+          isExpired: d.isExpired,
+        })),
+      );
+      return new UserLodgingDto(lodging, { termsStatus, docsStatus });
+    });
   }
 
   async getUserCommerce(id: string) {

@@ -15,6 +15,7 @@ import { GooglePlacesService } from '../google-places/google-places.service';
 import { PromotionsService } from '../promotions/promotions.service';
 import { EntityReviewsService } from '../reviews/services/entity-reviews.service';
 import { TermsService } from '../terms/services';
+import { DocumentService } from '../documents/services';
 import { ResendService } from '../email/services/resend.service';
 
 // ---------------------------------------------------------------------------
@@ -169,6 +170,7 @@ describe('LodgingsService — submitForReview', () => {
         { provide: PromotionsService, useValue: { hasActivePromotions: jest.fn(), getLatestActivePromotion: jest.fn(), getActivePromotions: jest.fn() } },
         { provide: EntityReviewsService, useValue: { getUserReviews: jest.fn(), findUserReview: jest.fn() } },
         { provide: TermsService, useValue: termsService },
+        { provide: DocumentService, useValue: { getEntityDocumentStatus: jest.fn().mockResolvedValue([]) } },
         { provide: DataSource, useValue: dataSource },
         { provide: ResendService, useValue: resendService },
       ],
@@ -333,8 +335,12 @@ describe('LodgingsService — submitForReview', () => {
 
   // -------------------------------------------------------------------------
   // Test 6: T&C not accepted but TERMS_ENFORCEMENT_ENABLED=false → success
+  //   3-indicator model note: T&C status is ALWAYS fetched to populate the DTO
+  //   for display, but only blocks submit when enforcement is enabled. The old
+  //   assertion (`getStatusForUser not called`) is no longer valid — the new
+  //   contract is "fetched for display, gate respects the flag".
   // -------------------------------------------------------------------------
-  it('T&C not accepted but TERMS_ENFORCEMENT_ENABLED=false → skips T&C check, succeeds', async () => {
+  it('T&C not accepted but TERMS_ENFORCEMENT_ENABLED=false → skips T&C gate, succeeds', async () => {
     const originalEnv = process.env.TERMS_ENFORCEMENT_ENABLED;
     process.env.TERMS_ENFORCEMENT_ENABLED = 'false';
 
@@ -344,10 +350,15 @@ describe('LodgingsService — submitForReview', () => {
     lodgingRepo.findOne.mockResolvedValueOnce(lodging).mockResolvedValueOnce(updatedLodging);
     lodgingRepo.save.mockResolvedValueOnce(updatedLodging);
 
+    // Mock terms as "pendientes" — would block under enforcement, but enforcement is off here.
+    (termsService.getStatusForUser as jest.Mock).mockResolvedValue({
+      hasAcceptedLodgingTerms: false,
+      activeDocumentIds: { lodging: TERMS_DOC_ID },
+    });
+
     const result = await service.submitForReview({ identifier: LODGING_ID, user: mockUser });
 
-    // Terms check must be skipped entirely
-    expect(termsService.getStatusForUser).not.toHaveBeenCalled();
+    // Submit succeeds despite terms being pendientes — the gate was skipped.
     expect(result.status).toBe('pending_review');
 
     process.env.TERMS_ENFORCEMENT_ENABLED = originalEnv;
@@ -405,6 +416,7 @@ describe('LodgingsService — create', () => {
         { provide: PromotionsService, useValue: { hasActivePromotions: jest.fn(), getLatestActivePromotion: jest.fn() } },
         { provide: EntityReviewsService, useValue: { getUserReviews: jest.fn() } },
         { provide: TermsService, useValue: termsService },
+        { provide: DocumentService, useValue: { getEntityDocumentStatus: jest.fn().mockResolvedValue([]) } },
         { provide: DataSource, useValue: dataSource },
         {
           provide: ResendService,
