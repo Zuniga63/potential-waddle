@@ -319,12 +319,17 @@ export class LodgingsService {
         : Promise.resolve([]),
     ]);
 
+    // When TERMS_ENFORCEMENT_ENABLED is off, getStatusForUser short-circuits to all-true
+    // for legacy gate compat. For the indicator strip we want the truth: gate is off →
+    // state='no_aplica'. Otherwise the strip would lie "Aceptados" on every new lodging.
     const activeTermsId = termsDto?.activeDocumentIds?.lodging ?? null;
-    const termsStatus = computeLodgingTermsStatus({
-      hasActiveLodgingTerms: activeTermsId !== null,
-      hasAcceptedLodgingTerms: termsDto?.hasAcceptedLodgingTerms ?? false,
-      activeTermsId,
-    });
+    const termsStatus = isTermsEnforcementEnabled()
+      ? computeLodgingTermsStatus({
+          hasActiveLodgingTerms: activeTermsId !== null,
+          hasAcceptedLodgingTerms: termsDto?.hasAcceptedLodgingTerms ?? false,
+          activeTermsId,
+        })
+      : ({ state: 'no_aplica' as const, activeTermsId: null });
     const docsStatus = computeLodgingDocsStatus(
       docsList.map(d => ({
         documentTypeName: d.documentType.name,

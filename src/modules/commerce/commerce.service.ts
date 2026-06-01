@@ -220,12 +220,15 @@ export class CommerceService {
         : Promise.resolve([]),
     ]);
 
+    // See LodgingsService.resolveOwnerCompletionContext — same enforcement-flag honesty.
     const activeTermsId = termsDto?.activeDocumentIds?.commerce ?? null;
-    const termsStatus = computeCommerceTermsStatus({
-      hasActiveCommerceTerms: activeTermsId !== null,
-      hasAcceptedCommerceTerms: termsDto?.hasAcceptedCommerceTerms ?? false,
-      activeTermsId,
-    });
+    const termsStatus = isTermsEnforcementEnabled()
+      ? computeCommerceTermsStatus({
+          hasActiveCommerceTerms: activeTermsId !== null,
+          hasAcceptedCommerceTerms: termsDto?.hasAcceptedCommerceTerms ?? false,
+          activeTermsId,
+        })
+      : ({ state: 'no_aplica' as const, activeTermsId: null });
     const docsStatus = computeCommerceDocsStatus(
       docsList.map(d => ({
         documentTypeName: d.documentType.name,

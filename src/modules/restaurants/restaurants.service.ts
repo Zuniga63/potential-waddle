@@ -251,12 +251,15 @@ export class RestaurantsService {
         : Promise.resolve([]),
     ]);
 
+    // See LodgingsService.resolveOwnerCompletionContext — same enforcement-flag honesty.
     const activeTermsId = termsDto?.activeDocumentIds?.restaurant ?? null;
-    const termsStatus = computeRestaurantTermsStatus({
-      hasActiveRestaurantTerms: activeTermsId !== null,
-      hasAcceptedRestaurantTerms: termsDto?.hasAcceptedRestaurantTerms ?? false,
-      activeTermsId,
-    });
+    const termsStatus = isTermsEnforcementEnabled()
+      ? computeRestaurantTermsStatus({
+          hasActiveRestaurantTerms: activeTermsId !== null,
+          hasAcceptedRestaurantTerms: termsDto?.hasAcceptedRestaurantTerms ?? false,
+          activeTermsId,
+        })
+      : ({ state: 'no_aplica' as const, activeTermsId: null });
     const docsStatus = computeRestaurantDocsStatus(
       docsList.map(d => ({
         documentTypeName: d.documentType.name,
