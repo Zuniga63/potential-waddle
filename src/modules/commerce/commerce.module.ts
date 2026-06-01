@@ -13,6 +13,7 @@ import { CommerceProductsService } from './commerce-products.service';
 import { CommerceProductsController } from './commerce-products.controller';
 import { ReviewsModule } from '../reviews/reviews.module';
 import { TermsModule } from '../terms/terms.module';
+import { DocumentsModule } from '../documents/documents.module';
 
 @Module({
   controllers: [CommerceController, CommerceProductsController],
@@ -22,6 +23,7 @@ import { TermsModule } from '../terms/terms.module';
     CloudinaryModule,
     ReviewsModule,
     TermsModule,
+    DocumentsModule,
   ],
 })
 export class CommerceModule {}

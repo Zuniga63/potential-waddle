@@ -80,9 +80,42 @@ export class CommerceController {
   // * GET COMMERCE BY IDENTIFIER
   // * ----------------------------------------------------------------------------------------------------------------
   @Get(':identifier')
+  @OptionalAuth()
   @ApiOkResponse({ description: 'Commerce Detail', type: CommerceFullDto })
-  findOne(@Param('identifier') identifier: string) {
-    return this.commerceService.findOne(identifier);
+  findOne(@Param('identifier') identifier: string, @GetUser() user?: User) {
+    // Pass the requester id so the service enriches owner-scoped fields (status,
+    // 3-indicator completion, skipped fields) only when the caller owns the commerce.
+    return this.commerceService.findOne(identifier, user?.id);
+  }
+
+  // * ----------------------------------------------------------------------------------------------------------------
+  // * SUBMIT COMMERCE FOR REVIEW (owner action)
+  // * ----------------------------------------------------------------------------------------------------------------
+  @Post(':identifier/submit-for-review')
+  @Auth()
+  @ApiOkResponse({ description: 'Commerce submitted for review', type: CommerceFullDto })
+  submitForReview(@Param('identifier') identifier: string, @GetUser() user: User) {
+    return this.commerceService.submitForReview({ identifier, user });
+  }
+
+  // * ----------------------------------------------------------------------------------------------------------------
+  // * APPROVE COMMERCE (admin action)
+  // * ----------------------------------------------------------------------------------------------------------------
+  @Post('admin/:identifier/approve')
+  @Auth()
+  @ApiOkResponse({ description: 'Commerce approved', type: CommerceFullDto })
+  approve(@Param('identifier') identifier: string) {
+    return this.commerceService.approve({ identifier });
+  }
+
+  // * ----------------------------------------------------------------------------------------------------------------
+  // * REJECT COMMERCE (admin action)
+  // * ----------------------------------------------------------------------------------------------------------------
+  @Post('admin/:identifier/reject')
+  @Auth()
+  @ApiOkResponse({ description: 'Commerce rejected', type: CommerceFullDto })
+  reject(@Param('identifier') identifier: string, @Body() body: { reason: string }) {
+    return this.commerceService.reject({ identifier, reason: body.reason });
   }
 
   // * ----------------------------------------------------------------------------------------------------------------

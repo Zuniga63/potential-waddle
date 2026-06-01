@@ -1,6 +1,6 @@
 import { Repository } from 'typeorm';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException, ForbiddenException } from '@nestjs/common';
 import { FindOptionsRelations, In, Point } from 'typeorm';
 import { Commerce, CommerceImage, CommerceProduct } from './entities';
 import { CreateCommerceDto, UpdateCommerceDto, CommerceIndexDto, CommerceFullDto, AdminCommerceFiltersDto, AdminCommerceListDto } from './dto';
@@ -20,6 +20,16 @@ import { ReviewDomainsEnum } from '../reviews/enums';
 import { Review } from '../reviews/entities';
 import { TermsService } from '../terms/services';
 import { TermsTypeEnum } from '../terms/interfaces';
+import { isTermsEnforcementEnabled } from '../terms/utils';
+import { DocumentService } from '../documents/services';
+import { DocumentEntityType } from '../documents/enums';
+import {
+  computeCommerceCompletion,
+  computeCommerceTermsStatus,
+  computeCommerceDocsStatus,
+  CommerceTermsStatus,
+  CommerceDocsStatus,
+} from './utils/compute-commerce-completion';
 
 @Injectable()
 export class CommerceService {
@@ -45,6 +55,7 @@ export class CommerceService {
     private readonly cloudinaryService: CloudinaryService,
     private readonly entityReviewsService: EntityReviewsService,
     private readonly termsService: TermsService,
+    private readonly documentService: DocumentService,
   ) {}
 
   async findAll({ filters }: CommerceFindAllParams = {}) {
@@ -163,7 +174,7 @@ export class CommerceService {
     });
   }
 
-  async findOne(id: string) {
+  async findOne(id: string, ownerId?: string) {
     const commerce = await this.commerceRepository.findOne({
       where: { id },
       relations: {
@@ -172,6 +183,7 @@ export class CommerceService {
         images: { imageResource: true },
         facilities: { icon: true },
         products: { images: { imageResource: true } },
+        user: true,
       },
       order: {
         images: { order: 'ASC' },
@@ -180,7 +192,203 @@ export class CommerceService {
     });
 
     if (!commerce) throw new NotFoundException(`Commerce with id ${id} not found`);
-    return new CommerceFullDto(commerce);
+
+    const dto = new CommerceFullDto(commerce);
+
+    if (ownerId && commerce.user?.id === ownerId) {
+      await this.applyOwnerEnrichment(dto, commerce);
+    }
+
+    return dto;
+  }
+
+  // ------------------------------------------------------------------------------------------------
+  // Resolve the 3-indicator context (T&C + docs) for the owner of this commerce.
+  // Mirror of LodgingsService.resolveOwnerCompletionContext.
+  // ------------------------------------------------------------------------------------------------
+  async resolveOwnerCompletionContext(
+    commerce: Commerce,
+  ): Promise<{ termsStatus: CommerceTermsStatus; docsStatus: CommerceDocsStatus }> {
+    const userId = commerce.user?.id;
+    const townId = commerce.town?.id;
+    const categoryIds = commerce.categories?.map(c => c.id) ?? [];
+
+    const [termsDto, docsList] = await Promise.all([
+      userId ? this.termsService.getStatusForUser(userId) : Promise.resolve(null),
+      townId
+        ? this.documentService.getEntityDocumentStatus(townId, DocumentEntityType.COMMERCE, commerce.id, categoryIds)
+        : Promise.resolve([]),
+    ]);
+
+    const activeTermsId = termsDto?.activeDocumentIds?.commerce ?? null;
+    const termsStatus = computeCommerceTermsStatus({
+      hasActiveCommerceTerms: activeTermsId !== null,
+      hasAcceptedCommerceTerms: termsDto?.hasAcceptedCommerceTerms ?? false,
+      activeTermsId,
+    });
+    const docsStatus = computeCommerceDocsStatus(
+      docsList.map(d => ({
+        documentTypeName: d.documentType.name,
+        isRequired: d.isRequired,
+        isUploaded: d.isUploaded,
+        isExpired: d.isExpired,
+      })),
+    );
+
+    return { termsStatus, docsStatus };
+  }
+
+  // ------------------------------------------------------------------------------------------------
+  // Populate the owner-scoped fields on a CommerceFullDto. Mirror of LodgingsService.applyOwnerEnrichment.
+  // ------------------------------------------------------------------------------------------------
+  private async applyOwnerEnrichment(dto: CommerceFullDto, commerce: Commerce): Promise<void> {
+    const context = await this.resolveOwnerCompletionContext(commerce);
+    const result = computeCommerceCompletion(commerce, context);
+    dto.status = commerce.status;
+    dto.completionPercentage = result.completionPercentage;
+    dto.missingFields = result.missingFields;
+    dto.infoPercentage = result.infoPercentage;
+    dto.infoMissingFields = result.infoMissingFields;
+    dto.infoCriticalSatisfied = result.infoCriticalSatisfied;
+    dto.termsStatus = result.termsStatus;
+    dto.docsStatus = result.docsStatus;
+    dto.readyToSubmit = result.readyToSubmit;
+    dto.submittedAt = commerce.submittedAt;
+    dto.rejectionReason = commerce.rejectionReason;
+  }
+
+  // ------------------------------------------------------------------------------------------------
+  // Submit commerce for review (owner action). Mirror of LodgingsService.submitForReview.
+  // Three independent gates with distinct errorCodes (INCOMPLETE / TERMS_NOT_ACCEPTED / DOCS_INCOMPLETE).
+  // ------------------------------------------------------------------------------------------------
+  async submitForReview({ identifier, user }: { identifier: string; user: User }) {
+    const relations: FindOptionsRelations<Commerce> = {
+      user: true,
+      categories: { icon: true },
+      facilities: { icon: true },
+      town: { department: true },
+      images: { imageResource: true },
+      products: { images: { imageResource: true } },
+    };
+
+    const commerce = await this.commerceRepository.findOne({ where: { id: identifier }, relations });
+    if (!commerce) throw new NotFoundException('Commerce not found');
+
+    if (commerce.user?.id !== user.id) {
+      throw new ForbiddenException('Not your commerce');
+    }
+
+    if (commerce.status !== 'draft' && commerce.status !== 'rejected') {
+      throw new BadRequestException({
+        message: 'INVALID_STATUS',
+        detail: 'Only draft or rejected commerces can be submitted',
+      });
+    }
+
+    const context = await this.resolveOwnerCompletionContext(commerce);
+    const completion = computeCommerceCompletion(commerce, context);
+
+    if (completion.infoPercentage < 80 || !completion.infoCriticalSatisfied) {
+      throw new BadRequestException({
+        errorCode: 'INCOMPLETE',
+        infoPercentage: completion.infoPercentage,
+        infoMissingFields: completion.infoMissingFields,
+        completionPercentage: completion.completionPercentage,
+        missingFields: completion.missingFields,
+      });
+    }
+
+    if (isTermsEnforcementEnabled() && context.termsStatus.state === 'pendientes') {
+      throw new ForbiddenException({
+        errorCode: 'TERMS_NOT_ACCEPTED',
+        termsType: 'commerce',
+        activeTermsId: context.termsStatus.activeTermsId ?? null,
+      });
+    }
+
+    if (context.docsStatus.state === 'incompletos') {
+      throw new BadRequestException({
+        errorCode: 'DOCS_INCOMPLETE',
+        docsStatus: context.docsStatus,
+      });
+    }
+
+    commerce.status = 'pending_review';
+    commerce.submittedAt = new Date();
+    commerce.rejectionReason = null;
+    await this.commerceRepository.save(commerce);
+
+    const updated = await this.commerceRepository.findOne({ where: { id: commerce.id }, relations });
+    if (!updated) throw new NotFoundException('Commerce not found after update');
+    const dto = new CommerceFullDto(updated);
+    await this.applyOwnerEnrichment(dto, updated);
+    return dto;
+  }
+
+  // ------------------------------------------------------------------------------------------------
+  // Approve commerce (admin action). Mirror of LodgingsService.approve.
+  // ------------------------------------------------------------------------------------------------
+  async approve({ identifier }: { identifier: string }): Promise<CommerceFullDto> {
+    const relations: FindOptionsRelations<Commerce> = {
+      user: true,
+      categories: { icon: true },
+      facilities: { icon: true },
+      town: { department: true },
+      images: { imageResource: true },
+      products: { images: { imageResource: true } },
+    };
+    const commerce = await this.commerceRepository.findOne({ where: { id: identifier }, relations });
+    if (!commerce) throw new NotFoundException('Commerce not found');
+
+    if (commerce.status !== 'pending_review') {
+      throw new BadRequestException({
+        message: 'Only pending_review commerces can be approved',
+        currentStatus: commerce.status,
+      });
+    }
+
+    commerce.status = 'published';
+    commerce.rejectionReason = null;
+    await this.commerceRepository.save(commerce);
+
+    const updated = await this.commerceRepository.findOne({ where: { id: commerce.id }, relations });
+    if (!updated) throw new NotFoundException('Commerce not found after update');
+    const dto = new CommerceFullDto(updated);
+    await this.applyOwnerEnrichment(dto, updated);
+    return dto;
+  }
+
+  // ------------------------------------------------------------------------------------------------
+  // Reject commerce (admin action). Mirror of LodgingsService.reject.
+  // ------------------------------------------------------------------------------------------------
+  async reject({ identifier, reason }: { identifier: string; reason: string }): Promise<CommerceFullDto> {
+    const relations: FindOptionsRelations<Commerce> = {
+      user: true,
+      categories: { icon: true },
+      facilities: { icon: true },
+      town: { department: true },
+      images: { imageResource: true },
+      products: { images: { imageResource: true } },
+    };
+    const commerce = await this.commerceRepository.findOne({ where: { id: identifier }, relations });
+    if (!commerce) throw new NotFoundException('Commerce not found');
+
+    if (commerce.status !== 'pending_review') {
+      throw new BadRequestException({
+        message: 'Only pending_review commerces can be rejected',
+        currentStatus: commerce.status,
+      });
+    }
+
+    commerce.status = 'rejected';
+    commerce.rejectionReason = reason;
+    await this.commerceRepository.save(commerce);
+
+    const updated = await this.commerceRepository.findOne({ where: { id: commerce.id }, relations });
+    if (!updated) throw new NotFoundException('Commerce not found after update');
+    const dto = new CommerceFullDto(updated);
+    await this.applyOwnerEnrichment(dto, updated);
+    return dto;
   }
 
   // ------------------------------------------------------------------------------------------------
@@ -195,8 +403,9 @@ export class CommerceService {
       products: { images: { imageResource: true } },
     };
 
+    // Published guard — draft / pending_review / rejected commerces must not leak to public pages.
     let commerce = await this.commerceRepository.findOne({
-      where: { slug },
+      where: { slug, status: 'published' },
       relations,
       order: {
         images: { order: 'ASC' },
@@ -204,7 +413,7 @@ export class CommerceService {
       },
     });
 
-    if (!commerce) commerce = await this.commerceRepository.findOne({ where: { slug }, relations });
+    if (!commerce) commerce = await this.commerceRepository.findOne({ where: { slug, status: 'published' }, relations });
     if (!commerce) throw new NotFoundException('Commerce not found');
 
     // Obtener review del usuario
