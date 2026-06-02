@@ -75,7 +75,7 @@ export class RestaurantsService {
   // Find all restaurants paginated (Admin)
   // ------------------------------------------------------------------------------------------------
   async findAllPaginated(filters: AdminRestaurantsFiltersDto): Promise<AdminRestaurantsListDto> {
-    const { page = 1, limit = 10, search, categoryId, townId, isPublic, sortBy = 'name', sortOrder = 'ASC' } = filters;
+    const { page = 1, limit = 10, search, categoryId, townId, isPublic, status, sortBy = 'name', sortOrder = 'ASC' } = filters;
 
     const queryBuilder = this.restaurantRepository
       .createQueryBuilder('restaurant')
@@ -101,6 +101,10 @@ export class RestaurantsService {
 
     if (isPublic !== undefined) {
       queryBuilder.andWhere('restaurant.isPublic = :isPublic', { isPublic });
+    }
+
+    if (status) {
+      queryBuilder.andWhere('restaurant.status = :status', { status });
     }
 
     // Sorting

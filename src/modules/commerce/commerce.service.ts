@@ -78,7 +78,7 @@ export class CommerceService {
   // Find all commerce paginated (Admin)
   // ------------------------------------------------------------------------------------------------
   async findAllPaginated(filters: AdminCommerceFiltersDto): Promise<AdminCommerceListDto> {
-    const { page = 1, limit = 10, search, categoryId, townId, isPublic, sortBy = 'name', sortOrder = 'ASC' } = filters;
+    const { page = 1, limit = 10, search, categoryId, townId, isPublic, status, sortBy = 'name', sortOrder = 'ASC' } = filters;
 
     const queryBuilder = this.commerceRepository
       .createQueryBuilder('commerce')
@@ -104,6 +104,10 @@ export class CommerceService {
 
     if (isPublic !== undefined) {
       queryBuilder.andWhere('commerce.isPublic = :isPublic', { isPublic });
+    }
+
+    if (status) {
+      queryBuilder.andWhere('commerce.status = :status', { status });
     }
 
     // Sorting

@@ -1,5 +1,5 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
-import { IsOptional, IsString, IsNumber, Min, IsBoolean, IsUUID } from 'class-validator';
+import { IsOptional, IsString, IsNumber, Min, IsBoolean, IsUUID, IsIn } from 'class-validator';
 import { Type, Transform } from 'class-transformer';
 
 export class AdminCommerceFiltersDto {
@@ -37,6 +37,14 @@ export class AdminCommerceFiltersDto {
   @Transform(({ value }) => value === 'true' || value === true)
   @IsBoolean()
   isPublic?: boolean;
+
+  @ApiPropertyOptional({
+    description: 'Filter by commerce workflow status',
+    enum: ['draft', 'pending_review', 'published', 'rejected'],
+  })
+  @IsOptional()
+  @IsIn(['draft', 'pending_review', 'published', 'rejected'])
+  status?: 'draft' | 'pending_review' | 'published' | 'rejected';
 
   @ApiPropertyOptional({ description: 'Sort field', default: 'name' })
   @IsOptional()
