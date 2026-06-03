@@ -104,6 +104,13 @@ export class UserRestaurantDto {
   })
   categories: CategoryDto[];
 
+  @ApiProperty({
+    description: 'Onboarding lifecycle status of the restaurant',
+    enum: ['draft', 'pending_review', 'published', 'rejected'],
+    required: false,
+  })
+  status?: 'draft' | 'pending_review' | 'published' | 'rejected';
+
   constructor(restaurant?: Restaurant) {
     if (!restaurant) return;
     this.id = restaurant.id;
@@ -123,5 +130,6 @@ export class UserRestaurantDto {
     this.highestPrice = restaurant.higherPrice || undefined;
     this.openingHours = restaurant.openingHours || undefined;
     this.isPublic = restaurant.isPublic;
+    this.status = restaurant.status;
   }
 }

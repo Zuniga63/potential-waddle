@@ -172,6 +172,13 @@ export class UserCommerceDto {
   })
   isPublic: boolean;
 
+  @ApiProperty({
+    description: 'Onboarding lifecycle status of the commerce',
+    enum: ['draft', 'pending_review', 'published', 'rejected'],
+    required: false,
+  })
+  status?: 'draft' | 'pending_review' | 'published' | 'rejected';
+
   constructor(commerce?: Commerce, userReview?: string) {
     if (!commerce) return;
     this.id = commerce.id;
@@ -199,5 +206,6 @@ export class UserCommerceDto {
     this.address = commerce.address;
     this.googleMapsUrl = commerce.googleMapsUrl;
     this.isPublic = commerce.isPublic;
+    this.status = commerce.status;
   }
 }
