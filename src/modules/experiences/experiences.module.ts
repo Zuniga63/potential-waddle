@@ -11,6 +11,8 @@ import { CloudinaryModule } from '../cloudinary/cloudinary.module';
 import { Town } from '../towns/entities';
 import { PromotionsModule } from '../promotions/promotions.module';
 import { ReviewsModule } from '../reviews/reviews.module';
+import { TermsModule } from '../terms/terms.module';
+import { DocumentsModule } from '../documents/documents.module';
 
 @Module({
   controllers: [ExperiencesController],
@@ -20,6 +22,8 @@ import { ReviewsModule } from '../reviews/reviews.module';
     CloudinaryModule,
     PromotionsModule,
     ReviewsModule,
+    TermsModule,
+    DocumentsModule,
   ],
 })
 export class ExperiencesModule {}

@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { CreateGuideDto } from './dto/create-guide.dto';
 import { UpdateGuideDto } from './dto/update-guide.dto';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -27,6 +27,16 @@ import { ReviewDomainsEnum } from '../reviews/enums';
 import { Review } from '../reviews/entities';
 import { TermsService } from '../terms/services';
 import { TermsTypeEnum } from '../terms/interfaces';
+import { isTermsEnforcementEnabled } from '../terms/utils';
+import { DocumentService } from '../documents/services';
+import { DocumentEntityType } from '../documents/enums';
+import {
+  computeGuideCompletion,
+  computeGuideTermsStatus,
+  computeGuideDocsStatus,
+  GuideTermsStatus,
+  GuideDocsStatus,
+} from './utils/compute-guide-completion';
 
 @Injectable()
 export class GuidesService {
@@ -46,6 +56,7 @@ export class GuidesService {
     private readonly cloudinaryService: CloudinaryService,
     private readonly entityReviewsService: EntityReviewsService,
     private readonly termsService: TermsService,
+    private readonly documentService: DocumentService,
   ) {}
 
   // ------------------------------------------------------------------------------------------------
@@ -96,7 +107,7 @@ export class GuidesService {
   // Find all guides paginated (Admin)
   // ------------------------------------------------------------------------------------------------
   async findAllPaginated(filters: AdminGuidesFiltersDto): Promise<AdminGuidesListDto> {
-    const { page = 1, limit = 10, search, categoryId, townId, isPublic, sortBy = 'firstName', sortOrder = 'ASC' } = filters;
+    const { page = 1, limit = 10, search, categoryId, townId, isPublic, status, sortBy = 'firstName', sortOrder = 'ASC' } = filters;
 
     const queryBuilder = this.guideRepository
       .createQueryBuilder('guide')
@@ -124,6 +135,10 @@ export class GuidesService {
 
     if (isPublic !== undefined) {
       queryBuilder.andWhere('guide.isPublic = :isPublic', { isPublic });
+    }
+
+    if (status) {
+      queryBuilder.andWhere('guide.status = :status', { status });
     }
 
     // Sorting
@@ -585,5 +600,189 @@ export class GuidesService {
     guide.isPublic = isPublic;
     await this.guideRepository.save(guide);
     return { message: 'Guide visibility updated', data: isPublic };
+  }
+
+  // ------------------------------------------------------------------------------------------------
+  // Resolve the 3-indicator context (T&C + docs). Mirror of RestaurantsService.resolveOwnerCompletionContext.
+  // ------------------------------------------------------------------------------------------------
+  async resolveOwnerCompletionContext(
+    guide: Guide,
+  ): Promise<{ termsStatus: GuideTermsStatus; docsStatus: GuideDocsStatus }> {
+    const userId = guide.user?.id;
+    // Guides are multi-town. For doc requirements we pick the first town as the reference
+    // (matches the Lodging single-town pattern). Docs are still filtered by category.
+    const townId = guide.towns?.[0]?.id;
+    const categoryIds = guide.categories?.map(c => c.id) ?? [];
+
+    const [termsDto, docsList] = await Promise.all([
+      userId ? this.termsService.getStatusForUser(userId) : Promise.resolve(null),
+      townId
+        ? this.documentService.getEntityDocumentStatus(townId, DocumentEntityType.GUIDE, guide.id, categoryIds)
+        : Promise.resolve([]),
+    ]);
+
+    const activeTermsId = termsDto?.activeDocumentIds?.guide ?? null;
+    const termsStatus = isTermsEnforcementEnabled()
+      ? computeGuideTermsStatus({
+          hasActiveGuideTerms: activeTermsId !== null,
+          hasAcceptedGuideTerms: termsDto?.hasAcceptedGuideTerms ?? false,
+          activeTermsId,
+        })
+      : ({ state: 'no_aplica' as const, activeTermsId: null });
+    const docsStatus = computeGuideDocsStatus(
+      docsList.map(d => ({
+        documentTypeName: d.documentType.name,
+        isRequired: d.isRequired,
+        isUploaded: d.isUploaded,
+        isExpired: d.isExpired,
+      })),
+    );
+
+    return { termsStatus, docsStatus };
+  }
+
+  // ------------------------------------------------------------------------------------------------
+  // Populate owner-scoped fields on a GuideDto. Mirror of RestaurantsService.applyOwnerEnrichment.
+  // ------------------------------------------------------------------------------------------------
+  private async applyOwnerEnrichment(dto: GuideDto, guide: Guide): Promise<void> {
+    const context = await this.resolveOwnerCompletionContext(guide);
+    const result = computeGuideCompletion(guide, context);
+    dto.status = guide.status;
+    dto.completionPercentage = result.completionPercentage;
+    dto.missingFields = result.missingFields;
+    dto.infoPercentage = result.infoPercentage;
+    dto.infoMissingFields = result.infoMissingFields;
+    dto.infoCriticalSatisfied = result.infoCriticalSatisfied;
+    dto.termsStatus = result.termsStatus;
+    dto.docsStatus = result.docsStatus;
+    dto.readyToSubmit = result.readyToSubmit;
+    dto.submittedAt = guide.submittedAt;
+    dto.rejectionReason = guide.rejectionReason;
+  }
+
+  // ------------------------------------------------------------------------------------------------
+  // Submit guide for review. Mirror of RestaurantsService.submitForReview with 3 gates.
+  // ------------------------------------------------------------------------------------------------
+  async submitForReview({ identifier, user }: { identifier: string; user: User }) {
+    const relations: FindOptionsRelations<Guide> = {
+      user: true,
+      categories: { icon: true },
+      towns: { department: true },
+      images: { imageResource: true },
+    };
+    const guide = await this.guideRepository.findOne({ where: { id: identifier }, relations });
+    if (!guide) throw new NotFoundException('Guide not found');
+
+    if (guide.user?.id !== user.id) {
+      throw new ForbiddenException('Not your guide');
+    }
+
+    if (guide.status !== 'draft' && guide.status !== 'rejected') {
+      throw new BadRequestException({
+        message: 'INVALID_STATUS',
+        detail: 'Only draft or rejected guides can be submitted',
+      });
+    }
+
+    const context = await this.resolveOwnerCompletionContext(guide);
+    const completion = computeGuideCompletion(guide, context);
+
+    if (completion.infoPercentage < 80 || !completion.infoCriticalSatisfied) {
+      throw new BadRequestException({
+        errorCode: 'INCOMPLETE',
+        infoPercentage: completion.infoPercentage,
+        infoMissingFields: completion.infoMissingFields,
+        completionPercentage: completion.completionPercentage,
+        missingFields: completion.missingFields,
+      });
+    }
+
+    if (isTermsEnforcementEnabled() && context.termsStatus.state === 'pendientes') {
+      throw new ForbiddenException({
+        errorCode: 'TERMS_NOT_ACCEPTED',
+        termsType: 'guide',
+        activeTermsId: context.termsStatus.activeTermsId ?? null,
+      });
+    }
+
+    if (context.docsStatus.state === 'incompletos') {
+      throw new BadRequestException({
+        errorCode: 'DOCS_INCOMPLETE',
+        docsStatus: context.docsStatus,
+      });
+    }
+
+    guide.status = 'pending_review';
+    guide.submittedAt = new Date();
+    guide.rejectionReason = null;
+    await this.guideRepository.save(guide);
+
+    const updated = await this.guideRepository.findOne({ where: { id: guide.id }, relations });
+    if (!updated) throw new NotFoundException('Guide not found after update');
+    const dto = new GuideDto({ data: updated });
+    await this.applyOwnerEnrichment(dto, updated);
+    return dto;
+  }
+
+  // ------------------------------------------------------------------------------------------------
+  // Approve guide (admin).
+  // ------------------------------------------------------------------------------------------------
+  async approve({ identifier }: { identifier: string }) {
+    const relations: FindOptionsRelations<Guide> = {
+      user: true,
+      categories: { icon: true },
+      towns: { department: true },
+      images: { imageResource: true },
+    };
+    const guide = await this.guideRepository.findOne({ where: { id: identifier }, relations });
+    if (!guide) throw new NotFoundException('Guide not found');
+
+    if (guide.status !== 'pending_review') {
+      throw new BadRequestException({
+        message: 'Only pending_review guides can be approved',
+        currentStatus: guide.status,
+      });
+    }
+
+    guide.status = 'published';
+    guide.rejectionReason = null;
+    await this.guideRepository.save(guide);
+
+    const updated = await this.guideRepository.findOne({ where: { id: guide.id }, relations });
+    if (!updated) throw new NotFoundException('Guide not found after update');
+    const dto = new GuideDto({ data: updated });
+    await this.applyOwnerEnrichment(dto, updated);
+    return dto;
+  }
+
+  // ------------------------------------------------------------------------------------------------
+  // Reject guide (admin).
+  // ------------------------------------------------------------------------------------------------
+  async reject({ identifier, reason }: { identifier: string; reason: string }) {
+    const relations: FindOptionsRelations<Guide> = {
+      user: true,
+      categories: { icon: true },
+      towns: { department: true },
+      images: { imageResource: true },
+    };
+    const guide = await this.guideRepository.findOne({ where: { id: identifier }, relations });
+    if (!guide) throw new NotFoundException('Guide not found');
+
+    if (guide.status !== 'pending_review') {
+      throw new BadRequestException({
+        message: 'Only pending_review guides can be rejected',
+        currentStatus: guide.status,
+      });
+    }
+
+    guide.status = 'rejected';
+    guide.rejectionReason = reason;
+    await this.guideRepository.save(guide);
+
+    const updated = await this.guideRepository.findOne({ where: { id: guide.id }, relations });
+    if (!updated) throw new NotFoundException('Guide not found after update');
+    const dto = new GuideDto({ data: updated });
+    await this.applyOwnerEnrichment(dto, updated);
+    return dto;
   }
 }

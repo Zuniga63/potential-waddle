@@ -121,6 +121,36 @@ export class ExperiencesController {
   }
 
   // * ----------------------------------------------------------------------------------------------------------------
+  // * SUBMIT EXPERIENCE FOR REVIEW (owner)
+  // * ----------------------------------------------------------------------------------------------------------------
+  @Post(':identifier/submit-for-review')
+  @Auth()
+  @ApiOkResponse({ description: 'Experience submitted for review', type: ExperienceDto })
+  submitForReview(@Param('identifier') identifier: string, @GetUser() user: User) {
+    return this.experiencesService.submitForReview({ identifier, user });
+  }
+
+  // * ----------------------------------------------------------------------------------------------------------------
+  // * APPROVE EXPERIENCE (admin)
+  // * ----------------------------------------------------------------------------------------------------------------
+  @Post('admin/:identifier/approve')
+  @Auth()
+  @ApiOkResponse({ description: 'Experience approved', type: ExperienceDto })
+  approve(@Param('identifier') identifier: string) {
+    return this.experiencesService.approve({ identifier });
+  }
+
+  // * ----------------------------------------------------------------------------------------------------------------
+  // * REJECT EXPERIENCE (admin)
+  // * ----------------------------------------------------------------------------------------------------------------
+  @Post('admin/:identifier/reject')
+  @Auth()
+  @ApiOkResponse({ description: 'Experience rejected', type: ExperienceDto })
+  reject(@Param('identifier') identifier: string, @Body() body: { reason: string }) {
+    return this.experiencesService.reject({ identifier, reason: body.reason });
+  }
+
+  // * ----------------------------------------------------------------------------------------------------------------
   // * CREATE EXPERIENCE
   // * ----------------------------------------------------------------------------------------------------------------
   @Post()

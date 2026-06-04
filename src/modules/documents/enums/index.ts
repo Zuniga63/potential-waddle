@@ -10,6 +10,7 @@ export enum DocumentEntityType {
   LODGING = 'lodging',
   RESTAURANT = 'restaurant',
   GUIDE = 'guide',
+  EXPERIENCE = 'experience',
   COMMERCE = 'commerce',
   TRANSPORT = 'transport',
 }

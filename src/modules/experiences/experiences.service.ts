@@ -1,6 +1,6 @@
 import { FindOptionsRelations, In, Point, Repository } from 'typeorm';
 import { InjectRepository } from '@nestjs/typeorm';
-import { BadRequestException, Injectable, NotFoundException, NotImplementedException } from '@nestjs/common';
+import { BadRequestException, ForbiddenException, Injectable, NotFoundException, NotImplementedException } from '@nestjs/common';
 
 import { AdminExperiencesFiltersDto, AdminExperiencesListDto, CreateExperienceDto, ExperienceDto, UpdateExperienceDto } from './dto';
 import { Experience, ExperienceImage } from './entities';
@@ -22,6 +22,17 @@ import { EntityReviewsService } from '../reviews/services';
 import { ReviewDomainsEnum } from '../reviews/enums';
 import { Review } from '../reviews/entities';
 import { User } from '../users/entities';
+import { TermsService } from '../terms/services';
+import { isTermsEnforcementEnabled } from '../terms/utils';
+import { DocumentService } from '../documents/services';
+import { DocumentEntityType } from '../documents/enums';
+import {
+  computeExperienceCompletion,
+  computeExperienceTermsStatus,
+  computeExperienceDocsStatus,
+  ExperienceTermsStatus,
+  ExperienceDocsStatus,
+} from './utils/compute-experience-completion';
 
 @Injectable()
 export class ExperiencesService {
@@ -44,6 +55,8 @@ export class ExperiencesService {
     private readonly cloudinaryService: CloudinaryService,
     private readonly promotionsService: PromotionsService,
     private readonly entityReviewsService: EntityReviewsService,
+    private readonly termsService: TermsService,
+    private readonly documentService: DocumentService,
   ) {}
 
   // ------------------------------------------------------------------------------------------------
@@ -69,7 +82,7 @@ export class ExperiencesService {
   // Find all experiences paginated (Admin)
   // ------------------------------------------------------------------------------------------------
   async findAllPaginated(filters: AdminExperiencesFiltersDto): Promise<AdminExperiencesListDto> {
-    const { page = 1, limit = 10, search, categoryId, townId, isPublic, sortBy = 'title', sortOrder = 'ASC' } = filters;
+    const { page = 1, limit = 10, search, categoryId, townId, isPublic, status, sortBy = 'title', sortOrder = 'ASC' } = filters;
 
     const queryBuilder = this.experienceRepository
       .createQueryBuilder('experience')
@@ -95,6 +108,10 @@ export class ExperiencesService {
 
     if (isPublic !== undefined) {
       queryBuilder.andWhere('experience.isPublic = :isPublic', { isPublic });
+    }
+
+    if (status) {
+      queryBuilder.andWhere('experience.status = :status', { status });
     }
 
     // Sorting
@@ -600,5 +617,205 @@ export class ExperiencesService {
     experience.isPublic = isPublic;
     await this.experienceRepository.save(experience);
     return { message: 'Experience visibility updated', data: isPublic };
+  }
+
+  // ------------------------------------------------------------------------------------------------
+  // Resolve the 3-indicator context (T&C + docs). Experience reuses Guide T&C semantics.
+  // ------------------------------------------------------------------------------------------------
+  async resolveOwnerCompletionContext(
+    experience: Experience,
+  ): Promise<{ termsStatus: ExperienceTermsStatus; docsStatus: ExperienceDocsStatus }> {
+    const ownerId = experience.guide?.user?.id;
+    const townId = experience.town?.id;
+    const categoryIds = experience.categories?.map(c => c.id) ?? [];
+
+    const [termsDto, docsList] = await Promise.all([
+      ownerId ? this.termsService.getStatusForUser(ownerId) : Promise.resolve(null),
+      townId
+        ? this.documentService.getEntityDocumentStatus(
+            townId,
+            DocumentEntityType.EXPERIENCE,
+            experience.id,
+            categoryIds,
+          )
+        : Promise.resolve([]),
+    ]);
+
+    // Experiences reuse Guide T&C — handoff §4 product decision.
+    const activeTermsId = termsDto?.activeDocumentIds?.guide ?? null;
+    const termsStatus = isTermsEnforcementEnabled()
+      ? computeExperienceTermsStatus({
+          hasActiveGuideTerms: activeTermsId !== null,
+          hasAcceptedGuideTerms: termsDto?.hasAcceptedGuideTerms ?? false,
+          activeTermsId,
+        })
+      : ({ state: 'no_aplica' as const, activeTermsId: null });
+    const docsStatus = computeExperienceDocsStatus(
+      docsList.map(d => ({
+        documentTypeName: d.documentType.name,
+        isRequired: d.isRequired,
+        isUploaded: d.isUploaded,
+        isExpired: d.isExpired,
+      })),
+    );
+
+    return { termsStatus, docsStatus };
+  }
+
+  // ------------------------------------------------------------------------------------------------
+  // Populate owner-scoped fields on an ExperienceDto.
+  // ------------------------------------------------------------------------------------------------
+  private async applyOwnerEnrichment(dto: ExperienceDto, experience: Experience): Promise<void> {
+    const context = await this.resolveOwnerCompletionContext(experience);
+    const result = computeExperienceCompletion(experience, context);
+    dto.status = experience.status;
+    dto.completionPercentage = result.completionPercentage;
+    dto.missingFields = result.missingFields;
+    dto.infoPercentage = result.infoPercentage;
+    dto.infoMissingFields = result.infoMissingFields;
+    dto.infoCriticalSatisfied = result.infoCriticalSatisfied;
+    dto.termsStatus = result.termsStatus;
+    dto.docsStatus = result.docsStatus;
+    dto.readyToSubmit = result.readyToSubmit;
+    dto.submittedAt = experience.submittedAt;
+    dto.rejectionReason = experience.rejectionReason;
+  }
+
+  // ------------------------------------------------------------------------------------------------
+  // Submit experience for review. Gates: info, terms, docs + guide must be 'published'.
+  // ------------------------------------------------------------------------------------------------
+  async submitForReview({ identifier, user }: { identifier: string; user: User }) {
+    const relations: FindOptionsRelations<Experience> = {
+      categories: { icon: true },
+      facilities: { icon: true },
+      town: { department: true },
+      images: { imageResource: true },
+      guide: { user: true },
+    };
+    const experience = await this.experienceRepository.findOne({ where: { id: identifier }, relations });
+    if (!experience) throw new NotFoundException('Experience not found');
+
+    if (experience.guide?.user?.id !== user.id) {
+      throw new ForbiddenException('Not your experience');
+    }
+
+    // Gate: guide must be approved before an experience can be submitted.
+    if (experience.guide?.status !== 'published') {
+      throw new ForbiddenException({
+        errorCode: 'GUIDE_NOT_APPROVED',
+        detail: 'Tu perfil de guía debe estar aprobado antes de enviar una experiencia',
+        guideStatus: experience.guide?.status ?? null,
+      });
+    }
+
+    if (experience.status !== 'draft' && experience.status !== 'rejected') {
+      throw new BadRequestException({
+        message: 'INVALID_STATUS',
+        detail: 'Only draft or rejected experiences can be submitted',
+      });
+    }
+
+    const context = await this.resolveOwnerCompletionContext(experience);
+    const completion = computeExperienceCompletion(experience, context);
+
+    if (completion.infoPercentage < 80 || !completion.infoCriticalSatisfied) {
+      throw new BadRequestException({
+        errorCode: 'INCOMPLETE',
+        infoPercentage: completion.infoPercentage,
+        infoMissingFields: completion.infoMissingFields,
+        completionPercentage: completion.completionPercentage,
+        missingFields: completion.missingFields,
+      });
+    }
+
+    if (isTermsEnforcementEnabled() && context.termsStatus.state === 'pendientes') {
+      throw new ForbiddenException({
+        errorCode: 'TERMS_NOT_ACCEPTED',
+        termsType: 'guide',
+        activeTermsId: context.termsStatus.activeTermsId ?? null,
+      });
+    }
+
+    if (context.docsStatus.state === 'incompletos') {
+      throw new BadRequestException({
+        errorCode: 'DOCS_INCOMPLETE',
+        docsStatus: context.docsStatus,
+      });
+    }
+
+    experience.status = 'pending_review';
+    experience.submittedAt = new Date();
+    experience.rejectionReason = null;
+    await this.experienceRepository.save(experience);
+
+    const updated = await this.experienceRepository.findOne({ where: { id: experience.id }, relations });
+    if (!updated) throw new NotFoundException('Experience not found after update');
+    const dto = new ExperienceDto({ data: updated });
+    await this.applyOwnerEnrichment(dto, updated);
+    return dto;
+  }
+
+  // ------------------------------------------------------------------------------------------------
+  // Approve experience (admin).
+  // ------------------------------------------------------------------------------------------------
+  async approve({ identifier }: { identifier: string }) {
+    const relations: FindOptionsRelations<Experience> = {
+      categories: { icon: true },
+      facilities: { icon: true },
+      town: { department: true },
+      images: { imageResource: true },
+      guide: { user: true },
+    };
+    const experience = await this.experienceRepository.findOne({ where: { id: identifier }, relations });
+    if (!experience) throw new NotFoundException('Experience not found');
+
+    if (experience.status !== 'pending_review') {
+      throw new BadRequestException({
+        message: 'Only pending_review experiences can be approved',
+        currentStatus: experience.status,
+      });
+    }
+
+    experience.status = 'published';
+    experience.rejectionReason = null;
+    await this.experienceRepository.save(experience);
+
+    const updated = await this.experienceRepository.findOne({ where: { id: experience.id }, relations });
+    if (!updated) throw new NotFoundException('Experience not found after update');
+    const dto = new ExperienceDto({ data: updated });
+    await this.applyOwnerEnrichment(dto, updated);
+    return dto;
+  }
+
+  // ------------------------------------------------------------------------------------------------
+  // Reject experience (admin).
+  // ------------------------------------------------------------------------------------------------
+  async reject({ identifier, reason }: { identifier: string; reason: string }) {
+    const relations: FindOptionsRelations<Experience> = {
+      categories: { icon: true },
+      facilities: { icon: true },
+      town: { department: true },
+      images: { imageResource: true },
+      guide: { user: true },
+    };
+    const experience = await this.experienceRepository.findOne({ where: { id: identifier }, relations });
+    if (!experience) throw new NotFoundException('Experience not found');
+
+    if (experience.status !== 'pending_review') {
+      throw new BadRequestException({
+        message: 'Only pending_review experiences can be rejected',
+        currentStatus: experience.status,
+      });
+    }
+
+    experience.status = 'rejected';
+    experience.rejectionReason = reason;
+    await this.experienceRepository.save(experience);
+
+    const updated = await this.experienceRepository.findOne({ where: { id: experience.id }, relations });
+    if (!updated) throw new NotFoundException('Experience not found after update');
+    const dto = new ExperienceDto({ data: updated });
+    await this.applyOwnerEnrichment(dto, updated);
+    return dto;
   }
 }

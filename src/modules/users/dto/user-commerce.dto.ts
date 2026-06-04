@@ -1,6 +1,12 @@
 import { ApiProperty } from '@nestjs/swagger';
 
 import { Commerce } from 'src/modules/commerce/entities';
+import {
+  computeCommerceCompletion,
+  CommerceTermsStatus,
+  CommerceDocsStatus,
+} from 'src/modules/commerce/utils/compute-commerce-completion';
+import { CommerceTermsStatusDto, CommerceDocsStatusDto } from 'src/modules/commerce/dto/commerce-full.dto';
 import { CategoryDto } from 'src/modules/core/dto';
 import { TownDto } from 'src/modules/towns/dto';
 
@@ -21,18 +27,18 @@ export class UserCommerceDto {
 
   @ApiProperty({
     example: 'San Rafael',
-    description: 'The name of the lodging',
+    description: 'The name of the commerce',
   })
   name: string;
 
   @ApiProperty({
     example: 'san-rafael',
-    description: 'The slug of the lodging',
+    description: 'The slug of the commerce',
   })
   slug: string;
 
   @ApiProperty({
-    description: 'List of categories of the lodging',
+    description: 'List of categories of the commerce',
     readOnly: true,
     required: false,
     type: CategoryDto,
@@ -43,7 +49,7 @@ export class UserCommerceDto {
   @ApiProperty({
     example: ['https://image.jpg'],
     isArray: true,
-    description: 'The image of the lodging',
+    description: 'The image of the commerce',
     readOnly: true,
     required: false,
     type: String,
@@ -52,13 +58,13 @@ export class UserCommerceDto {
 
   @ApiProperty({
     example: 'This ',
-    description: 'The description of the lodging',
+    description: 'The description of the commerce',
   })
   description: string;
 
   @ApiProperty({
     example: 13,
-    description: 'The review counts of the lodging',
+    description: 'The review counts of the commerce',
     readOnly: true,
     required: false,
   })
@@ -66,7 +72,7 @@ export class UserCommerceDto {
 
   @ApiProperty({
     example: 100,
-    description: 'Score awarded for reaching the lodging, on a scale from 1 to 100',
+    description: 'Score awarded for reaching the commerce, on a scale from 1 to 100',
     readOnly: true,
     required: false,
   })
@@ -74,7 +80,7 @@ export class UserCommerceDto {
 
   @ApiProperty({
     example: 4.5,
-    description: 'Rating of the lodging, on a scale from 1 to 5',
+    description: 'Rating of the commerce, on a scale from 1 to 5',
     readOnly: true,
     required: false,
   })
@@ -90,7 +96,7 @@ export class UserCommerceDto {
 
   @ApiProperty({
     example: '08:00-18:00',
-    description: 'The opening hours of the lodging',
+    description: 'The opening hours of the commerce',
     readOnly: true,
     required: false,
   })
@@ -179,7 +185,61 @@ export class UserCommerceDto {
   })
   status?: 'draft' | 'pending_review' | 'published' | 'rejected';
 
-  constructor(commerce?: Commerce, userReview?: string) {
+  @ApiProperty({
+    example: 80,
+    description: 'Onboarding completion percentage (0-100). Alias of infoPercentage for backwards-compat.',
+    readOnly: true,
+    required: false,
+  })
+  completionPercentage?: number;
+
+  // ------------------------------------------------------------------------------------------------
+  // 3-indicator completion model (mirror of UserLodgingDto). Populated when the caller passes the
+  // precomputed termsStatus + docsStatus into the constructor.
+  // ------------------------------------------------------------------------------------------------
+  @ApiProperty({ required: false, type: Number, description: 'Info-only completion 0-100.' })
+  infoPercentage?: number;
+
+  @ApiProperty({ required: false, type: [String] })
+  infoMissingFields?: string[];
+
+  @ApiProperty({ required: false, type: Boolean })
+  infoCriticalSatisfied?: boolean;
+
+  @ApiProperty({ required: false, type: CommerceTermsStatusDto })
+  termsStatus?: CommerceTermsStatusDto;
+
+  @ApiProperty({ required: false, type: CommerceDocsStatusDto })
+  docsStatus?: CommerceDocsStatusDto;
+
+  @ApiProperty({ required: false, type: Boolean })
+  readyToSubmit?: boolean;
+
+  // ------------------------------------------------------------------------------------------------
+  // Optional channels — surfaced so the frontend can compute the skip-penalty on the dashboard cards
+  // with the same logic as the wizard hook.
+  // ------------------------------------------------------------------------------------------------
+  @ApiProperty({ required: false, type: [String] })
+  spokenLanguages?: string[];
+
+  @ApiProperty({ required: false, type: String, nullable: true })
+  arrivalReference?: string | null;
+
+  @ApiProperty({ required: false, type: String, nullable: true })
+  howToGetThere?: string | null;
+
+  @ApiProperty({
+    required: false,
+    type: [String],
+    description: 'Optional-field slugs the owner marked "No tengo" (persisted server-side).',
+  })
+  skippedOptionalFields?: string[];
+
+  constructor(
+    commerce?: Commerce,
+    context?: { termsStatus: CommerceTermsStatus; docsStatus: CommerceDocsStatus },
+    userReview?: string,
+  ) {
     if (!commerce) return;
     this.id = commerce.id;
     this.town = new TownDto(commerce.town);
@@ -207,5 +267,19 @@ export class UserCommerceDto {
     this.googleMapsUrl = commerce.googleMapsUrl;
     this.isPublic = commerce.isPublic;
     this.status = commerce.status;
+
+    const result = computeCommerceCompletion(commerce, context);
+    this.completionPercentage = result.completionPercentage;
+    this.infoPercentage = result.infoPercentage;
+    this.infoMissingFields = result.infoMissingFields;
+    this.infoCriticalSatisfied = result.infoCriticalSatisfied;
+    if (result.termsStatus) this.termsStatus = result.termsStatus;
+    if (result.docsStatus) this.docsStatus = result.docsStatus;
+    if (result.readyToSubmit !== undefined) this.readyToSubmit = result.readyToSubmit;
+
+    this.spokenLanguages = commerce.spokenLanguages ?? [];
+    this.arrivalReference = commerce.arrivalReference ?? null;
+    this.howToGetThere = commerce.howToGetThere ?? null;
+    this.skippedOptionalFields = commerce.skippedOptionalFields ?? [];
   }
 }

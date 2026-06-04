@@ -4,6 +4,31 @@ import { Guide } from '../entities/guide.entity';
 import { UserDto } from 'src/modules/users/dto/user.dto';
 import { ApiProperty } from '@nestjs/swagger';
 import { GuideExperienceDto } from './guide-experience.dto';
+import type { GuideTermsStatusState, GuideDocsStatusState } from '../utils/compute-guide-completion';
+
+// Owner-scoped sub-DTOs surfacing the 3-indicator completion model (mirror of RestaurantDto).
+
+export class GuideTermsStatusDto {
+  @ApiProperty({ enum: ['no_aplica', 'aceptados', 'pendientes'] })
+  state: GuideTermsStatusState;
+
+  @ApiProperty({ type: String, nullable: true, required: false })
+  activeTermsId?: string | null;
+}
+
+export class GuideDocsStatusDto {
+  @ApiProperty({ enum: ['no_requeridos', 'opcionales', 'incompletos', 'completos'] })
+  state: GuideDocsStatusState;
+
+  @ApiProperty({ example: 2 })
+  uploaded: number;
+
+  @ApiProperty({ example: 3 })
+  required: number;
+
+  @ApiProperty({ type: [String] })
+  missing: string[];
+}
 
 export class GuideDto {
   @ApiProperty({
@@ -181,6 +206,45 @@ export class GuideDto {
   })
   ownerHasAcceptedTerms?: boolean;
 
+  // * ----------------------------------------------------------------------------------------------------------------
+  // * OWNER-SCOPED FIELDS (only populated when the requester is the owner — see applyOwnerEnrichment)
+  // * ----------------------------------------------------------------------------------------------------------------
+  @ApiProperty({ required: false, enum: ['draft', 'pending_review', 'published', 'rejected'] })
+  status?: 'draft' | 'pending_review' | 'published' | 'rejected';
+
+  @ApiProperty({ required: false, type: Number })
+  completionPercentage?: number;
+
+  @ApiProperty({ required: false, type: [String] })
+  missingFields?: string[];
+
+  @ApiProperty({ required: false, type: Date, nullable: true })
+  submittedAt?: Date | null;
+
+  @ApiProperty({ required: false, type: String, nullable: true })
+  rejectionReason?: string | null;
+
+  @ApiProperty({ required: false, type: Number })
+  infoPercentage?: number;
+
+  @ApiProperty({ required: false, type: [String] })
+  infoMissingFields?: string[];
+
+  @ApiProperty({ required: false, type: Boolean })
+  infoCriticalSatisfied?: boolean;
+
+  @ApiProperty({ required: false, type: GuideTermsStatusDto })
+  termsStatus?: GuideTermsStatusDto;
+
+  @ApiProperty({ required: false, type: GuideDocsStatusDto })
+  docsStatus?: GuideDocsStatusDto;
+
+  @ApiProperty({ required: false, type: Boolean })
+  readyToSubmit?: boolean;
+
+  @ApiProperty({ required: false, type: [String] })
+  skippedOptionalFields?: string[];
+
   constructor({ data, userReview }: { data: Guide; userReview?: string }) {
     if (!data) return;
 
@@ -214,5 +278,8 @@ export class GuideDto {
     this.reviewCount = data.reviewCount ?? 0;
     this.showBinntuReviews = data.showBinntuReviews ?? undefined;
     this.userReview = userReview;
+    this.skippedOptionalFields = data.skippedOptionalFields ?? [];
+    // status / completionPercentage / 3-indicator fields are populated by the
+    // service via applyOwnerEnrichment when the caller is the owner.
   }
 }

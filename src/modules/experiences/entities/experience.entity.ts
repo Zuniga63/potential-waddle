@@ -147,4 +147,24 @@ export class Experience {
 
   @CreateDateColumn({ name: 'updated_at', default: () => 'CURRENT_TIMESTAMP', onUpdate: 'CURRENT_TIMESTAMP' })
   updatedAt: Date;
+
+  // * ----------------------------------------------------------------------------------------------------------------
+  // * STATUS WORKFLOW (parity with Lodging + Restaurant + Commerce + Guide)
+  // * ----------------------------------------------------------------------------------------------------------------
+  @Column('enum', {
+    enum: ['draft', 'pending_review', 'published', 'rejected'],
+    enumName: 'experience_status',
+    default: 'draft',
+  })
+  status: 'draft' | 'pending_review' | 'published' | 'rejected';
+
+  @Column('timestamp', { name: 'submitted_at', nullable: true })
+  submittedAt: Date | null;
+
+  @Column('text', { name: 'rejection_reason', nullable: true })
+  rejectionReason: string | null;
+
+  /** Slugs of optional fields the owner marked "No tengo". See lodging.entity for design rationale. */
+  @Column('text', { name: 'skipped_optional_fields', array: true, default: [] })
+  skippedOptionalFields: string[];
 }

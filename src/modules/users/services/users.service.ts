@@ -29,6 +29,14 @@ import {
   computeLodgingTermsStatus,
   computeLodgingDocsStatus,
 } from 'src/modules/lodgings/utils/compute-lodging-completion';
+import {
+  computeRestaurantTermsStatus,
+  computeRestaurantDocsStatus,
+} from 'src/modules/restaurants/utils/compute-restaurant-completion';
+import {
+  computeCommerceTermsStatus,
+  computeCommerceDocsStatus,
+} from 'src/modules/commerce/utils/compute-commerce-completion';
 
 interface AdminUsersFindAllParams {
   filters?: AdminUsersFiltersDto;
@@ -359,10 +367,45 @@ export class UsersService {
       .leftJoinAndSelect('commerces.categories', 'categories')
       .leftJoinAndSelect('commerces.town', 'town')
       .leftJoinAndSelect('town.department', 'department')
+      .leftJoinAndSelect('commerces.facilities', 'commerceFacilities')
+      .leftJoinAndSelect('commerces.products', 'commerceProducts')
       .where('user.id = :id', { id })
       .getOne();
 
-    return user?.commerces ? user?.commerces.map(commerce => new UserCommerceDto(commerce)) : [];
+    if (!user?.commerces || user.commerces.length === 0) return [];
+
+    const termsDto = await this.termsService.getStatusForUser(id);
+    const termsStatus = computeCommerceTermsStatus({
+      hasActiveCommerceTerms: termsDto.activeDocumentIds.commerce !== null,
+      hasAcceptedCommerceTerms: termsDto.hasAcceptedCommerceTerms,
+      activeTermsId: termsDto.activeDocumentIds.commerce,
+    });
+
+    const docsLists = await Promise.all(
+      user.commerces.map(commerce => {
+        const townId = commerce.town?.id;
+        if (!townId) return Promise.resolve([]);
+        const categoryIds = commerce.categories?.map(c => c.id) ?? [];
+        return this.documentService.getEntityDocumentStatus(
+          townId,
+          DocumentEntityType.COMMERCE,
+          commerce.id,
+          categoryIds,
+        );
+      }),
+    );
+
+    return user.commerces.map((commerce, i) => {
+      const docsStatus = computeCommerceDocsStatus(
+        docsLists[i].map(d => ({
+          documentTypeName: d.documentType.name,
+          isRequired: d.isRequired,
+          isUploaded: d.isUploaded,
+          isExpired: d.isExpired,
+        })),
+      );
+      return new UserCommerceDto(commerce, { termsStatus, docsStatus });
+    });
   }
 
   async getUserRestaurants(id: string) {
@@ -374,10 +417,45 @@ export class UsersService {
       .leftJoinAndSelect('restaurants.categories', 'categories')
       .leftJoinAndSelect('restaurants.town', 'town')
       .leftJoinAndSelect('town.department', 'department')
+      .leftJoinAndSelect('restaurants.facilities', 'restaurantFacilities')
+      .leftJoinAndSelect('restaurants.menus', 'restaurantMenus')
       .where('user.id = :id', { id })
       .getOne();
 
-    return user?.restaurants ? user?.restaurants.map(restaurant => new UserRestaurantDto(restaurant)) : [];
+    if (!user?.restaurants || user.restaurants.length === 0) return [];
+
+    const termsDto = await this.termsService.getStatusForUser(id);
+    const termsStatus = computeRestaurantTermsStatus({
+      hasActiveRestaurantTerms: termsDto.activeDocumentIds.restaurant !== null,
+      hasAcceptedRestaurantTerms: termsDto.hasAcceptedRestaurantTerms,
+      activeTermsId: termsDto.activeDocumentIds.restaurant,
+    });
+
+    const docsLists = await Promise.all(
+      user.restaurants.map(restaurant => {
+        const townId = restaurant.town?.id;
+        if (!townId) return Promise.resolve([]);
+        const categoryIds = restaurant.categories?.map(c => c.id) ?? [];
+        return this.documentService.getEntityDocumentStatus(
+          townId,
+          DocumentEntityType.RESTAURANT,
+          restaurant.id,
+          categoryIds,
+        );
+      }),
+    );
+
+    return user.restaurants.map((restaurant, i) => {
+      const docsStatus = computeRestaurantDocsStatus(
+        docsLists[i].map(d => ({
+          documentTypeName: d.documentType.name,
+          isRequired: d.isRequired,
+          isUploaded: d.isUploaded,
+          isExpired: d.isExpired,
+        })),
+      );
+      return new UserRestaurantDto(restaurant, { termsStatus, docsStatus });
+    });
   }
 
   // * ----------------------------------------------------------------------------------------------------------------

@@ -130,6 +130,36 @@ export class GuidesController {
   }
 
   // * ----------------------------------------------------------------------------------------------------------------
+  // * SUBMIT GUIDE FOR REVIEW (owner)
+  // * ----------------------------------------------------------------------------------------------------------------
+  @Post(':identifier/submit-for-review')
+  @Auth()
+  @ApiOkResponse({ description: 'Guide submitted for review', type: GuideDto })
+  submitForReview(@Param('identifier') identifier: string, @GetUser() user: User) {
+    return this.guidesService.submitForReview({ identifier, user });
+  }
+
+  // * ----------------------------------------------------------------------------------------------------------------
+  // * APPROVE GUIDE (admin)
+  // * ----------------------------------------------------------------------------------------------------------------
+  @Post('admin/:identifier/approve')
+  @Auth()
+  @ApiOkResponse({ description: 'Guide approved', type: GuideDto })
+  approve(@Param('identifier') identifier: string) {
+    return this.guidesService.approve({ identifier });
+  }
+
+  // * ----------------------------------------------------------------------------------------------------------------
+  // * REJECT GUIDE (admin)
+  // * ----------------------------------------------------------------------------------------------------------------
+  @Post('admin/:identifier/reject')
+  @Auth()
+  @ApiOkResponse({ description: 'Guide rejected', type: GuideDto })
+  reject(@Param('identifier') identifier: string, @Body() body: { reason: string }) {
+    return this.guidesService.reject({ identifier, reason: body.reason });
+  }
+
+  // * ----------------------------------------------------------------------------------------------------------------
   // * UPDATE GUIDE
   // * ----------------------------------------------------------------------------------------------------------------
   @Patch(':slug')

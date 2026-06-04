@@ -3,6 +3,35 @@ import { Experience } from '../entities';
 import { TownDto } from 'src/modules/towns/dto';
 import { ExperienceGuide } from '../interfaces';
 import { GuideDto } from 'src/modules/guides/dto/guide.dto';
+import { ApiProperty } from '@nestjs/swagger';
+import type {
+  ExperienceTermsStatusState,
+  ExperienceDocsStatusState,
+} from '../utils/compute-experience-completion';
+
+// Owner-scoped sub-DTOs surfacing the 3-indicator completion model (mirror of RestaurantDto).
+
+export class ExperienceTermsStatusDto {
+  @ApiProperty({ enum: ['no_aplica', 'aceptados', 'pendientes'] })
+  state: ExperienceTermsStatusState;
+
+  @ApiProperty({ type: String, nullable: true, required: false })
+  activeTermsId?: string | null;
+}
+
+export class ExperienceDocsStatusDto {
+  @ApiProperty({ enum: ['no_requeridos', 'opcionales', 'incompletos', 'completos'] })
+  state: ExperienceDocsStatusState;
+
+  @ApiProperty({ example: 2 })
+  uploaded: number;
+
+  @ApiProperty({ example: 3 })
+  required: number;
+
+  @ApiProperty({ type: [String] })
+  missing: string[];
+}
 
 export class ExperienceDto {
   id: string;
@@ -79,6 +108,45 @@ export class ExperienceDto {
 
   userReview?: string;
 
+  // * ----------------------------------------------------------------------------------------------------------------
+  // * OWNER-SCOPED FIELDS (only populated when the requester is the owner — see applyOwnerEnrichment)
+  // * ----------------------------------------------------------------------------------------------------------------
+  @ApiProperty({ required: false, enum: ['draft', 'pending_review', 'published', 'rejected'] })
+  status?: 'draft' | 'pending_review' | 'published' | 'rejected';
+
+  @ApiProperty({ required: false, type: Number })
+  completionPercentage?: number;
+
+  @ApiProperty({ required: false, type: [String] })
+  missingFields?: string[];
+
+  @ApiProperty({ required: false, type: Date, nullable: true })
+  submittedAt?: Date | null;
+
+  @ApiProperty({ required: false, type: String, nullable: true })
+  rejectionReason?: string | null;
+
+  @ApiProperty({ required: false, type: Number })
+  infoPercentage?: number;
+
+  @ApiProperty({ required: false, type: [String] })
+  infoMissingFields?: string[];
+
+  @ApiProperty({ required: false, type: Boolean })
+  infoCriticalSatisfied?: boolean;
+
+  @ApiProperty({ required: false, type: ExperienceTermsStatusDto })
+  termsStatus?: ExperienceTermsStatusDto;
+
+  @ApiProperty({ required: false, type: ExperienceDocsStatusDto })
+  docsStatus?: ExperienceDocsStatusDto;
+
+  @ApiProperty({ required: false, type: Boolean })
+  readyToSubmit?: boolean;
+
+  @ApiProperty({ required: false, type: [String] })
+  skippedOptionalFields?: string[];
+
   constructor({ data, userReview }: { data: Experience; userReview?: string }) {
     if (!data) return;
 
@@ -123,5 +191,8 @@ export class ExperienceDto {
     this.paymentMethods = data.paymentMethods || [];
     this.showBinntuReviews = data.showBinntuReviews ?? undefined;
     this.userReview = userReview;
+    this.skippedOptionalFields = data.skippedOptionalFields ?? [];
+    // status / completionPercentage / 3-indicator fields are populated by the
+    // service via applyOwnerEnrichment when the caller is the owner.
   }
 }

@@ -11,6 +11,7 @@ import { ImageResource } from '../core/entities';
 import { CloudinaryModule } from '../cloudinary/cloudinary.module';
 import { ReviewsModule } from '../reviews/reviews.module';
 import { TermsModule } from '../terms/terms.module';
+import { DocumentsModule } from '../documents/documents.module';
 
 @Module({
   controllers: [GuidesController],
@@ -20,6 +21,7 @@ import { TermsModule } from '../terms/terms.module';
     CloudinaryModule,
     ReviewsModule,
     TermsModule,
+    DocumentsModule,
   ],
 })
 export class GuidesModule {}
