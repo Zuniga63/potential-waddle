@@ -267,16 +267,21 @@ export class GuidesService {
       },
     };
 
-    const guide = await this.guideRepository.findOne({
-      where: {
-        slug: identifier,
-        experiences: { isPublic: true },
-      },
-      relations,
-    });
+    const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(identifier);
+
+    let guide = isUuid
+      ? await this.guideRepository.findOne({ where: { id: identifier }, relations })
+      : null;
+    if (!guide) {
+      guide = await this.guideRepository.findOne({ where: { slug: identifier }, relations });
+    }
     if (!guide) throw new NotFoundException('Guide not found');
 
-    // Obtener review del usuario
+    const isOwner = !!user && guide.user?.id === user.id;
+    if (!isOwner && guide.experiences) {
+      guide.experiences = guide.experiences.filter(e => e.isPublic);
+    }
+
     const userReview = user
       ? await this.entityReviewsService.findUserReview({
           entityType: ReviewDomainsEnum.GUIDES,
@@ -324,12 +329,14 @@ export class GuidesService {
   // ------------------------------------------------------------------------------------------------
   // Update guide
   // ------------------------------------------------------------------------------------------------
-  async update(slug: string, updateGuideDto: UpdateGuideDto) {
+  async update(identifier: string, updateGuideDto: UpdateGuideDto) {
     const { categories, userId, townIds, ...restDto } = updateGuideDto;
     const categoriesEntities = categories ? await this.categoryRepo.findBy({ id: In(categories) }) : [];
     const townsEntities = townIds ? await this.townRepo.findBy({ id: In(townIds) }) : undefined;
     const user = userId ? await this.userRepo.findOneBy({ id: userId }) : undefined;
-    const guide = await this.guideRepository.findOne({ where: { slug } });
+    const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(identifier);
+    let guide = isUuid ? await this.guideRepository.findOne({ where: { id: identifier } }) : null;
+    if (!guide) guide = await this.guideRepository.findOne({ where: { slug: identifier } });
     if (!guide) throw new NotFoundException('Guide not found');
 
     const updatedGuide = await this.guideRepository.save({
