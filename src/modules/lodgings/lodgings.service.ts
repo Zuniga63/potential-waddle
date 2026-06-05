@@ -111,6 +111,8 @@ export class LodgingsService {
       .leftJoinAndSelect('categories.icon', 'categoryIcon')
       .leftJoinAndSelect('lodging.images', 'images')
       .leftJoinAndSelect('images.imageResource', 'imageResource')
+      .leftJoinAndSelect('lodging.facilities', 'facilities')
+      .leftJoinAndSelect('lodging.lodgingRoomTypes', 'lodgingRoomTypes')
       .leftJoinAndSelect('lodging.user', 'user');
 
     if (search) {
@@ -159,6 +161,19 @@ export class LodgingsService {
       const ownerId = lodgings[i].user?.id;
       dto.ownerHasAcceptedTerms = ownerId ? ownersWithAcceptance.has(ownerId) : false;
     });
+
+    // Per-row completion enrichment so the admin list reflects the same
+    // percentage the owner sees in the wizard (otherwise the list would show 0%
+    // because completion is computed at runtime, never persisted on the entity).
+    await Promise.all(
+      result.data.map(async (dto, i) => {
+        const lodging = lodgings[i];
+        const context = await this.resolveOwnerCompletionContext(lodging);
+        const completion = computeLodgingCompletion(lodging, context);
+        dto.completionPercentage = completion.completionPercentage;
+        dto.infoPercentage = completion.infoPercentage;
+      }),
+    );
 
     return result;
   }
@@ -246,7 +261,7 @@ export class LodgingsService {
   // Find one lodging
   // When ownerId matches the lodging's owner, the response is enriched with completion fields.
   // ------------------------------------------------------------------------------------------------
-  async findOne({ identifier, ownerId }: { identifier: string; ownerId?: string }) {
+  async findOne({ identifier, user }: { identifier: string; user?: User }) {
     const relations: FindOptionsRelations<Lodging> = {
       categories: { icon: true },
       facilities: { icon: true },
@@ -270,8 +285,10 @@ export class LodgingsService {
 
     const dto = new LodgingFullDto(lodging);
 
-    // Enrich with owner-scoped fields when the caller is the lodging's owner.
-    if (ownerId && lodging.user?.id === ownerId) {
+    // Enrich with completion fields for the owner (their wizard) and for super admins
+    // (so the admin review screens see the same percentages the owner sees).
+    const isOwner = !!user && lodging.user?.id === user.id;
+    if (isOwner || user?.isSuperUser) {
       await this.applyOwnerEnrichment(dto, lodging);
     }
 
@@ -490,7 +507,7 @@ export class LodgingsService {
       //   - redirect to /profile/negocios/lodgings/:id/onboarding using the new id
       //   - render the header progress radial from completionPercentage + missingFields
       //   - apply the typed adapter (createLodgingDetailAdapter) without crashing on undefined town
-      return await this.findOne({ identifier: newLodgingId, ownerId: userId });
+      return await this.findOne({ identifier: newLodgingId, user });
     } catch (error) {
       if (error instanceof NotFoundException || error instanceof InternalServerErrorException) {
         throw error;

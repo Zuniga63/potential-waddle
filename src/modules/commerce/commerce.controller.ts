@@ -85,7 +85,7 @@ export class CommerceController {
   findOne(@Param('identifier') identifier: string, @GetUser() user?: User) {
     // Pass the requester id so the service enriches owner-scoped fields (status,
     // 3-indicator completion, skipped fields) only when the caller owns the commerce.
-    return this.commerceService.findOne(identifier, user?.id);
+    return this.commerceService.findOne(identifier, user);
   }
 
   // * ----------------------------------------------------------------------------------------------------------------

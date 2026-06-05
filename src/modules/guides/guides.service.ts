@@ -168,6 +168,17 @@ export class GuidesService {
       dto.ownerHasAcceptedTerms = ownerId ? ownersWithAcceptance.has(ownerId) : false;
     });
 
+    // Per-row completion enrichment so the admin list mirrors the owner-side wizard.
+    await Promise.all(
+      result.data.map(async (dto, i) => {
+        const guide = guides[i];
+        const context = await this.resolveOwnerCompletionContext(guide);
+        const completion = computeGuideCompletion(guide, context);
+        dto.completionPercentage = completion.completionPercentage;
+        dto.infoPercentage = completion.infoPercentage;
+      }),
+    );
+
     return result;
   }
 
@@ -290,7 +301,15 @@ export class GuidesService {
         })
       : null;
 
-    return new GuideDto({ data: guide, userReview: userReview?.id });
+    const dto = new GuideDto({ data: guide, userReview: userReview?.id });
+
+    // Enrich with completion fields for the owner (their wizard) and for super admins
+    // (so the admin review screens see the same percentages the owner sees).
+    if (isOwner || user?.isSuperUser) {
+      await this.applyOwnerEnrichment(dto, guide);
+    }
+
+    return dto;
   }
 
   async findOneById(id: string, user?: User) {

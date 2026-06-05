@@ -88,6 +88,8 @@ export class CommerceService {
       .leftJoinAndSelect('categories.icon', 'categoryIcon')
       .leftJoinAndSelect('commerce.images', 'images')
       .leftJoinAndSelect('images.imageResource', 'imageResource')
+      .leftJoinAndSelect('commerce.facilities', 'facilities')
+      .leftJoinAndSelect('commerce.products', 'products')
       .leftJoinAndSelect('commerce.user', 'user');
 
     if (search) {
@@ -137,6 +139,17 @@ export class CommerceService {
       dto.ownerHasAcceptedTerms = ownerId ? ownersWithAcceptance.has(ownerId) : false;
     });
 
+    // Per-row completion enrichment so the admin list mirrors the owner-side wizard.
+    await Promise.all(
+      result.data.map(async (dto, i) => {
+        const commerce = commerces[i];
+        const context = await this.resolveOwnerCompletionContext(commerce);
+        const completion = computeCommerceCompletion(commerce, context);
+        dto.completionPercentage = completion.completionPercentage;
+        dto.infoPercentage = completion.infoPercentage;
+      }),
+    );
+
     return result;
   }
 
@@ -178,7 +191,7 @@ export class CommerceService {
     });
   }
 
-  async findOne(id: string, ownerId?: string) {
+  async findOne(id: string, user?: User) {
     const commerce = await this.commerceRepository.findOne({
       where: { id },
       relations: {
@@ -199,7 +212,9 @@ export class CommerceService {
 
     const dto = new CommerceFullDto(commerce);
 
-    if (ownerId && commerce.user?.id === ownerId) {
+    // Enrich for owner OR super admin so admin review screens see the same percentages.
+    const isOwner = !!user && commerce.user?.id === user.id;
+    if (isOwner || user?.isSuperUser) {
       await this.applyOwnerEnrichment(dto, commerce);
     }
 

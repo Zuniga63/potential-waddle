@@ -85,6 +85,8 @@ export class RestaurantsService {
       .leftJoinAndSelect('categories.icon', 'categoryIcon')
       .leftJoinAndSelect('restaurant.images', 'images')
       .leftJoinAndSelect('images.imageResource', 'imageResource')
+      .leftJoinAndSelect('restaurant.facilities', 'facilities')
+      .leftJoinAndSelect('restaurant.menus', 'menus')
       .leftJoinAndSelect('restaurant.user', 'user');
 
     if (search) {
@@ -133,6 +135,17 @@ export class RestaurantsService {
       const ownerId = restaurants[i].user?.id;
       dto.ownerHasAcceptedTerms = ownerId ? ownersWithAcceptance.has(ownerId) : false;
     });
+
+    // Per-row completion enrichment so the admin list mirrors the owner-side wizard.
+    await Promise.all(
+      result.data.map(async (dto, i) => {
+        const restaurant = restaurants[i];
+        const context = await this.resolveOwnerCompletionContext(restaurant);
+        const completion = computeRestaurantCompletion(restaurant, context);
+        dto.completionPercentage = completion.completionPercentage;
+        dto.infoPercentage = completion.infoPercentage;
+      }),
+    );
 
     return result;
   }
@@ -214,7 +227,7 @@ export class RestaurantsService {
   // ------------------------------------------------------------------------------------------------
   // Find one restaurant
   // ------------------------------------------------------------------------------------------------
-  async findOne(id: string, ownerId?: string) {
+  async findOne(id: string, user?: User) {
     const restaurant = await this.restaurantRepository.findOne({
       where: { id },
       relations: {
@@ -231,7 +244,9 @@ export class RestaurantsService {
 
     const dto = new RestaurantDto({ data: restaurant });
 
-    if (ownerId && restaurant.user?.id === ownerId) {
+    // Enrich for owner OR super admin so admin review screens see the same percentages.
+    const isOwner = !!user && restaurant.user?.id === user.id;
+    if (isOwner || user?.isSuperUser) {
       await this.applyOwnerEnrichment(dto, restaurant);
     }
 

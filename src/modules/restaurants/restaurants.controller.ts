@@ -98,7 +98,7 @@ export class RestaurantsController {
   @OptionalAuth()
   @ApiOkResponse({ description: 'Restaurant Detail', type: RestaurantDto })
   findOne(@Param('identifier') identifier: string, @GetUser() user?: User) {
-    return this.restaurantsService.findOne(identifier, user?.id);
+    return this.restaurantsService.findOne(identifier, user);
   }
 
   // * ----------------------------------------------------------------------------------------------------------------

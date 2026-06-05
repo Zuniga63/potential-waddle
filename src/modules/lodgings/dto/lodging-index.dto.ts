@@ -189,6 +189,22 @@ export class LodgingIndexDto {
   status?: string;
 
   @ApiProperty({
+    example: 100,
+    description: 'Admin-only: overall completion percentage (0-100). Same value the owner sees.',
+    readOnly: true,
+    required: false,
+  })
+  completionPercentage?: number;
+
+  @ApiProperty({
+    example: 100,
+    description: 'Admin-only: info-section completion percentage (0-100).',
+    readOnly: true,
+    required: false,
+  })
+  infoPercentage?: number;
+
+  @ApiProperty({
     example: 123.456,
     description: 'Latitude of the lodging',
     required: false,

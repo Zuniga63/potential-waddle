@@ -108,7 +108,7 @@ export class LodgingsController {
   @OptionalAuth()
   @ApiOkResponse({ description: 'Lodging Detail', type: LodgingFullDto })
   findOne(@Param('identifier') identifier: string, @GetUser() user?: User) {
-    return this.lodgingsService.findOne({ identifier, ownerId: user?.id });
+    return this.lodgingsService.findOne({ identifier, user });
   }
 
   // * ----------------------------------------------------------------------------------------------------------------

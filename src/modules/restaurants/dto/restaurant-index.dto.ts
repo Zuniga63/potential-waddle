@@ -72,6 +72,12 @@ export class RestaurantIndexDto {
    */
   ownerHasAcceptedTerms?: boolean;
 
+  /** Admin-only: overall completion percentage (0-100). Same value the owner sees. */
+  completionPercentage?: number;
+
+  /** Admin-only: info-section completion percentage (0-100). */
+  infoPercentage?: number;
+
   paymentMethods?: string[];
 
   googleMapsRating?: number;
