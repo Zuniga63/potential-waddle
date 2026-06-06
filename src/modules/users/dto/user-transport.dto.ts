@@ -7,6 +7,14 @@ export class UserTransportDto extends UserDto {
   @ApiProperty({ example: '1234567890' })
   transportId: string;
 
+  // Alias for transportId so the frontend (which expects `.id` like other entities)
+  // can render the dashboard card without extra mapping.
+  @ApiProperty({ example: '1234567890' })
+  id: string;
+
+  @ApiProperty({ example: 'draft', enum: ['draft', 'pending_review', 'published', 'rejected'], required: false })
+  status?: string;
+
   @ApiProperty({ example: 'true' })
   isAvailable: boolean;
 
@@ -44,6 +52,8 @@ export class UserTransportDto extends UserDto {
     if (!user) return;
     super(user);
     this.transportId = transport.id || '';
+    this.id = transport.id || '';
+    this.status = transport.status;
     this.isAvailable = transport.isAvailable || false;
     this.firstName = transport.firstName || '';
     this.lastName = transport.lastName || '';

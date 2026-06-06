@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
+import { BadRequestException, ForbiddenException, Injectable, NotFoundException, ConflictException } from '@nestjs/common';
 import { TransportDto } from './dto/transport.dto';
 import { TransportFindAllParams } from './interfaces/transport-find-all-params.interface';
 import { generateTransportQueryFiltersAndSort } from './logic/generate-transport-query-filters-and-sort';
@@ -18,6 +18,16 @@ import { ReviewDomainsEnum } from '../reviews/enums';
 import { Review } from '../reviews/entities';
 import { TermsService } from '../terms/services';
 import { TermsTypeEnum } from '../terms/interfaces';
+import { computeTransportCompletion } from './utils/compute-transport-completion';
+import { DocumentService } from '../documents/services';
+import { DocumentEntityType } from '../documents/enums';
+import {
+  computeLodgingTermsStatus,
+  computeLodgingDocsStatus,
+  type LodgingTermsStatus,
+  type LodgingDocsStatus,
+} from '../lodgings/utils/compute-lodging-completion';
+import { isTermsEnforcementEnabled } from '../terms/utils';
 
 @Injectable()
 export class TransportService {
@@ -36,7 +46,47 @@ export class TransportService {
 
     private readonly entityReviewsService: EntityReviewsService,
     private readonly termsService: TermsService,
+    private readonly documentService: DocumentService,
   ) {}
+
+  // ------------------------------------------------------------------------------------------------
+  // Resolve the per-owner completion context (T&C acceptance + docs requirements).
+  // Mirror of LodgingsService.resolveOwnerCompletionContext so the transport wizard surfaces the
+  // same termsStatus + docsStatus shape and the admin can configure required docs per municipio.
+  // ------------------------------------------------------------------------------------------------
+  async resolveOwnerCompletionContext(
+    transport: Transport,
+  ): Promise<{ termsStatus: LodgingTermsStatus; docsStatus: LodgingDocsStatus }> {
+    const userId = transport.user?.id;
+    const townId = transport.town?.id;
+    const categoryIds = transport.categories?.map(c => c.id) ?? [];
+
+    const [termsDto, docsList] = await Promise.all([
+      userId ? this.termsService.getStatusForUser(userId) : Promise.resolve(null),
+      townId
+        ? this.documentService.getEntityDocumentStatus(townId, DocumentEntityType.TRANSPORT, transport.id, categoryIds)
+        : Promise.resolve([]),
+    ]);
+
+    const activeTermsId = termsDto?.activeDocumentIds?.transport ?? null;
+    const termsStatus = isTermsEnforcementEnabled()
+      ? computeLodgingTermsStatus({
+          hasActiveLodgingTerms: activeTermsId !== null,
+          hasAcceptedLodgingTerms: termsDto?.hasAcceptedTransportTerms ?? false,
+          activeTermsId,
+        })
+      : ({ state: 'no_aplica' as const, activeTermsId: null });
+    const docsStatus = computeLodgingDocsStatus(
+      docsList.map(d => ({
+        documentTypeName: d.documentType.name,
+        isRequired: d.isRequired,
+        isUploaded: d.isUploaded,
+        isExpired: d.isExpired,
+      })),
+    );
+
+    return { termsStatus, docsStatus };
+  }
 
   async create(createTransportDto: CreateTransportDto, userId: string) {
     const { categoryIds, townId, ...restDto } = createTransportDto;
@@ -84,8 +134,8 @@ export class TransportService {
   // ------------------------------------------------------------------------------------------------
   // Find all transports paginated (Admin)
   // ------------------------------------------------------------------------------------------------
-  async findAllPaginated(filters: AdminTransportFiltersDto): Promise<AdminTransportListDto> {
-    const { page = 1, limit = 10, search, categoryId, townId, isPublic, sortBy = 'firstName', sortOrder = 'ASC' } = filters;
+  async findAllPaginated(filters: AdminTransportFiltersDto & { status?: string }): Promise<AdminTransportListDto> {
+    const { page = 1, limit = 10, search, categoryId, townId, isPublic, status, sortBy = 'firstName', sortOrder = 'ASC' } = filters;
 
     const queryBuilder = this.transportRepository
       .createQueryBuilder('transport')
@@ -109,6 +159,10 @@ export class TransportService {
 
     if (isPublic !== undefined) {
       queryBuilder.andWhere('transport.isPublic = :isPublic', { isPublic });
+    }
+
+    if (status) {
+      queryBuilder.andWhere('transport.status = :status', { status });
     }
 
     // Sorting
@@ -136,6 +190,20 @@ export class TransportService {
     result.data.forEach((dto, i) => {
       const ownerId = transports[i].user?.id;
       dto.ownerHasAcceptedTerms = ownerId ? ownersWithAcceptance.has(ownerId) : false;
+    });
+
+    // Per-row completion enrichment so the admin list mirrors the owner-side wizard.
+    result.data.forEach((dto, i) => {
+      const transport = transports[i];
+      const completion = computeTransportCompletion(transport);
+      const augmented = dto as TransportDto & {
+        completionPercentage?: number;
+        infoPercentage?: number;
+        status?: string;
+      };
+      augmented.completionPercentage = completion.completionPercentage;
+      augmented.infoPercentage = completion.infoPercentage;
+      augmented.status = transport.status;
     });
 
     return result;
@@ -195,7 +263,6 @@ export class TransportService {
     const transport = await this.transportRepository.findOne({ where: { id: identifier }, relations });
     if (!transport) throw new NotFoundException('Transport not found');
 
-    // Obtener review del usuario
     const userReview = user
       ? await this.entityReviewsService.findUserReview({
           entityType: ReviewDomainsEnum.TRANSPORT,
@@ -204,7 +271,134 @@ export class TransportService {
         })
       : null;
 
-    return new TransportDto({ data: transport, userReview: userReview?.id });
+    const dto = new TransportDto({ data: transport, userReview: userReview?.id }) as TransportDto & {
+      status?: string;
+      submittedAt?: Date | null;
+      rejectionReason?: string | null;
+      completionPercentage?: number;
+      infoPercentage?: number;
+      missingFields?: string[];
+      infoMissingFields?: string[];
+      infoCriticalSatisfied?: boolean;
+      readyToSubmit?: boolean;
+      termsStatus?: LodgingTermsStatus;
+      docsStatus?: LodgingDocsStatus;
+    };
+
+    const isOwner = !!user && transport.user?.id === user.id;
+    if (isOwner || user?.isSuperUser) {
+      const completion = computeTransportCompletion(transport);
+      const { termsStatus, docsStatus } = await this.resolveOwnerCompletionContext(transport);
+      const termsBlock = isTermsEnforcementEnabled() && termsStatus.state === 'pendientes';
+      const docsBlock = docsStatus.state === 'incompletos';
+      dto.status = transport.status;
+      dto.submittedAt = transport.submittedAt;
+      dto.rejectionReason = transport.rejectionReason;
+      dto.completionPercentage = completion.completionPercentage;
+      dto.infoPercentage = completion.infoPercentage;
+      dto.missingFields = completion.missingFields;
+      dto.infoMissingFields = completion.infoMissingFields;
+      dto.infoCriticalSatisfied = completion.infoCriticalSatisfied;
+      dto.termsStatus = termsStatus;
+      dto.docsStatus = docsStatus;
+      dto.readyToSubmit = completion.readyToSubmit && !termsBlock && !docsBlock;
+    }
+
+    return dto;
+  }
+
+  // ------------------------------------------------------------------------------------------------
+  // Submit transport for review (owner action) — mirror of LodgingsService.submitForReview
+  // ------------------------------------------------------------------------------------------------
+  async submitForReview({ identifier, user }: { identifier: string; user: User }) {
+    const relations: FindOptionsRelations<Transport> = {
+      user: true,
+      categories: { icon: true },
+      town: { department: true },
+    };
+    const transport = await this.transportRepository.findOne({ where: { id: identifier }, relations });
+    if (!transport) throw new NotFoundException('Transport not found');
+    if (transport.user?.id !== user.id) throw new ForbiddenException('Not your transport');
+    if (transport.status !== 'draft' && transport.status !== 'rejected') {
+      throw new BadRequestException({ message: 'INVALID_STATUS', detail: 'Only draft or rejected transports can be submitted' });
+    }
+
+    const completion = computeTransportCompletion(transport);
+    if (completion.infoPercentage < 80 || !completion.infoCriticalSatisfied) {
+      throw new BadRequestException({
+        errorCode: 'INCOMPLETE',
+        infoPercentage: completion.infoPercentage,
+        infoMissingFields: completion.infoMissingFields,
+        completionPercentage: completion.completionPercentage,
+        missingFields: completion.missingFields,
+      });
+    }
+
+    const context = await this.resolveOwnerCompletionContext(transport);
+
+    if (isTermsEnforcementEnabled() && context.termsStatus.state === 'pendientes') {
+      throw new ForbiddenException({
+        errorCode: 'TERMS_NOT_ACCEPTED',
+        termsType: 'transport',
+        activeTermsId: context.termsStatus.activeTermsId ?? null,
+      });
+    }
+
+    if (context.docsStatus.state === 'incompletos') {
+      throw new BadRequestException({
+        errorCode: 'DOCS_INCOMPLETE',
+        docsStatus: context.docsStatus,
+      });
+    }
+
+    transport.status = 'pending_review';
+    transport.submittedAt = new Date();
+    transport.rejectionReason = null;
+    await this.transportRepository.save(transport);
+
+    const updated = await this.transportRepository.findOne({ where: { id: transport.id }, relations });
+    if (!updated) throw new NotFoundException('Transport not found after update');
+    return this.findOne(updated.id, user);
+  }
+
+  // ------------------------------------------------------------------------------------------------
+  // Approve transport (admin action)
+  // ------------------------------------------------------------------------------------------------
+  async approve({ identifier }: { identifier: string }) {
+    const relations: FindOptionsRelations<Transport> = {
+      user: true,
+      categories: { icon: true },
+      town: { department: true },
+    };
+    const transport = await this.transportRepository.findOne({ where: { id: identifier }, relations });
+    if (!transport) throw new NotFoundException('Transport not found');
+    if (transport.status !== 'pending_review') {
+      throw new BadRequestException({ message: 'Only pending_review transports can be approved', currentStatus: transport.status });
+    }
+    transport.status = 'published';
+    transport.rejectionReason = null;
+    await this.transportRepository.save(transport);
+    return this.findOne(transport.id, transport.user);
+  }
+
+  // ------------------------------------------------------------------------------------------------
+  // Reject transport (admin action)
+  // ------------------------------------------------------------------------------------------------
+  async reject({ identifier, reason }: { identifier: string; reason: string }) {
+    const relations: FindOptionsRelations<Transport> = {
+      user: true,
+      categories: { icon: true },
+      town: { department: true },
+    };
+    const transport = await this.transportRepository.findOne({ where: { id: identifier }, relations });
+    if (!transport) throw new NotFoundException('Transport not found');
+    if (transport.status !== 'pending_review') {
+      throw new BadRequestException({ message: 'Only pending_review transports can be rejected', currentStatus: transport.status });
+    }
+    transport.status = 'rejected';
+    transport.rejectionReason = reason || null;
+    await this.transportRepository.save(transport);
+    return this.findOne(transport.id, transport.user);
   }
 
   async update(id: string, updateTransportDto: UpdateTransportDto) {

@@ -8,6 +8,7 @@ import { Town } from '../towns/entities';
 import { User } from '../users/entities';
 import { ReviewsModule } from '../reviews/reviews.module';
 import { TermsModule } from '../terms/terms.module';
+import { DocumentsModule } from '../documents/documents.module';
 
 @Module({
   controllers: [TransportController],
@@ -16,6 +17,7 @@ import { TermsModule } from '../terms/terms.module';
     TypeOrmModule.forFeature([Transport, Category, Town, User]),
     ReviewsModule,
     TermsModule,
+    DocumentsModule,
   ],
 })
 export class TransportModule {}

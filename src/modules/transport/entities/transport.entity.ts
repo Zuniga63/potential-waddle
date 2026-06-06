@@ -98,6 +98,15 @@ export class Transport {
   @Column('text', { name: 'payment_methods', array: true, nullable: true })
   paymentMethods: string[] | null;
 
+  @Column('text', { name: 'status', default: 'draft' })
+  status: 'draft' | 'pending_review' | 'published' | 'rejected';
+
+  @Column('timestamp', { name: 'submitted_at', nullable: true })
+  submittedAt: Date | null;
+
+  @Column('text', { name: 'rejection_reason', nullable: true })
+  rejectionReason: string | null;
+
   @CreateDateColumn({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP', name: 'created_at' })
   createdAt: Date;
 

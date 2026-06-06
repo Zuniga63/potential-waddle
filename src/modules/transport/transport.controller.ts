@@ -105,6 +105,33 @@ export class TransportController {
   }
 
   // * ----------------------------------------------------------------------------------------------------------------
+  // * SUBMIT TRANSPORT FOR REVIEW (owner)
+  // * ----------------------------------------------------------------------------------------------------------------
+  @Post(':id/submit-for-review')
+  @ApiOkResponse({ description: 'The transport has been submitted for review.', type: TransportDto })
+  submitForReview(@Param('id', ParseUUIDPipe) id: string, @GetUser() user: User) {
+    return this.transportService.submitForReview({ identifier: id, user });
+  }
+
+  // * ----------------------------------------------------------------------------------------------------------------
+  // * APPROVE TRANSPORT (admin)
+  // * ----------------------------------------------------------------------------------------------------------------
+  @Post(':id/approve')
+  @ApiOkResponse({ description: 'The transport has been approved.', type: TransportDto })
+  approve(@Param('id', ParseUUIDPipe) id: string) {
+    return this.transportService.approve({ identifier: id });
+  }
+
+  // * ----------------------------------------------------------------------------------------------------------------
+  // * REJECT TRANSPORT (admin)
+  // * ----------------------------------------------------------------------------------------------------------------
+  @Post(':id/reject')
+  @ApiOkResponse({ description: 'The transport has been rejected.', type: TransportDto })
+  reject(@Param('id', ParseUUIDPipe) id: string, @Body() body: { reason: string }) {
+    return this.transportService.reject({ identifier: id, reason: body.reason });
+  }
+
+  // * ----------------------------------------------------------------------------------------------------------------
   // * DELETE TRANSPORT
   // * ----------------------------------------------------------------------------------------------------------------
   @Delete(':id')
