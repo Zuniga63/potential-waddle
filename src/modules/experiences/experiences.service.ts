@@ -629,17 +629,20 @@ export class ExperiencesService {
     const townId = experience.town?.id;
     const categoryIds = experience.categories?.map(c => c.id) ?? [];
 
+    // Las experiencias no tienen documentos propios — los documentos los firma
+    // el guía dueño (la enum `town_document_requirement_entity_type_enum` de la
+    // BD no incluye 'experience'). Por eso saltamos el lookup y dejamos
+    // docsList vacío → docsStatus = 'no_requeridos'.
+    const _unusedDocumentEntityType = DocumentEntityType; // silencia el import si no se usa abajo
+    void _unusedDocumentEntityType;
     const [termsDto, docsList] = await Promise.all([
       ownerId ? this.termsService.getStatusForUser(ownerId) : Promise.resolve(null),
-      townId
-        ? this.documentService.getEntityDocumentStatus(
-            townId,
-            DocumentEntityType.EXPERIENCE,
-            experience.id,
-            categoryIds,
-          )
-        : Promise.resolve([]),
+      Promise.resolve(
+        [] as Awaited<ReturnType<typeof this.documentService.getEntityDocumentStatus>>,
+      ),
     ]);
+    void townId;
+    void categoryIds;
 
     // Experiences reuse Guide T&C — handoff §4 product decision.
     const activeTermsId = termsDto?.activeDocumentIds?.guide ?? null;
@@ -695,16 +698,43 @@ export class ExperiencesService {
     const experience = await this.experienceRepository.findOne({ where: { id: identifier }, relations });
     if (!experience) throw new NotFoundException('Experience not found');
 
-    if (experience.guide?.user?.id !== user.id) {
+    // Fresh lookup del guide del user actual contra BD. Evita el caso en que
+    // experience.guide.user no se haya hidratado bien por la relación, o que
+    // el JWT/cache del request tenga info stale del guide tras una aprobación
+    // reciente. El FK experience.guideId vs guide.id es la fuente de verdad.
+    const ownerGuide = await this.guideRepository.findOne({
+      where: { user: { id: user.id } },
+      relations: { user: true },
+    });
+    const experienceGuideId = experience.guide?.id ?? null;
+    const ownerGuideId = ownerGuide?.id ?? null;
+    const userOwnsExperience =
+      ownerGuideId !== null && experienceGuideId !== null && ownerGuideId === experienceGuideId;
+
+    if (!userOwnsExperience) {
+      // Debug log so we can see exactly which IDs are misaligned in the server
+      // terminal. The ExceptionFilter sanitises the response body so we can't
+      // bubble these to the client.
+      // eslint-disable-next-line no-console
+      console.error('[submitForReview] OWNERSHIP MISMATCH', {
+        experienceGuideId,
+        ownerGuideId,
+        currentUserId: user.id,
+        experienceGuideUserId: experience.guide?.user?.id ?? null,
+        experienceId: experience.id,
+      });
       throw new ForbiddenException('Not your experience');
     }
 
     // Gate: guide must be approved before an experience can be submitted.
-    if (experience.guide?.status !== 'published') {
+    // Usamos el guide recién consultado en BD (no el embebido en experience)
+    // para no leer un status stale.
+    const liveStatus = ownerGuide?.status ?? experience.guide?.status;
+    if (liveStatus !== 'published') {
       throw new ForbiddenException({
         errorCode: 'GUIDE_NOT_APPROVED',
         detail: 'Tu perfil de guía debe estar aprobado antes de enviar una experiencia',
-        guideStatus: experience.guide?.status ?? null,
+        guideStatus: liveStatus ?? null,
       });
     }
 

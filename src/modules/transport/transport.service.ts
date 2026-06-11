@@ -135,7 +135,9 @@ export class TransportService {
   // Find all transports paginated (Admin)
   // ------------------------------------------------------------------------------------------------
   async findAllPaginated(filters: AdminTransportFiltersDto & { status?: string }): Promise<AdminTransportListDto> {
+    console.log('(TransportService.findAllPaginated): RAW filters →', JSON.stringify(filters));
     const { page = 1, limit = 10, search, categoryId, townId, isPublic, status, sortBy = 'firstName', sortOrder = 'ASC' } = filters;
+    console.log('(TransportService.findAllPaginated): destructured →', { page, limit, search, categoryId, townId, isPublic, status, sortBy, sortOrder });
 
     const queryBuilder = this.transportRepository
       .createQueryBuilder('transport')
@@ -162,7 +164,10 @@ export class TransportService {
     }
 
     if (status) {
+      console.log('(TransportService.findAllPaginated): applying status filter =', status);
       queryBuilder.andWhere('transport.status = :status', { status });
+    } else {
+      console.log('(TransportService.findAllPaginated): NO status filter applied');
     }
 
     // Sorting
@@ -174,7 +179,14 @@ export class TransportService {
     const skip = (page - 1) * limit;
     queryBuilder.skip(skip).take(limit);
 
+    console.log('(TransportService.findAllPaginated): SQL →', queryBuilder.getSql());
+    console.log('(TransportService.findAllPaginated): params →', queryBuilder.getParameters());
+
     const [transports, count] = await queryBuilder.getManyAndCount();
+    console.log('(TransportService.findAllPaginated): result → count=', count, 'transports.length=', transports.length);
+    if (transports.length > 0) {
+      console.log('(TransportService.findAllPaginated): first transport →', { id: transports[0].id, status: transports[0].status, firstName: transports[0].firstName });
+    }
     const pages = Math.ceil(count / limit);
 
     const result = new AdminTransportListDto({ currentPage: page, pages, count }, transports);

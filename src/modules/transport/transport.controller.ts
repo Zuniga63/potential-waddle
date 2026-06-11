@@ -108,6 +108,7 @@ export class TransportController {
   // * SUBMIT TRANSPORT FOR REVIEW (owner)
   // * ----------------------------------------------------------------------------------------------------------------
   @Post(':id/submit-for-review')
+  @Auth()
   @ApiOkResponse({ description: 'The transport has been submitted for review.', type: TransportDto })
   submitForReview(@Param('id', ParseUUIDPipe) id: string, @GetUser() user: User) {
     return this.transportService.submitForReview({ identifier: id, user });
