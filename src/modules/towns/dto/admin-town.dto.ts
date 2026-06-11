@@ -87,9 +87,7 @@ export class AdminTownDto {
     this.updatedAt = town.updatedAt;
 
     if (town.images) {
-      this.images = town.images
-        .sort((a, b) => a.order - b.order)
-        .map(img => new TownImageDto(img));
+      this.images = town.images.sort((a, b) => a.order - b.order).map(img => new TownImageDto(img));
     }
 
     // TownInfo fields

@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Patch, Param, Body, ParseUUIDPipe, Query } from '@nestjs/common';
+import { Controller, Get, Post, Patch, Param, Body, ParseUUIDPipe } from '@nestjs/common';
 import { ApiTags, ApiOkResponse, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 
 import { Auth } from 'src/modules/auth/decorators';

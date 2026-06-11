@@ -3,10 +3,7 @@ import { Commerce } from '../entities';
 import { ApiProperty } from '@nestjs/swagger';
 import { Facility } from 'src/modules/core/entities';
 import { CommerceProductDto } from './commerce-product.dto';
-import type {
-  CommerceTermsStatusState,
-  CommerceDocsStatusState,
-} from '../utils/compute-commerce-completion';
+import type { CommerceTermsStatusState, CommerceDocsStatusState } from '../utils/compute-commerce-completion';
 
 // Owner-scoped sub-DTOs surfacing the 3-indicator completion model (mirror of LodgingFullDto).
 

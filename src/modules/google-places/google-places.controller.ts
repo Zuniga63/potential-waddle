@@ -117,7 +117,10 @@ export class GooglePlacesController {
     description: 'Reviews for chart retrieved successfully.',
   })
   getReviewsforChart(@Param('entityId') entityId: string, @Param('entityType') entityType: string) {
-    return this.googlePlacesService.getReviewsCountByRating(entityId, entityType as 'lodging' | 'restaurant' | 'commerce');
+    return this.googlePlacesService.getReviewsCountByRating(
+      entityId,
+      entityType as 'lodging' | 'restaurant' | 'commerce',
+    );
   }
 
   @Get('reviews-for-chart-by-year/:entityId/:entityType')
@@ -125,7 +128,10 @@ export class GooglePlacesController {
     description: 'Reviews for chart by year retrieved successfully.',
   })
   getReviewsforChartByYear(@Param('entityId') entityId: string, @Param('entityType') entityType: string) {
-    return this.googlePlacesService.getReviewsCountByYear(entityId, entityType as 'lodging' | 'restaurant' | 'commerce');
+    return this.googlePlacesService.getReviewsCountByYear(
+      entityId,
+      entityType as 'lodging' | 'restaurant' | 'commerce',
+    );
   }
 
   @Get('reviews-by-month/:entityId/:entityType')
@@ -133,7 +139,10 @@ export class GooglePlacesController {
     description: 'Reviews count by month for current year.',
   })
   getReviewsByMonth(@Param('entityId') entityId: string, @Param('entityType') entityType: string) {
-    return this.googlePlacesService.getReviewsCountByMonth(entityId, entityType as 'lodging' | 'restaurant' | 'commerce');
+    return this.googlePlacesService.getReviewsCountByMonth(
+      entityId,
+      entityType as 'lodging' | 'restaurant' | 'commerce',
+    );
   }
 
   @Get('reviews-rating-trend/:entityId/:entityType')
@@ -141,7 +150,10 @@ export class GooglePlacesController {
     description: 'Rating trend over time (average rating per month).',
   })
   getReviewsRatingTrend(@Param('entityId') entityId: string, @Param('entityType') entityType: string) {
-    return this.googlePlacesService.getReviewsRatingTrend(entityId, entityType as 'lodging' | 'restaurant' | 'commerce');
+    return this.googlePlacesService.getReviewsRatingTrend(
+      entityId,
+      entityType as 'lodging' | 'restaurant' | 'commerce',
+    );
   }
 
   @Get('reviews-metrics/:entityId/:entityType')

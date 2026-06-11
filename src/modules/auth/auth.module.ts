@@ -34,7 +34,15 @@ import { PasswordResetService } from './services/password-reset.service';
 
     TermsModule,
   ],
-  providers: [AuthService, SessionService, PasswordResetService, LocalStrategy, JwtStrategy, GoogleStrategy, OptionalJwtStrategy],
+  providers: [
+    AuthService,
+    SessionService,
+    PasswordResetService,
+    LocalStrategy,
+    JwtStrategy,
+    GoogleStrategy,
+    OptionalJwtStrategy,
+  ],
   controllers: [AuthController, ProfileController],
   exports: [JwtModule],
 })

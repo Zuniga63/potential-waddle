@@ -1,11 +1,4 @@
-import {
-  Entity,
-  PrimaryGeneratedColumn,
-  Column,
-  CreateDateColumn,
-  UpdateDateColumn,
-  OneToMany,
-} from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, OneToMany } from 'typeorm';
 import { DocumentCategory } from '../enums';
 import { TownDocumentRequirement } from './town-document-requirement.entity';
 import { Document } from './document.entity';
@@ -51,9 +44,9 @@ export class DocumentType {
   updatedAt: Date;
 
   // Relations
-  @OneToMany(() => TownDocumentRequirement, (requirement) => requirement.documentType)
+  @OneToMany(() => TownDocumentRequirement, requirement => requirement.documentType)
   townRequirements: TownDocumentRequirement[];
 
-  @OneToMany(() => Document, (document) => document.documentType)
+  @OneToMany(() => Document, document => document.documentType)
   documents: Document[];
 }

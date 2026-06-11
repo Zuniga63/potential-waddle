@@ -14,13 +14,7 @@ import {
   UseInterceptors,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
-import {
-  ApiBody,
-  ApiConsumes,
-  ApiOkResponse,
-  ApiOperation,
-  ApiTags,
-} from '@nestjs/swagger';
+import { ApiBody, ApiConsumes, ApiOkResponse, ApiOperation, ApiTags } from '@nestjs/swagger';
 
 import { SuperAdmin } from 'src/modules/auth/decorators';
 import { GetUser } from 'src/modules/common/decorators';
@@ -28,7 +22,6 @@ import { User } from 'src/modules/users/entities';
 import { SwaggerTags } from 'src/config';
 
 import { TermsService } from '../services';
-import { TermsFormatEnum } from '../interfaces';
 import {
   AdminAcceptancesFiltersDto,
   AdminAcceptancesListDto,

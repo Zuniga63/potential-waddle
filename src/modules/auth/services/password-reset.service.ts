@@ -3,7 +3,6 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, LessThan } from 'typeorm';
 import { randomBytes } from 'crypto';
 import { PasswordResetToken } from '../entities/password-reset-token.entity';
-import { User } from '../../users/entities/user.entity';
 import { UsersService } from '../../users/services';
 import { ResendService } from '../../email/services/resend.service';
 import { hashPassword } from '../utils/hash-password';

@@ -38,10 +38,7 @@ export async function getAuthToken(app: INestApplication): Promise<AuthFixture> 
     .expect(201);
 
   // 2. Signin — matches `POST /auth/local/signin` contract (LocalAuthGuard).
-  const loginRes = await request(app.getHttpServer())
-    .post('/auth/local/signin')
-    .send({ email, password })
-    .expect(201);
+  const loginRes = await request(app.getHttpServer()).post('/auth/local/signin').send({ email, password }).expect(201);
 
   const accessToken: string | undefined = loginRes.body?.accessToken;
   const userId: string | undefined = loginRes.body?.user?.id;

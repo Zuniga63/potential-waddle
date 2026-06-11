@@ -80,7 +80,11 @@ export class LodgingsController {
   @Get('public')
   @OptionalAuth()
   @ApiOkResponse({ description: 'Lodging List', type: [LodgingIndexDto] })
-  findPublicLodgings(@LodgingFilters() filters: LodgingFiltersDto, @GetUser() user: User | undefined, @Req() request: Request) {
+  findPublicLodgings(
+    @LodgingFilters() filters: LodgingFiltersDto,
+    @GetUser() user: User | undefined,
+    @Req() request: Request,
+  ) {
     const tenantId = (request as any)[TENANT_ID_KEY];
     if (tenantId && !filters.townId) {
       filters.townId = tenantId;

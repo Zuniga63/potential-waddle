@@ -1,4 +1,4 @@
-import { ApiProperty, PartialType } from '@nestjs/swagger';
+import { ApiProperty } from '@nestjs/swagger';
 import { IsString, IsEnum, IsUUID, IsOptional, IsDateString } from 'class-validator';
 import { DocumentEntityType, DocumentStatus } from '../enums';
 

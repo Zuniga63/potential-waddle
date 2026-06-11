@@ -35,7 +35,7 @@ class PublicEventPriceDto {
 
   @ApiProperty({
     description: 'Price value',
-    example: 50.00,
+    example: 50.0,
   })
   @Expose()
   value: number;

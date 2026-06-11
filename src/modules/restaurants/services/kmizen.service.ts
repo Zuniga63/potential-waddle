@@ -46,19 +46,15 @@ export class KmizenService {
     form.append('save', 'true');
 
     const { data } = await firstValueFrom(
-      this.httpService.post(
-        `${this.baseUrl}/api/public/extract/auto`,
-        form,
-        {
-          headers: {
-            'X-API-Key': this.apiKey,
-            ...form.getHeaders(),
-          },
-          timeout: 120000,
-          maxBodyLength: Infinity,
-          maxContentLength: Infinity,
+      this.httpService.post(`${this.baseUrl}/api/public/extract/auto`, form, {
+        headers: {
+          'X-API-Key': this.apiKey,
+          ...form.getHeaders(),
         },
-      ),
+        timeout: 120000,
+        maxBodyLength: Infinity,
+        maxContentLength: Infinity,
+      }),
     );
 
     this.logger.log('Menu data extracted successfully (small file)');

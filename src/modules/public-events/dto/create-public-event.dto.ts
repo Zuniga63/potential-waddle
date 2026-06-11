@@ -24,7 +24,7 @@ class PublicEventPriceDto {
 
   @ApiProperty({
     description: 'Price value',
-    example: 50.00,
+    example: 50.0,
   })
   @IsNumber()
   @IsPositive()
@@ -118,7 +118,7 @@ export class CreatePublicEventDto {
 
   @ApiProperty({
     description: 'Price of the event',
-    example: 50.00,
+    example: 50.0,
     required: false,
   })
   @IsNumber()
@@ -129,7 +129,7 @@ export class CreatePublicEventDto {
 
   @ApiProperty({
     description: 'Prices for the event',
-    example: [{ name: 'Entrada General', value: 50.00 }],
+    example: [{ name: 'Entrada General', value: 50.0 }],
     required: false,
   })
   @IsArray()

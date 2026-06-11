@@ -115,12 +115,7 @@ export interface WompiCreateTransactionRequest {
   };
 }
 
-export type WompiTransactionStatus =
-  | 'PENDING'
-  | 'APPROVED'
-  | 'DECLINED'
-  | 'VOIDED'
-  | 'ERROR';
+export type WompiTransactionStatus = 'PENDING' | 'APPROVED' | 'DECLINED' | 'VOIDED' | 'ERROR';
 
 export interface WompiTransactionResponse {
   data: WompiTransaction;

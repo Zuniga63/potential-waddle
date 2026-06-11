@@ -1,4 +1,17 @@
-import { Body, Controller, Delete, Get, HttpStatus, Param, Patch, Post, Put, Query, UploadedFile, UseInterceptors } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  HttpStatus,
+  Param,
+  Patch,
+  Post,
+  Put,
+  Query,
+  UploadedFile,
+  UseInterceptors,
+} from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { SwaggerTags } from 'src/config';
@@ -42,10 +55,7 @@ export class BadgesController {
   // * -------------------------------------------------------------------------------------------------------------
   @Get('entity/:entityType/:entityId')
   @ApiOperation({ summary: 'Get badges for a specific entity' })
-  findBadgesByEntity(
-    @Param('entityType') entityType: BadgeEntityType,
-    @Param('entityId') entityId: string,
-  ) {
+  findBadgesByEntity(@Param('entityType') entityType: BadgeEntityType, @Param('entityId') entityId: string) {
     return this.badgesService.findBadgesByEntity(entityType, entityId);
   }
 

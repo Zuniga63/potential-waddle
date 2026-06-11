@@ -462,10 +462,14 @@ export class VectorizationService {
           await index.namespace(namespace).upsert(vectors);
 
           vectorized += batch.length;
-          this.logger.log(`  ✓ Namespace ${namespace}, Batch ${Math.floor(i / this.BATCH_SIZE) + 1}: ${batch.length} vectors upserted`);
+          this.logger.log(
+            `  ✓ Namespace ${namespace}, Batch ${Math.floor(i / this.BATCH_SIZE) + 1}: ${batch.length} vectors upserted`,
+          );
         } catch (error) {
           errors += batch.length;
-          this.logger.error(`  ✗ Namespace ${namespace}, Batch ${Math.floor(i / this.BATCH_SIZE) + 1} failed: ${error.message}`);
+          this.logger.error(
+            `  ✗ Namespace ${namespace}, Batch ${Math.floor(i / this.BATCH_SIZE) + 1} failed: ${error.message}`,
+          );
         }
       }
     }
@@ -490,7 +494,7 @@ export class VectorizationService {
     const index = this.getIndex();
 
     // Get entities grouped by town from database
-    let entitiesByTown: Map<string, string[]> = new Map();
+    const entitiesByTown: Map<string, string[]> = new Map();
 
     switch (entityType) {
       case 'lodging':
@@ -651,7 +655,7 @@ export class VectorizationService {
             metadata: match.metadata,
           })),
         );
-      } catch (error) {
+      } catch {
         // Namespace might not exist, skip it
       }
     }

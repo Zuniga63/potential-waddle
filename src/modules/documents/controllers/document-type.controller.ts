@@ -11,14 +11,7 @@ import {
   UseInterceptors,
   UploadedFile,
 } from '@nestjs/common';
-import {
-  ApiTags,
-  ApiOperation,
-  ApiOkResponse,
-  ApiBearerAuth,
-  ApiConsumes,
-  ApiBody,
-} from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiOkResponse, ApiBearerAuth, ApiConsumes, ApiBody } from '@nestjs/swagger';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { DocumentTypeService } from '../services';
 import { CreateDocumentTypeDto, UpdateDocumentTypeDto, DocumentTypeResponseDto } from '../dto';
@@ -98,10 +91,7 @@ export class DocumentTypeController {
     },
   })
   @ApiOkResponse({ type: DocumentTypeResponseDto })
-  uploadTemplate(
-    @Param('id', ParseUUIDPipe) id: string,
-    @UploadedFile() file: Express.Multer.File,
-  ) {
+  uploadTemplate(@Param('id', ParseUUIDPipe) id: string, @UploadedFile() file: Express.Multer.File) {
     return this.documentTypeService.uploadTemplate(id, file);
   }
 

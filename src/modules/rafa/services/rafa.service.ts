@@ -83,15 +83,15 @@ export class RafaService {
         history,
       });
 
-      await this.saveMessage(conversation.id, 'assistant', fallbackResponse.message, classification.intent, classification.confidence);
-
-      return this.buildResponse(
-        fallbackResponse,
-        classification,
-        updatedState,
+      await this.saveMessage(
         conversation.id,
-        userId,
+        'assistant',
+        fallbackResponse.message,
+        classification.intent,
+        classification.confidence,
       );
+
+      return this.buildResponse(fallbackResponse, classification, updatedState, conversation.id, userId);
     }
 
     this.logger.debug(`Routing to expert: ${expert.name}`);
@@ -125,13 +125,7 @@ export class RafaService {
     );
 
     // 10. BUILD RESPONSE - Convert expert response to API response
-    return this.buildResponse(
-      expertResponse,
-      classification,
-      updatedState,
-      conversation.id,
-      userId,
-    );
+    return this.buildResponse(expertResponse, classification, updatedState, conversation.id, userId);
   }
 
   /**

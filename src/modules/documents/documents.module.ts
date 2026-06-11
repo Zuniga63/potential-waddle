@@ -20,9 +20,21 @@ import { Category } from '../core/entities/category.entity';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([DocumentType, TownDocumentRequirement, Document, CategoryDocumentExclusion, Town, Category]),
+    TypeOrmModule.forFeature([
+      DocumentType,
+      TownDocumentRequirement,
+      Document,
+      CategoryDocumentExclusion,
+      Town,
+      Category,
+    ]),
   ],
-  controllers: [DocumentTypeController, TownDocumentRequirementController, DocumentController, CategoryDocumentExclusionController],
+  controllers: [
+    DocumentTypeController,
+    TownDocumentRequirementController,
+    DocumentController,
+    CategoryDocumentExclusionController,
+  ],
   providers: [
     GcpStorageService,
     DocumentTypeService,

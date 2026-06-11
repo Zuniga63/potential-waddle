@@ -10,12 +10,7 @@ export class MapController {
   async getNearbyPlaces(@Query() query: GetNearbyPlacesDto) {
     const { latitude, longitude, radius = 10, types } = query;
 
-    const places = await this.mapService.getNearbyPlaces(
-      latitude,
-      longitude,
-      radius,
-      types,
-    );
+    const places = await this.mapService.getNearbyPlaces(latitude, longitude, radius, types);
 
     return {
       success: true,

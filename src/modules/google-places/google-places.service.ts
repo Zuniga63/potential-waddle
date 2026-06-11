@@ -17,10 +17,7 @@ import { PineconeService } from '../pinecone/pinecone.service';
 import { GoogleReviewInterface } from './interfaces/google-review.interface';
 import { GoogleGenerativeAI, GenerativeModel } from '@google/generative-ai';
 import { GoogleReviewSummary } from './entities/google-review-summary.entity';
-import {
-  reviewAnalysisPrompt,
-  specificQuestionPrompt,
-} from '../ai/lib/gemini/review-analysis-prompts';
+import { reviewAnalysisPrompt, specificQuestionPrompt } from '../ai/lib/gemini/review-analysis-prompts';
 @Injectable()
 export class GooglePlacesService {
   private readonly logger = new Logger(GooglePlacesService.name);
@@ -896,9 +893,12 @@ export class GooglePlacesService {
       }
     }
 
-    const monthlyChange = lastMonthCount > 0
-      ? Number((((thisMonthCount - lastMonthCount) / lastMonthCount) * 100).toFixed(1))
-      : thisMonthCount > 0 ? 100 : 0;
+    const monthlyChange =
+      lastMonthCount > 0
+        ? Number((((thisMonthCount - lastMonthCount) / lastMonthCount) * 100).toFixed(1))
+        : thisMonthCount > 0
+          ? 100
+          : 0;
 
     return {
       averageRating,

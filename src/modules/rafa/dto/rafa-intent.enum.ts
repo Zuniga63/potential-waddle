@@ -25,5 +25,13 @@ export enum RafaIntent {
   UNKNOWN = 'unknown',
 }
 
-export const TRIP_STYLES = ['aventura', 'relax', 'romantico', 'familiar', 'cultural', 'naturaleza', 'gastronomico'] as const;
+export const TRIP_STYLES = [
+  'aventura',
+  'relax',
+  'romantico',
+  'familiar',
+  'cultural',
+  'naturaleza',
+  'gastronomico',
+] as const;
 export type TripStyle = (typeof TRIP_STYLES)[number];

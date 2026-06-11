@@ -1,5 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { BadRequestException, NotFoundException } from '@nestjs/common';
+import { NotFoundException } from '@nestjs/common';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { QueryFailedError } from 'typeorm';
 
@@ -88,9 +88,7 @@ describe('TermsService', () => {
     it('throws NotFoundException when no active doc exists for the type', async () => {
       docsRepo.findOne.mockResolvedValueOnce(null);
 
-      await expect(service.findActive(TermsTypeEnum.Lodging)).rejects.toBeInstanceOf(
-        NotFoundException,
-      );
+      await expect(service.findActive(TermsTypeEnum.Lodging)).rejects.toBeInstanceOf(NotFoundException);
     });
   });
 
@@ -241,18 +239,9 @@ describe('TermsService', () => {
       const transportDoc = buildActiveDoc(TermsTypeEnum.Transport, 'doc-transport');
       const guideDoc = buildActiveDoc(TermsTypeEnum.Guide, 'doc-guide');
 
-      docsRepo.find.mockResolvedValueOnce([
-        userDoc,
-        lodgingDoc,
-        restaurantDoc,
-        commerceDoc,
-        transportDoc,
-        guideDoc,
-      ]);
+      docsRepo.find.mockResolvedValueOnce([userDoc, lodgingDoc, restaurantDoc, commerceDoc, transportDoc, guideDoc]);
 
-      acceptsRepo.find.mockResolvedValueOnce([
-        { userId: USER_ID, termsDocumentId: 'doc-user' } as TermsAcceptance,
-      ]);
+      acceptsRepo.find.mockResolvedValueOnce([{ userId: USER_ID, termsDocumentId: 'doc-user' } as TermsAcceptance]);
 
       const status = await service.getStatusForUser(USER_ID);
 

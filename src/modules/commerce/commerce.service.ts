@@ -3,7 +3,14 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Injectable, NotFoundException, BadRequestException, ForbiddenException } from '@nestjs/common';
 import { FindOptionsRelations, In, Point } from 'typeorm';
 import { Commerce, CommerceImage, CommerceProduct } from './entities';
-import { CreateCommerceDto, UpdateCommerceDto, CommerceIndexDto, CommerceFullDto, AdminCommerceFiltersDto, AdminCommerceListDto } from './dto';
+import {
+  CreateCommerceDto,
+  UpdateCommerceDto,
+  CommerceIndexDto,
+  CommerceFullDto,
+  AdminCommerceFiltersDto,
+  AdminCommerceListDto,
+} from './dto';
 import { Facility, ImageResource } from '../core/entities';
 import { Category } from '../core/entities';
 import { Town } from '../towns/entities';
@@ -78,7 +85,17 @@ export class CommerceService {
   // Find all commerce paginated (Admin)
   // ------------------------------------------------------------------------------------------------
   async findAllPaginated(filters: AdminCommerceFiltersDto): Promise<AdminCommerceListDto> {
-    const { page = 1, limit = 10, search, categoryId, townId, isPublic, status, sortBy = 'name', sortOrder = 'ASC' } = filters;
+    const {
+      page = 1,
+      limit = 10,
+      search,
+      categoryId,
+      townId,
+      isPublic,
+      status,
+      sortBy = 'name',
+      sortOrder = 'ASC',
+    } = filters;
 
     const queryBuilder = this.commerceRepository
       .createQueryBuilder('commerce')
@@ -127,13 +144,8 @@ export class CommerceService {
     const result = new AdminCommerceListDto({ currentPage: page, pages, count }, commerces);
 
     // Admin-only enrichment: per-row T&C acceptance flag for the owner
-    const ownerIds = Array.from(
-      new Set(commerces.map(c => c.user?.id).filter((id): id is string => !!id)),
-    );
-    const ownersWithAcceptance = await this.termsService.getOwnersWithAcceptance(
-      TermsTypeEnum.Commerce,
-      ownerIds,
-    );
+    const ownerIds = Array.from(new Set(commerces.map(c => c.user?.id).filter((id): id is string => !!id)));
+    const ownersWithAcceptance = await this.termsService.getOwnersWithAcceptance(TermsTypeEnum.Commerce, ownerIds);
     result.data.forEach((dto, i) => {
       const ownerId = commerces[i].user?.id;
       dto.ownerHasAcceptedTerms = ownerId ? ownersWithAcceptance.has(ownerId) : false;
@@ -247,7 +259,7 @@ export class CommerceService {
           hasAcceptedCommerceTerms: termsDto?.hasAcceptedCommerceTerms ?? false,
           activeTermsId,
         })
-      : ({ state: 'no_aplica' as const, activeTermsId: null });
+      : { state: 'no_aplica' as const, activeTermsId: null };
     const docsStatus = computeCommerceDocsStatus(
       docsList.map(d => ({
         documentTypeName: d.documentType.name,
@@ -435,7 +447,8 @@ export class CommerceService {
       },
     });
 
-    if (!commerce) commerce = await this.commerceRepository.findOne({ where: { slug, status: 'published' }, relations });
+    if (!commerce)
+      commerce = await this.commerceRepository.findOne({ where: { slug, status: 'published' }, relations });
     if (!commerce) throw new NotFoundException('Commerce not found');
 
     // Obtener review del usuario
@@ -528,7 +541,8 @@ export class CommerceService {
 
     // Note: commerceProducts is extracted but ignored — products are now managed
     // independently via CommerceProductsController
-    const { latitude, longitude, commerceProducts, ...restUpdateDto } = updateCommerceDto;
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const { latitude, longitude, commerceProducts: _commerceProducts, ...restUpdateDto } = updateCommerceDto;
     // PATCH semantics: only build a new Point when BOTH coords were provided.
     // Otherwise leave the location relation untouched (undefined → omitted in save).
     const commerceLocation =

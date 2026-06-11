@@ -10,9 +10,7 @@ export class CreateTermsTables1771000000000 implements MigrationInterface {
     await queryRunner.query(
       `CREATE TYPE "public"."terms_type_enum" AS ENUM ('user', 'lodging', 'restaurant', 'commerce', 'transport', 'guide')`,
     );
-    await queryRunner.query(
-      `CREATE TYPE "public"."terms_format_enum" AS ENUM ('markdown', 'pdf')`,
-    );
+    await queryRunner.query(`CREATE TYPE "public"."terms_format_enum" AS ENUM ('markdown', 'pdf')`);
     await queryRunner.query(
       `CREATE TYPE "public"."terms_context_enum" AS ENUM ('registration', 'user_login_check', 'lodging_creation', 'restaurant_creation', 'commerce_creation', 'transport_creation', 'guide_creation')`,
     );
@@ -35,9 +33,7 @@ export class CreateTermsTables1771000000000 implements MigrationInterface {
       )
     `);
 
-    await queryRunner.query(
-      `CREATE INDEX "IDX_terms_documents_type" ON "terms_documents" ("type")`,
-    );
+    await queryRunner.query(`CREATE INDEX "IDX_terms_documents_type" ON "terms_documents" ("type")`);
 
     // Partial unique index — PostgreSQL-native: only one active document per type
     await queryRunner.query(
@@ -66,9 +62,7 @@ export class CreateTermsTables1771000000000 implements MigrationInterface {
       )
     `);
 
-    await queryRunner.query(
-      `CREATE INDEX "IDX_terms_acceptances_user_id" ON "terms_acceptances" ("user_id")`,
-    );
+    await queryRunner.query(`CREATE INDEX "IDX_terms_acceptances_user_id" ON "terms_acceptances" ("user_id")`);
     await queryRunner.query(
       `CREATE INDEX "IDX_terms_acceptances_terms_document_id" ON "terms_acceptances" ("terms_document_id")`,
     );
@@ -103,15 +97,9 @@ export class CreateTermsTables1771000000000 implements MigrationInterface {
 
   public async down(queryRunner: QueryRunner): Promise<void> {
     // Reverse order: FKs → indexes → tables → enum types
-    await queryRunner.query(
-      `ALTER TABLE "terms_acceptances" DROP CONSTRAINT "FK_terms_acceptances_document"`,
-    );
-    await queryRunner.query(
-      `ALTER TABLE "terms_acceptances" DROP CONSTRAINT "FK_terms_acceptances_user"`,
-    );
-    await queryRunner.query(
-      `ALTER TABLE "terms_documents" DROP CONSTRAINT "FK_terms_documents_created_by"`,
-    );
+    await queryRunner.query(`ALTER TABLE "terms_acceptances" DROP CONSTRAINT "FK_terms_acceptances_document"`);
+    await queryRunner.query(`ALTER TABLE "terms_acceptances" DROP CONSTRAINT "FK_terms_acceptances_user"`);
+    await queryRunner.query(`ALTER TABLE "terms_documents" DROP CONSTRAINT "FK_terms_documents_created_by"`);
 
     await queryRunner.query(`DROP INDEX "public"."UQ_terms_acceptances_user_doc"`);
     await queryRunner.query(`DROP INDEX "public"."IDX_terms_acceptances_terms_document_id"`);

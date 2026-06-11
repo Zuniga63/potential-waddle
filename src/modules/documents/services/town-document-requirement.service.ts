@@ -23,10 +23,7 @@ export class TownDocumentRequirementService {
     return this.requirementRepository.save(requirement);
   }
 
-  async findByTownAndEntityType(
-    townId: string,
-    entityType: DocumentEntityType,
-  ): Promise<TownDocumentRequirement[]> {
+  async findByTownAndEntityType(townId: string, entityType: DocumentEntityType): Promise<TownDocumentRequirement[]> {
     return this.requirementRepository.find({
       where: { townId, entityType },
       relations: ['documentType'],
@@ -74,7 +71,7 @@ export class TownDocumentRequirementService {
     await this.requirementRepository.delete({ townId, entityType });
 
     // Create new requirements
-    const newRequirements = requirements.map((req) =>
+    const newRequirements = requirements.map(req =>
       this.requirementRepository.create({
         townId,
         entityType,
@@ -103,9 +100,9 @@ export class TownDocumentRequirementService {
     });
 
     const requirements = await this.findByTownAndEntityType(townId, entityType);
-    const requirementMap = new Map(requirements.map((r) => [r.documentTypeId, r]));
+    const requirementMap = new Map(requirements.map(r => [r.documentTypeId, r]));
 
-    return allDocumentTypes.map((docType) => {
+    return allDocumentTypes.map(docType => {
       const requirement = requirementMap.get(docType.id);
       return {
         documentType: docType,

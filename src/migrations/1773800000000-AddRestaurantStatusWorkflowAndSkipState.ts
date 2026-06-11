@@ -35,9 +35,7 @@ export class AddRestaurantStatusWorkflowAndSkipState1773800000000 implements Mig
     await queryRunner.query(`CREATE INDEX "idx_restaurant_status" ON "restaurant" ("status")`);
 
     // Owner-opt-out flag for the Menu bucket (analogous to lodging.rooms_not_applicable)
-    await queryRunner.query(
-      `ALTER TABLE "restaurant" ADD COLUMN "menu_not_applicable" boolean NOT NULL DEFAULT false`,
-    );
+    await queryRunner.query(`ALTER TABLE "restaurant" ADD COLUMN "menu_not_applicable" boolean NOT NULL DEFAULT false`);
 
     // Persisted skip state (see AddLodgingSkippedOptionalFields docblock for design)
     await queryRunner.query(

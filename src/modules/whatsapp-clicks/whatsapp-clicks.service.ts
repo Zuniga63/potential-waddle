@@ -26,19 +26,13 @@ export class WhatsappClicksService {
   /**
    * Create a new WhatsApp click record
    */
-  async create(
-    createDto: CreateWhatsappClickDto,
-    ipAddress?: string,
-  ): Promise<WhatsappClick> {
+  async create(createDto: CreateWhatsappClickDto, ipAddress?: string): Promise<WhatsappClick> {
     try {
       // Parse user agent
       const uaData = this.parseUserAgent(createDto.userAgent || '');
 
       // Check if it's a repeat click
-      const isRepeat = await this.checkRepeatClick(
-        createDto.sessionId,
-        createDto.entityId,
-      );
+      const isRepeat = await this.checkRepeatClick(createDto.sessionId, createDto.entityId);
 
       // Get user if authenticated
       let user: User | null = null;
@@ -83,10 +77,7 @@ export class WhatsappClicksService {
   /**
    * Check if this is a repeat click (same session, same entity, within 30 minutes)
    */
-  private async checkRepeatClick(
-    sessionId: string | undefined,
-    entityId: string,
-  ): Promise<boolean> {
+  private async checkRepeatClick(sessionId: string | undefined, entityId: string): Promise<boolean> {
     if (!sessionId) return false;
 
     const thirtyMinutesAgo = new Date(Date.now() - 30 * 60 * 1000);
@@ -221,11 +212,14 @@ export class WhatsappClicksService {
     // Basic analytics
     const repeatClicks = clicks.filter(c => c.isRepeatClick).length;
     const uniqueSessions = new Set(clicks.map(c => c.sessionId).filter(Boolean)).size;
-    const deviceTypes = clicks.reduce((acc, click) => {
-      const type = click.deviceType || 'unknown';
-      acc[type] = (acc[type] || 0) + 1;
-      return acc;
-    }, {} as Record<string, number>);
+    const deviceTypes = clicks.reduce(
+      (acc, click) => {
+        const type = click.deviceType || 'unknown';
+        acc[type] = (acc[type] || 0) + 1;
+        return acc;
+      },
+      {} as Record<string, number>,
+    );
 
     return {
       total,
@@ -400,43 +394,58 @@ export class WhatsappClicksService {
     const repeatClicks = clicks.filter(c => c.isRepeatClick).length;
 
     // Device breakdown
-    const deviceTypes = clicks.reduce((acc, click) => {
-      const type = click.deviceType || 'unknown';
-      acc[type] = (acc[type] || 0) + 1;
-      return acc;
-    }, {} as Record<string, number>);
+    const deviceTypes = clicks.reduce(
+      (acc, click) => {
+        const type = click.deviceType || 'unknown';
+        acc[type] = (acc[type] || 0) + 1;
+        return acc;
+      },
+      {} as Record<string, number>,
+    );
 
     // Browser breakdown
-    const browsers = clicks.reduce((acc, click) => {
-      const browser = click.browserName || 'Unknown';
-      acc[browser] = (acc[browser] || 0) + 1;
-      return acc;
-    }, {} as Record<string, number>);
+    const browsers = clicks.reduce(
+      (acc, click) => {
+        const browser = click.browserName || 'Unknown';
+        acc[browser] = (acc[browser] || 0) + 1;
+        return acc;
+      },
+      {} as Record<string, number>,
+    );
 
     // OS breakdown
-    const operatingSystems = clicks.reduce((acc, click) => {
-      const os = click.osName || 'Unknown';
-      acc[os] = (acc[os] || 0) + 1;
-      return acc;
-    }, {} as Record<string, number>);
+    const operatingSystems = clicks.reduce(
+      (acc, click) => {
+        const os = click.osName || 'Unknown';
+        acc[os] = (acc[os] || 0) + 1;
+        return acc;
+      },
+      {} as Record<string, number>,
+    );
 
     // Page type breakdown
-    const pageTypes = clicks.reduce((acc, click) => {
-      const pageType = click.pageType || 'Unknown';
-      acc[pageType] = (acc[pageType] || 0) + 1;
-      return acc;
-    }, {} as Record<string, number>);
+    const pageTypes = clicks.reduce(
+      (acc, click) => {
+        const pageType = click.pageType || 'Unknown';
+        acc[pageType] = (acc[pageType] || 0) + 1;
+        return acc;
+      },
+      {} as Record<string, number>,
+    );
 
     // Location breakdown
-    const locations = clicks.reduce((acc, click) => {
-      if (click.city && click.country) {
-        const location = `${click.city}, ${click.country}`;
-        acc[location] = (acc[location] || 0) + 1;
-      } else if (click.country) {
-        acc[click.country] = (acc[click.country] || 0) + 1;
-      }
-      return acc;
-    }, {} as Record<string, number>);
+    const locations = clicks.reduce(
+      (acc, click) => {
+        if (click.city && click.country) {
+          const location = `${click.city}, ${click.country}`;
+          acc[location] = (acc[location] || 0) + 1;
+        } else if (click.country) {
+          acc[click.country] = (acc[click.country] || 0) + 1;
+        }
+        return acc;
+      },
+      {} as Record<string, number>,
+    );
 
     // Clicks by date (last 30 days)
     const last30Days = new Date();
@@ -444,30 +453,37 @@ export class WhatsappClicksService {
 
     const clicksByDate = clicks
       .filter(c => c.clickedAt >= last30Days)
-      .reduce((acc, click) => {
-        const date = click.clickedAt.toISOString().split('T')[0];
-        acc[date] = (acc[date] || 0) + 1;
-        return acc;
-      }, {} as Record<string, number>);
+      .reduce(
+        (acc, click) => {
+          const date = click.clickedAt.toISOString().split('T')[0];
+          acc[date] = (acc[date] || 0) + 1;
+          return acc;
+        },
+        {} as Record<string, number>,
+      );
 
     // Clicks by hour (0-23)
-    const clicksByHour = clicks.reduce((acc, click) => {
-      const hour = click.clickedAt.getHours();
-      acc[hour] = (acc[hour] || 0) + 1;
-      return acc;
-    }, {} as Record<number, number>);
+    const clicksByHour = clicks.reduce(
+      (acc, click) => {
+        const hour = click.clickedAt.getHours();
+        acc[hour] = (acc[hour] || 0) + 1;
+        return acc;
+      },
+      {} as Record<number, number>,
+    );
 
     // Average time on page
     const timesOnPage = clicks.map(c => c.timeOnPage).filter(Boolean) as number[];
-    const avgTimeOnPage = timesOnPage.length > 0
-      ? timesOnPage.reduce((a, b) => a + b, 0) / timesOnPage.length
-      : 0;
+    const avgTimeOnPage = timesOnPage.length > 0 ? timesOnPage.reduce((a, b) => a + b, 0) / timesOnPage.length : 0;
 
     // Top phone numbers clicked
-    const topPhoneNumbers = clicks.reduce((acc, click) => {
-      acc[click.phoneNumber] = (acc[click.phoneNumber] || 0) + 1;
-      return acc;
-    }, {} as Record<string, number>);
+    const topPhoneNumbers = clicks.reduce(
+      (acc, click) => {
+        acc[click.phoneNumber] = (acc[click.phoneNumber] || 0) + 1;
+        return acc;
+      },
+      {} as Record<string, number>,
+    );
 
     return {
       summary: {

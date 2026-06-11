@@ -1,4 +1,10 @@
-import { BadRequestException, ForbiddenException, Injectable, NotFoundException, ConflictException } from '@nestjs/common';
+import {
+  BadRequestException,
+  ForbiddenException,
+  Injectable,
+  NotFoundException,
+  ConflictException,
+} from '@nestjs/common';
 import { TransportDto } from './dto/transport.dto';
 import { TransportFindAllParams } from './interfaces/transport-find-all-params.interface';
 import { generateTransportQueryFiltersAndSort } from './logic/generate-transport-query-filters-and-sort';
@@ -75,7 +81,7 @@ export class TransportService {
           hasAcceptedLodgingTerms: termsDto?.hasAcceptedTransportTerms ?? false,
           activeTermsId,
         })
-      : ({ state: 'no_aplica' as const, activeTermsId: null });
+      : { state: 'no_aplica' as const, activeTermsId: null };
     const docsStatus = computeLodgingDocsStatus(
       docsList.map(d => ({
         documentTypeName: d.documentType.name,
@@ -136,8 +142,28 @@ export class TransportService {
   // ------------------------------------------------------------------------------------------------
   async findAllPaginated(filters: AdminTransportFiltersDto & { status?: string }): Promise<AdminTransportListDto> {
     console.log('(TransportService.findAllPaginated): RAW filters →', JSON.stringify(filters));
-    const { page = 1, limit = 10, search, categoryId, townId, isPublic, status, sortBy = 'firstName', sortOrder = 'ASC' } = filters;
-    console.log('(TransportService.findAllPaginated): destructured →', { page, limit, search, categoryId, townId, isPublic, status, sortBy, sortOrder });
+    const {
+      page = 1,
+      limit = 10,
+      search,
+      categoryId,
+      townId,
+      isPublic,
+      status,
+      sortBy = 'firstName',
+      sortOrder = 'ASC',
+    } = filters;
+    console.log('(TransportService.findAllPaginated): destructured →', {
+      page,
+      limit,
+      search,
+      categoryId,
+      townId,
+      isPublic,
+      status,
+      sortBy,
+      sortOrder,
+    });
 
     const queryBuilder = this.transportRepository
       .createQueryBuilder('transport')
@@ -148,7 +174,9 @@ export class TransportService {
       .leftJoinAndSelect('transport.user', 'user');
 
     if (search) {
-      queryBuilder.andWhere('(transport.firstName ILIKE :search OR transport.lastName ILIKE :search)', { search: `%${search}%` });
+      queryBuilder.andWhere('(transport.firstName ILIKE :search OR transport.lastName ILIKE :search)', {
+        search: `%${search}%`,
+      });
     }
 
     if (categoryId) {
@@ -185,20 +213,19 @@ export class TransportService {
     const [transports, count] = await queryBuilder.getManyAndCount();
     console.log('(TransportService.findAllPaginated): result → count=', count, 'transports.length=', transports.length);
     if (transports.length > 0) {
-      console.log('(TransportService.findAllPaginated): first transport →', { id: transports[0].id, status: transports[0].status, firstName: transports[0].firstName });
+      console.log('(TransportService.findAllPaginated): first transport →', {
+        id: transports[0].id,
+        status: transports[0].status,
+        firstName: transports[0].firstName,
+      });
     }
     const pages = Math.ceil(count / limit);
 
     const result = new AdminTransportListDto({ currentPage: page, pages, count }, transports);
 
     // Admin-only enrichment: per-row T&C acceptance flag for the owner
-    const ownerIds = Array.from(
-      new Set(transports.map(t => t.user?.id).filter((id): id is string => !!id)),
-    );
-    const ownersWithAcceptance = await this.termsService.getOwnersWithAcceptance(
-      TermsTypeEnum.Transport,
-      ownerIds,
-    );
+    const ownerIds = Array.from(new Set(transports.map(t => t.user?.id).filter((id): id is string => !!id)));
+    const ownersWithAcceptance = await this.termsService.getOwnersWithAcceptance(TermsTypeEnum.Transport, ownerIds);
     result.data.forEach((dto, i) => {
       const ownerId = transports[i].user?.id;
       dto.ownerHasAcceptedTerms = ownerId ? ownersWithAcceptance.has(ownerId) : false;
@@ -332,7 +359,10 @@ export class TransportService {
     if (!transport) throw new NotFoundException('Transport not found');
     if (transport.user?.id !== user.id) throw new ForbiddenException('Not your transport');
     if (transport.status !== 'draft' && transport.status !== 'rejected') {
-      throw new BadRequestException({ message: 'INVALID_STATUS', detail: 'Only draft or rejected transports can be submitted' });
+      throw new BadRequestException({
+        message: 'INVALID_STATUS',
+        detail: 'Only draft or rejected transports can be submitted',
+      });
     }
 
     const completion = computeTransportCompletion(transport);
@@ -385,7 +415,10 @@ export class TransportService {
     const transport = await this.transportRepository.findOne({ where: { id: identifier }, relations });
     if (!transport) throw new NotFoundException('Transport not found');
     if (transport.status !== 'pending_review') {
-      throw new BadRequestException({ message: 'Only pending_review transports can be approved', currentStatus: transport.status });
+      throw new BadRequestException({
+        message: 'Only pending_review transports can be approved',
+        currentStatus: transport.status,
+      });
     }
     transport.status = 'published';
     transport.rejectionReason = null;
@@ -405,7 +438,10 @@ export class TransportService {
     const transport = await this.transportRepository.findOne({ where: { id: identifier }, relations });
     if (!transport) throw new NotFoundException('Transport not found');
     if (transport.status !== 'pending_review') {
-      throw new BadRequestException({ message: 'Only pending_review transports can be rejected', currentStatus: transport.status });
+      throw new BadRequestException({
+        message: 'Only pending_review transports can be rejected',
+        currentStatus: transport.status,
+      });
     }
     transport.status = 'rejected';
     transport.rejectionReason = reason || null;

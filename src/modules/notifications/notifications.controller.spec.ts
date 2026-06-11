@@ -43,10 +43,7 @@ describe('NotificationsController — welcome-business', () => {
     await new Promise(r => setImmediate(r));
 
     expect(result).toEqual({ ok: true });
-    expect(resendService.sendBusinessWelcomeEmail).toHaveBeenCalledWith(
-      mockUser.email,
-      mockUser.username,
-    );
+    expect(resendService.sendBusinessWelcomeEmail).toHaveBeenCalledWith(mockUser.email, mockUser.username);
   });
 
   // -------------------------------------------------------------------------

@@ -94,7 +94,7 @@ export class PromotionsController {
   })
   findAll(
     @Query('entityId') entityId?: string,
-    @Query('entityType') entityType?: 'lodging' | 'restaurant' | 'experience' | 'guide'
+    @Query('entityType') entityType?: 'lodging' | 'restaurant' | 'experience' | 'guide',
   ) {
     return this.promotionsService.findAll(entityId, entityType);
   }

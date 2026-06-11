@@ -95,7 +95,7 @@ export class PlansService {
       sortOrder: dto.sortOrder ?? 0,
     });
 
-    const savedPlan = await this.planRepository.save(plan) as Plan;
+    const savedPlan = (await this.planRepository.save(plan)) as Plan;
 
     // Create features if provided
     if (dto.features?.length) {

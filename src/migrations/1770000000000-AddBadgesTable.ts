@@ -33,12 +33,8 @@ export class AddBadgesTable1770000000000 implements MigrationInterface {
       )
     `);
 
-    await queryRunner.query(
-      `CREATE INDEX "IDX_entity_badge_entity" ON "entity_badge" ("entity_type", "entity_id")`,
-    );
-    await queryRunner.query(
-      `CREATE INDEX "IDX_entity_badge_badge" ON "entity_badge" ("badge_id")`,
-    );
+    await queryRunner.query(`CREATE INDEX "IDX_entity_badge_entity" ON "entity_badge" ("entity_type", "entity_id")`);
+    await queryRunner.query(`CREATE INDEX "IDX_entity_badge_badge" ON "entity_badge" ("badge_id")`);
     await queryRunner.query(
       `CREATE UNIQUE INDEX "UQ_entity_badge" ON "entity_badge" ("entity_type", "entity_id", "badge_id")`,
     );

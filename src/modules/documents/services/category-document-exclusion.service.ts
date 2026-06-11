@@ -22,7 +22,7 @@ export class CategoryDocumentExclusionService {
       relations: ['documentType'],
     });
 
-    return exclusions.map((e) => e.documentType.id);
+    return exclusions.map(e => e.documentType.id);
   }
 
   async getExcludedDocumentTypeIdsByCategoryIds(categoryIds: string[]): Promise<string[]> {
@@ -33,7 +33,7 @@ export class CategoryDocumentExclusionService {
       relations: ['documentType'],
     });
 
-    return [...new Set(exclusions.map((e) => e.documentType.id))];
+    return [...new Set(exclusions.map(e => e.documentType.id))];
   }
 
   async getCategoryWithExclusions(categoryId: string): Promise<{
@@ -71,7 +71,7 @@ export class CategoryDocumentExclusionService {
 
     // Create new exclusions
     if (documentTypeIds.length > 0) {
-      const exclusions = documentTypeIds.map((documentTypeId) => {
+      const exclusions = documentTypeIds.map(documentTypeId => {
         const exclusion = new CategoryDocumentExclusion();
         exclusion.category = { id: categoryId } as Category;
         exclusion.documentType = { id: documentTypeId } as DocumentType;

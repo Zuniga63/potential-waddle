@@ -26,12 +26,7 @@ import {
 } from '@nestjs/swagger';
 import { FilesInterceptor } from '@nestjs/platform-express';
 import { PublicEventsService } from './public-events.service';
-import {
-  CreatePublicEventDto,
-  UpdatePublicEventDto,
-  PublicEventFiltersDto,
-  PublicEventDto,
-} from './dto';
+import { CreatePublicEventDto, UpdatePublicEventDto, PublicEventFiltersDto, PublicEventDto } from './dto';
 import { SwaggerTags } from 'src/config';
 import { OptionalAuth } from '../auth/decorators';
 import { ContentTypes } from '../common/constants';
@@ -123,10 +118,7 @@ export class PublicEventsController {
   })
   @ApiNotFoundResponse({ description: 'Public event not found' })
   @ApiConflictResponse({ description: 'Event with this slug already exists' })
-  update(
-    @Param('id', ParseUUIDPipe) id: string,
-    @Body() updatePublicEventDto: UpdatePublicEventDto,
-  ) {
+  update(@Param('id', ParseUUIDPipe) id: string, @Body() updatePublicEventDto: UpdatePublicEventDto) {
     return this.publicEventsService.update(id, updatePublicEventDto);
   }
 
@@ -216,10 +208,7 @@ export class PublicEventsController {
     description: 'Main image set successfully',
   })
   @ApiNotFoundResponse({ description: 'Public event or image not found' })
-  setMainImage(
-    @Param('eventId', ParseUUIDPipe) eventId: string,
-    @Param('imageId', ParseUUIDPipe) imageId: string,
-  ) {
+  setMainImage(@Param('eventId', ParseUUIDPipe) eventId: string, @Param('imageId', ParseUUIDPipe) imageId: string) {
     return this.publicEventsService.setMainImage(eventId, imageId);
   }
 

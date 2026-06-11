@@ -28,11 +28,6 @@ function hasDaysOrDates(state: TripState): boolean {
   return state.days !== null || (state.dateFrom !== null && state.dateTo !== null);
 }
 
-// Helper para validar contacto
-function hasContact(state: TripState): boolean {
-  return state.contactPhone !== null || state.contactEmail !== null;
-}
-
 export const INTENT_CONFIG: Record<RafaIntent, IntentConfig> = {
   // Búsquedas - no requieren campos obligatorios
   [RafaIntent.FIND_LODGING]: {

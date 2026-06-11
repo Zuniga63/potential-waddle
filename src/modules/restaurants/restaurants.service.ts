@@ -3,7 +3,13 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Injectable, NotFoundException, BadRequestException, ForbiddenException } from '@nestjs/common';
 import { FindOptionsRelations, In, Point } from 'typeorm';
 
-import { RestaurantDto, CreateRestaurantDto, UpdateRestaurantDto, AdminRestaurantsFiltersDto, AdminRestaurantsListDto } from './dto';
+import {
+  RestaurantDto,
+  CreateRestaurantDto,
+  UpdateRestaurantDto,
+  AdminRestaurantsFiltersDto,
+  AdminRestaurantsListDto,
+} from './dto';
 import { Restaurant, RestaurantImage } from './entities';
 import { RestaurantFindAllParams } from './interfaces';
 import { generateRestaurantQueryFiltersAndSort } from './logic';
@@ -75,7 +81,17 @@ export class RestaurantsService {
   // Find all restaurants paginated (Admin)
   // ------------------------------------------------------------------------------------------------
   async findAllPaginated(filters: AdminRestaurantsFiltersDto): Promise<AdminRestaurantsListDto> {
-    const { page = 1, limit = 10, search, categoryId, townId, isPublic, status, sortBy = 'name', sortOrder = 'ASC' } = filters;
+    const {
+      page = 1,
+      limit = 10,
+      search,
+      categoryId,
+      townId,
+      isPublic,
+      status,
+      sortBy = 'name',
+      sortOrder = 'ASC',
+    } = filters;
 
     const queryBuilder = this.restaurantRepository
       .createQueryBuilder('restaurant')
@@ -124,13 +140,8 @@ export class RestaurantsService {
     const result = new AdminRestaurantsListDto({ currentPage: page, pages, count }, restaurants);
 
     // Admin-only enrichment: per-row T&C acceptance flag for the owner
-    const ownerIds = Array.from(
-      new Set(restaurants.map(r => r.user?.id).filter((id): id is string => !!id)),
-    );
-    const ownersWithAcceptance = await this.termsService.getOwnersWithAcceptance(
-      TermsTypeEnum.Restaurant,
-      ownerIds,
-    );
+    const ownerIds = Array.from(new Set(restaurants.map(r => r.user?.id).filter((id): id is string => !!id)));
+    const ownersWithAcceptance = await this.termsService.getOwnersWithAcceptance(TermsTypeEnum.Restaurant, ownerIds);
     result.data.forEach((dto, i) => {
       const ownerId = restaurants[i].user?.id;
       dto.ownerHasAcceptedTerms = ownerId ? ownersWithAcceptance.has(ownerId) : false;
@@ -266,7 +277,12 @@ export class RestaurantsService {
     const [termsDto, docsList] = await Promise.all([
       userId ? this.termsService.getStatusForUser(userId) : Promise.resolve(null),
       townId
-        ? this.documentService.getEntityDocumentStatus(townId, DocumentEntityType.RESTAURANT, restaurant.id, categoryIds)
+        ? this.documentService.getEntityDocumentStatus(
+            townId,
+            DocumentEntityType.RESTAURANT,
+            restaurant.id,
+            categoryIds,
+          )
         : Promise.resolve([]),
     ]);
 
@@ -278,7 +294,7 @@ export class RestaurantsService {
           hasAcceptedRestaurantTerms: termsDto?.hasAcceptedRestaurantTerms ?? false,
           activeTermsId,
         })
-      : ({ state: 'no_aplica' as const, activeTermsId: null });
+      : { state: 'no_aplica' as const, activeTermsId: null };
     const docsStatus = computeRestaurantDocsStatus(
       docsList.map(d => ({
         documentTypeName: d.documentType.name,
@@ -461,7 +477,8 @@ export class RestaurantsService {
       order: { images: { order: 'ASC' } },
     });
 
-    if (!restaurant) restaurant = await this.restaurantRepository.findOne({ where: { slug, status: 'published' }, relations });
+    if (!restaurant)
+      restaurant = await this.restaurantRepository.findOne({ where: { slug, status: 'published' }, relations });
     if (!restaurant) throw new NotFoundException('Restaurant not found');
 
     // Check for active promotions and user review in parallel

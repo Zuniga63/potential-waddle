@@ -14,10 +14,7 @@ export class WhatsappClicksController {
   @ApiOperation({ summary: 'Track a WhatsApp click' })
   @ApiResponse({ status: 201, description: 'Click tracked successfully' })
   @ApiResponse({ status: 400, description: 'Bad request' })
-  async trackClick(
-    @Body() createDto: CreateWhatsappClickDto,
-    @Ip() ipAddress: string,
-  ) {
+  async trackClick(@Body() createDto: CreateWhatsappClickDto, @Ip() ipAddress: string) {
     return this.whatsappClicksService.create(createDto, ipAddress);
   }
 
@@ -26,10 +23,7 @@ export class WhatsappClicksController {
   @ApiQuery({ name: 'entityId', required: false, description: 'Filter by entity ID' })
   @ApiQuery({ name: 'entityType', required: false, description: 'Filter by entity type' })
   @ApiResponse({ status: 200, description: 'Analytics retrieved successfully' })
-  async getAnalytics(
-    @Query('entityId') entityId?: string,
-    @Query('entityType') entityType?: string,
-  ) {
+  async getAnalytics(@Query('entityId') entityId?: string, @Query('entityType') entityType?: string) {
     return this.whatsappClicksService.getAnalytics(entityId, entityType);
   }
 
@@ -38,10 +32,7 @@ export class WhatsappClicksController {
   @ApiQuery({ name: 'entityId', required: true, description: 'Entity ID' })
   @ApiQuery({ name: 'entityType', required: true, description: 'Entity type' })
   @ApiResponse({ status: 200, description: 'Detailed analytics retrieved successfully' })
-  async getDetailedAnalytics(
-    @Query('entityId') entityId: string,
-    @Query('entityType') entityType: string,
-  ) {
+  async getDetailedAnalytics(@Query('entityId') entityId: string, @Query('entityType') entityType: string) {
     return this.whatsappClicksService.getDetailedAnalytics(entityId, entityType);
   }
 
@@ -73,10 +64,7 @@ export class WhatsappClicksController {
   @ApiOperation({ summary: 'Get WhatsApp clicks by day and entity type for dashboard' })
   @ApiQuery({ name: 'days', required: false, description: 'Number of days to fetch (default 7)' })
   @ApiResponse({ status: 200, description: 'Dashboard stats retrieved successfully' })
-  async getDashboardStats(
-    @Query('days') days?: string,
-    @Req() request?: Request,
-  ) {
+  async getDashboardStats(@Query('days') days?: string, @Req() request?: Request) {
     const townId = (request as any)?.[TENANT_ID_KEY];
     return this.whatsappClicksService.getDashboardStats(days ? parseInt(days, 10) : 7, townId);
   }

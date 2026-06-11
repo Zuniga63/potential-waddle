@@ -1,5 +1,10 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { CreateMunicipalityDto, UpdateMunicipalityDto, AdminDepartmentsFiltersDto, AdminDepartmentsListDto } from '../dto';
+import {
+  CreateMunicipalityDto,
+  UpdateMunicipalityDto,
+  AdminDepartmentsFiltersDto,
+  AdminDepartmentsListDto,
+} from '../dto';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Department } from '../entities';
 import { Repository } from 'typeorm';

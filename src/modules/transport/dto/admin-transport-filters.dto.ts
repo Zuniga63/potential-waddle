@@ -48,7 +48,10 @@ export class AdminTransportFiltersDto {
   @IsString()
   sortOrder?: 'ASC' | 'DESC' = 'ASC';
 
-  @ApiPropertyOptional({ description: 'Filter by workflow status', enum: ['draft', 'pending_review', 'published', 'rejected'] })
+  @ApiPropertyOptional({
+    description: 'Filter by workflow status',
+    enum: ['draft', 'pending_review', 'published', 'rejected'],
+  })
   @IsOptional()
   @IsString()
   status?: string;

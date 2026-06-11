@@ -44,7 +44,7 @@ export function computeRestaurantInfoCompletion(restaurant: Restaurant): Restaur
   const hasEmailOrPhone =
     !!(restaurant.email && restaurant.email.trim().length > 0) ||
     !!(restaurant.phoneNumbers && restaurant.phoneNumbers.length >= 1);
-  totalScore += ((hasWhatsapp ? 1 : 0) + (hasEmailOrPhone ? 1 : 0)) / 2 * 15;
+  totalScore += (((hasWhatsapp ? 1 : 0) + (hasEmailOrPhone ? 1 : 0)) / 2) * 15;
   if (!hasWhatsapp) infoMissingFields.push('whatsappNumbers');
 
   // Bucket 3: Price (10)
@@ -72,7 +72,7 @@ export function computeRestaurantInfoCompletion(restaurant: Restaurant): Restaur
   const hasFacilities = !!(restaurant.facilities && restaurant.facilities.length >= 1);
   const hasPaymentMethods = !!(restaurant.paymentMethods && restaurant.paymentMethods.length >= 1);
   const hasLanguages = !!(restaurant.spokenLanguages && restaurant.spokenLanguages.length >= 1);
-  totalScore += ((hasFacilities ? 1 : 0) + (hasPaymentMethods ? 1 : 0) + (hasLanguages ? 1 : 0)) / 3 * 10;
+  totalScore += (((hasFacilities ? 1 : 0) + (hasPaymentMethods ? 1 : 0) + (hasLanguages ? 1 : 0)) / 3) * 10;
   if (!hasFacilities) infoMissingFields.push('facilities');
   if (!hasPaymentMethods) infoMissingFields.push('paymentMethods');
   if (!hasLanguages) infoMissingFields.push('spokenLanguages');

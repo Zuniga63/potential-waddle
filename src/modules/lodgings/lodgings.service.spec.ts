@@ -1,5 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { BadRequestException, ForbiddenException, NotFoundException, InternalServerErrorException } from '@nestjs/common';
+import { ForbiddenException, InternalServerErrorException } from '@nestjs/common';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { DataSource } from 'typeorm';
 
@@ -165,9 +165,19 @@ describe('LodgingsService — submitForReview', () => {
         { provide: getRepositoryToken(LodgingRoomType), useValue: makeRepo() },
         { provide: getRepositoryToken(Plan), useValue: makeRepo() },
         { provide: getRepositoryToken(Subscription), useValue: makeRepo() },
-        { provide: CloudinaryService, useValue: { uploadImage: jest.fn(), destroyFile: jest.fn(), destroyFolder: jest.fn() } },
+        {
+          provide: CloudinaryService,
+          useValue: { uploadImage: jest.fn(), destroyFile: jest.fn(), destroyFolder: jest.fn() },
+        },
         { provide: GooglePlacesService, useValue: { getPlaceDetails: jest.fn() } },
-        { provide: PromotionsService, useValue: { hasActivePromotions: jest.fn(), getLatestActivePromotion: jest.fn(), getActivePromotions: jest.fn() } },
+        {
+          provide: PromotionsService,
+          useValue: {
+            hasActivePromotions: jest.fn(),
+            getLatestActivePromotion: jest.fn(),
+            getActivePromotions: jest.fn(),
+          },
+        },
         { provide: EntityReviewsService, useValue: { getUserReviews: jest.fn(), findUserReview: jest.fn() } },
         { provide: TermsService, useValue: termsService },
         { provide: DocumentService, useValue: { getEntityDocumentStatus: jest.fn().mockResolvedValue([]) } },
@@ -242,9 +252,9 @@ describe('LodgingsService — submitForReview', () => {
     const lodging = buildFullLodging({ user: { id: 'other-user-id' } as User });
     lodgingRepo.findOne.mockResolvedValueOnce(lodging);
 
-    await expect(
-      service.submitForReview({ identifier: LODGING_ID, user: mockUser }),
-    ).rejects.toBeInstanceOf(ForbiddenException);
+    await expect(service.submitForReview({ identifier: LODGING_ID, user: mockUser })).rejects.toBeInstanceOf(
+      ForbiddenException,
+    );
 
     expect(lodgingRepo.save).not.toHaveBeenCalled();
   });
@@ -256,9 +266,7 @@ describe('LodgingsService — submitForReview', () => {
     const lodging = buildFullLodging({ status: 'published' });
     lodgingRepo.findOne.mockResolvedValueOnce(lodging);
 
-    await expect(
-      service.submitForReview({ identifier: LODGING_ID, user: mockUser }),
-    ).rejects.toMatchObject(
+    await expect(service.submitForReview({ identifier: LODGING_ID, user: mockUser })).rejects.toMatchObject(
       expect.objectContaining({
         response: expect.objectContaining({ message: 'INVALID_STATUS' }),
       }),
@@ -285,9 +293,7 @@ describe('LodgingsService — submitForReview', () => {
     });
     lodgingRepo.findOne.mockResolvedValueOnce(lodging);
 
-    await expect(
-      service.submitForReview({ identifier: LODGING_ID, user: mockUser }),
-    ).rejects.toMatchObject(
+    await expect(service.submitForReview({ identifier: LODGING_ID, user: mockUser })).rejects.toMatchObject(
       expect.objectContaining({
         response: expect.objectContaining({
           errorCode: 'INCOMPLETE',
@@ -411,9 +417,15 @@ describe('LodgingsService — create', () => {
         { provide: getRepositoryToken(LodgingRoomType), useValue: makeRepo() },
         { provide: getRepositoryToken(Plan), useValue: planRepo },
         { provide: getRepositoryToken(Subscription), useValue: makeRepo() },
-        { provide: CloudinaryService, useValue: { uploadImage: jest.fn(), destroyFile: jest.fn(), destroyFolder: jest.fn() } },
+        {
+          provide: CloudinaryService,
+          useValue: { uploadImage: jest.fn(), destroyFile: jest.fn(), destroyFolder: jest.fn() },
+        },
         { provide: GooglePlacesService, useValue: { getPlaceDetails: jest.fn() } },
-        { provide: PromotionsService, useValue: { hasActivePromotions: jest.fn(), getLatestActivePromotion: jest.fn() } },
+        {
+          provide: PromotionsService,
+          useValue: { hasActivePromotions: jest.fn(), getLatestActivePromotion: jest.fn() },
+        },
         { provide: EntityReviewsService, useValue: { getUserReviews: jest.fn() } },
         { provide: TermsService, useValue: termsService },
         { provide: DocumentService, useValue: { getEntityDocumentStatus: jest.fn().mockResolvedValue([]) } },

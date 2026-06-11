@@ -125,7 +125,8 @@ export class CommerceProductsService {
 
     try {
       // Remove id from updateDto if present to avoid updating primary key
-      const { id: dtoId, ...dataToUpdate } = updateDto as any;
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      const { id: _dtoId, ...dataToUpdate } = updateDto as any;
       this.logger.log(`Data to update (without id): ${JSON.stringify(dataToUpdate)}`);
 
       await this.productRepository.update(id, dataToUpdate);

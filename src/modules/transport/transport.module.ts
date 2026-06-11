@@ -13,11 +13,6 @@ import { DocumentsModule } from '../documents/documents.module';
 @Module({
   controllers: [TransportController],
   providers: [TransportService],
-  imports: [
-    TypeOrmModule.forFeature([Transport, Category, Town, User]),
-    ReviewsModule,
-    TermsModule,
-    DocumentsModule,
-  ],
+  imports: [TypeOrmModule.forFeature([Transport, Category, Town, User]), ReviewsModule, TermsModule, DocumentsModule],
 })
 export class TransportModule {}

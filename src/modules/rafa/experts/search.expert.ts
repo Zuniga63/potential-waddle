@@ -26,7 +26,8 @@ export class SearchExpert extends BaseExpert {
   private readonly logger = new Logger(SearchExpert.name);
 
   readonly name = 'Experto en Búsquedas';
-  readonly description = 'Encuentra hoteles, restaurantes, experiencias, lugares mágicos, guías, transporte y comercios';
+  readonly description =
+    'Encuentra hoteles, restaurantes, experiencias, lugares mágicos, guías, transporte y comercios';
 
   readonly handledIntents = [
     RafaIntent.FIND_LODGING,
@@ -101,15 +102,10 @@ EJEMPLO:
       }
 
       // Execute search
-      const cards = await this.toolsService.executeTool(
-        toolName,
-        state,
-        message,
-        {
-          selectedPosition: classification.extractedData.selectedPosition ?? undefined,
-          selectedName: classification.extractedData.selectedName ?? undefined,
-        },
-      );
+      const cards = await this.toolsService.executeTool(toolName, state, message, {
+        selectedPosition: classification.extractedData.selectedPosition ?? undefined,
+        selectedName: classification.extractedData.selectedName ?? undefined,
+      });
 
       this.logger.debug(`Search returned ${cards.length} results`);
 
@@ -193,8 +189,13 @@ EJEMPLO:
     return mapping[intent] || null;
   }
 
-  private getEntityTypeFromIntent(intent: RafaIntent): 'lodging' | 'restaurant' | 'experience' | 'place' | 'guide' | 'transport' | 'commerce' | null {
-    const mapping: Record<string, 'lodging' | 'restaurant' | 'experience' | 'place' | 'guide' | 'transport' | 'commerce'> = {
+  private getEntityTypeFromIntent(
+    intent: RafaIntent,
+  ): 'lodging' | 'restaurant' | 'experience' | 'place' | 'guide' | 'transport' | 'commerce' | null {
+    const mapping: Record<
+      string,
+      'lodging' | 'restaurant' | 'experience' | 'place' | 'guide' | 'transport' | 'commerce'
+    > = {
       [RafaIntent.FIND_LODGING]: 'lodging',
       [RafaIntent.FIND_RESTAURANT]: 'restaurant',
       [RafaIntent.FIND_EXPERIENCE]: 'experience',
@@ -222,10 +223,7 @@ EJEMPLO:
 
   private generateFollowUps(intent: RafaIntent, cards: any[], state: TripState): string[] {
     if (cards.length === 0) {
-      return [
-        '¿Quieres buscar en otro destino?',
-        '¿Ajustamos el presupuesto?',
-      ];
+      return ['¿Quieres buscar en otro destino?', '¿Ajustamos el presupuesto?'];
     }
 
     if (intent === RafaIntent.SELECT_ENTITY && cards.length === 1) {
@@ -262,11 +260,6 @@ EJEMPLO:
       return ['Ampliar búsqueda', 'Cambiar filtros', 'Otro destino'];
     }
 
-    return [
-      'Ver detalles',
-      'Más opciones',
-      'Filtrar por precio',
-      'Agregar al plan',
-    ];
+    return ['Ver detalles', 'Más opciones', 'Filtrar por precio', 'Agregar al plan'];
   }
 }

@@ -1,6 +1,6 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, Like, FindOptionsWhere, In } from 'typeorm';
+import { Repository, FindOptionsWhere } from 'typeorm';
 
 import { Department, Town, TownInfo } from '../entities';
 import { CreateTownDto, UpdateTownDto } from '../dto';
@@ -80,9 +80,7 @@ export class TownsService {
     // Sorting: always sort by isEnable first (active first), then by selected field
     const validSortFields = ['name', 'code', 'createdAt', 'updatedAt', 'isEnable'];
     const sortField = validSortFields.includes(sortBy) ? sortBy : 'name';
-    queryBuilder
-      .orderBy('town.isEnable', 'DESC')
-      .addOrderBy(`town.${sortField}`, sortOrder);
+    queryBuilder.orderBy('town.isEnable', 'DESC').addOrderBy(`town.${sortField}`, sortOrder);
 
     // Pagination
     const skip = (page - 1) * limit;
@@ -138,9 +136,13 @@ export class TownsService {
     }
 
     // Handle TownInfo update
-    const hasInfoFields = population !== undefined || distanceToCapital !== undefined ||
-      ubication !== undefined || officialName !== undefined ||
-      altitude !== undefined || temperature !== undefined;
+    const hasInfoFields =
+      population !== undefined ||
+      distanceToCapital !== undefined ||
+      ubication !== undefined ||
+      officialName !== undefined ||
+      altitude !== undefined ||
+      temperature !== undefined;
 
     if (hasInfoFields) {
       let townInfo = town.info;

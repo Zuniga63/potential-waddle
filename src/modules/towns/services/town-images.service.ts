@@ -41,9 +41,7 @@ export class TownImagesService {
   async getImages(townId: string): Promise<TownImageDto[]> {
     const town = await this.getTownWithImages(townId);
     const images = town.images || [];
-    return images
-      .sort((a, b) => a.order - b.order)
-      .map(img => new TownImageDto(img));
+    return images.sort((a, b) => a.order - b.order).map(img => new TownImageDto(img));
   }
 
   // ------------------------------------------------------------------------------------------------
@@ -53,9 +51,7 @@ export class TownImagesService {
     const town = await this.getTownWithImages(townId);
     const existingImages = town.images || [];
 
-    const currentMaxOrder = existingImages.length > 0
-      ? Math.max(...existingImages.map(img => img.order))
-      : 0;
+    const currentMaxOrder = existingImages.length > 0 ? Math.max(...existingImages.map(img => img.order)) : 0;
 
     const uploadedImages: TownImage[] = [];
 
@@ -128,9 +124,7 @@ export class TownImagesService {
 
     // If setting heroPosition, ensure it's not already taken
     if (dto.heroPosition) {
-      const existingWithPosition = images.find(
-        img => img.heroPosition === dto.heroPosition && img.id !== imageId,
-      );
+      const existingWithPosition = images.find(img => img.heroPosition === dto.heroPosition && img.id !== imageId);
       if (existingWithPosition) {
         // Swap positions
         existingWithPosition.heroPosition = image.heroPosition;
@@ -169,14 +163,10 @@ export class TownImagesService {
     }
 
     // Reorder remaining images
-    const remainingImages = images
-      .filter(img => img.id !== imageId)
-      .sort((a, b) => a.order - b.order);
+    const remainingImages = images.filter(img => img.id !== imageId).sort((a, b) => a.order - b.order);
 
     await Promise.all(
-      remainingImages.map((img, index) =>
-        this.townImageRepository.update(img.id, { order: index + 1 }),
-      ),
+      remainingImages.map((img, index) => this.townImageRepository.update(img.id, { order: index + 1 })),
     );
 
     return { message: 'Image deleted successfully' };
@@ -189,11 +179,7 @@ export class TownImagesService {
     const town = await this.townRepository.findOne({ where: { id: townId } });
     if (!town) throw new NotFoundException('Town not found');
 
-    await Promise.all(
-      dto.newOrder.map(({ id, order }) =>
-        this.townImageRepository.update(id, { order }),
-      ),
-    );
+    await Promise.all(dto.newOrder.map(({ id, order }) => this.townImageRepository.update(id, { order })));
 
     return { message: 'Images reordered successfully' };
   }
@@ -202,7 +188,7 @@ export class TownImagesService {
   // Set hero images
   // ------------------------------------------------------------------------------------------------
   async setHeroImages(townId: string, dto: SetHeroImagesDto): Promise<TownImageDto[]> {
-    const town = await this.getTownWithImages(townId);
+    await this.getTownWithImages(townId);
 
     if (dto.imageIds.length > 3) {
       throw new BadRequestException('Maximum 3 hero images allowed');
@@ -271,15 +257,16 @@ export class TownImagesService {
       return { townName: '', images: [] };
     }
 
-    const images = town.images
-      ?.filter(img => img.isPublic)
-      .sort((a, b) => a.order - b.order)
-      .map(img => ({
-        id: img.id,
-        url: img.imageResource?.url || '',
-        order: img.order,
-        isHero: img.isHero,
-      })) || [];
+    const images =
+      town.images
+        ?.filter(img => img.isPublic)
+        .sort((a, b) => a.order - b.order)
+        .map(img => ({
+          id: img.id,
+          url: img.imageResource?.url || '',
+          order: img.order,
+          isHero: img.isHero,
+        })) || [];
 
     return { townName: town.name, images };
   }
@@ -310,13 +297,14 @@ export class TownImagesService {
       return { images: [] };
     }
 
-    const heroImages = town.images
-      ?.filter(img => img.isHero && img.isPublic)
-      .sort((a, b) => (a.heroPosition || 0) - (b.heroPosition || 0))
-      .map(img => ({
-        url: img.imageResource?.url || '',
-        position: img.heroPosition || 0,
-      })) || [];
+    const heroImages =
+      town.images
+        ?.filter(img => img.isHero && img.isPublic)
+        .sort((a, b) => (a.heroPosition || 0) - (b.heroPosition || 0))
+        .map(img => ({
+          url: img.imageResource?.url || '',
+          position: img.heroPosition || 0,
+        })) || [];
 
     return {
       name: town.name,

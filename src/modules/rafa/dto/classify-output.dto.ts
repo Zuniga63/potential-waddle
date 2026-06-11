@@ -15,8 +15,16 @@ export const ClassifyOutputSchema = z.object({
     days: z.number().int().min(1).nullable().optional(),
     budgetMin: z.number().min(0).nullable().optional(),
     budgetMax: z.number().min(0).nullable().optional(),
-    tripStyle: z.array(z.enum(TRIP_STYLES)).nullable().optional().transform(v => v ?? []),
-    tags: z.array(z.string()).nullable().optional().transform(v => v ?? []),
+    tripStyle: z
+      .array(z.enum(TRIP_STYLES))
+      .nullable()
+      .optional()
+      .transform(v => v ?? []),
+    tags: z
+      .array(z.string())
+      .nullable()
+      .optional()
+      .transform(v => v ?? []),
     contactPhone: z.string().nullable().optional(),
     contactEmail: z.string().email().nullable().optional(),
     // Para SELECT_ENTITY

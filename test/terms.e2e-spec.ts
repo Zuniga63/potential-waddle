@@ -33,9 +33,7 @@ describe('Terms (e2e)', () => {
   // * ----------------------------------------------------------------------------------------------------------------
   describe('GET /terms/active', () => {
     it('returns 200 + TermsDocumentDto shape for the seeded markdown user doc', async () => {
-      const res = await request(app.getHttpServer())
-        .get(`/terms/active?type=${TermsTypeEnum.User}`)
-        .expect(200);
+      const res = await request(app.getHttpServer()).get(`/terms/active?type=${TermsTypeEnum.User}`).expect(200);
 
       expect(res.body).toMatchObject({
         id: expect.any(String),
@@ -48,9 +46,7 @@ describe('Terms (e2e)', () => {
     });
 
     it('returns 400 when the query param is not a valid TermsTypeEnum (ParseEnumPipe)', async () => {
-      await request(app.getHttpServer())
-        .get('/terms/active?type=invalidtype')
-        .expect(400);
+      await request(app.getHttpServer()).get('/terms/active?type=invalidtype').expect(400);
     });
   });
 

@@ -126,10 +126,7 @@ EJEMPLO DE FORMATO:
         message: response,
         cards: dayCards,
         stateUpdates: { currentGoal: 'Itinerario creado' },
-        followUpQuestions: [
-          '¿Ajustamos algún día?',
-          '¿Calculamos el presupuesto total?',
-        ],
+        followUpQuestions: ['¿Ajustamos algún día?', '¿Calculamos el presupuesto total?'],
         suggestedActions: ['Modificar itinerario', 'Ver presupuesto', 'Agregar experiencias'],
         requiresMoreInfo: false,
       };
@@ -161,9 +158,7 @@ EJEMPLO DE FORMATO:
 
     // Get some popular places if none selected
     const places = await this.placeRepo.find({
-      where: state.townId
-        ? { town: { id: state.townId }, isPublic: true }
-        : { isPublic: true },
+      where: state.townId ? { town: { id: state.townId }, isPublic: true } : { isPublic: true },
       take: 5,
       order: { rating: 'DESC' },
     });
@@ -308,9 +303,7 @@ EJEMPLO DE FORMATO:
           entityId: a.entityId,
         })),
       },
-      actions: [
-        { text: 'Modificar día', action: `modify_day_${dayPlan.day}` },
-      ],
+      actions: [{ text: 'Modificar día', action: `modify_day_${dayPlan.day}` }],
     };
   }
 
@@ -322,10 +315,14 @@ EJEMPLO DE FORMATO:
   ): Promise<string> {
     const itineraryContext = `
 ITINERARIO GENERADO:
-${itinerary.map(day => `
+${itinerary
+  .map(
+    day => `
 Día ${day.day}: ${day.title}
 ${day.activities.map(a => `- ${a.time}: ${a.activity}`).join('\n')}
-`).join('\n')}
+`,
+  )
+  .join('\n')}
 `;
 
     return this.llmService.generateExpertResponse(

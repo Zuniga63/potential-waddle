@@ -9,15 +9,7 @@ import { Commerce } from '../commerce/entities/commerce.entity';
 import { Place } from '../places/entities/place.entity';
 
 @Module({
-  imports: [
-    TypeOrmModule.forFeature([
-      Lodging,
-      Restaurant,
-      Experience,
-      Commerce,
-      Place,
-    ]),
-  ],
+  imports: [TypeOrmModule.forFeature([Lodging, Restaurant, Experience, Commerce, Place])],
   controllers: [MapController],
   providers: [MapService],
   exports: [MapService],

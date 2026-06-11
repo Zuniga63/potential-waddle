@@ -4,10 +4,7 @@ import { TownDto } from 'src/modules/towns/dto';
 import { ExperienceGuide } from '../interfaces';
 import { GuideDto } from 'src/modules/guides/dto/guide.dto';
 import { ApiProperty } from '@nestjs/swagger';
-import type {
-  ExperienceTermsStatusState,
-  ExperienceDocsStatusState,
-} from '../utils/compute-experience-completion';
+import type { ExperienceTermsStatusState, ExperienceDocsStatusState } from '../utils/compute-experience-completion';
 
 // Owner-scoped sub-DTOs surfacing the 3-indicator completion model (mirror of RestaurantDto).
 

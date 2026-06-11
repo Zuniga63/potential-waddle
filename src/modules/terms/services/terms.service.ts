@@ -132,9 +132,7 @@ export class TermsService {
       activeIds[doc.type] = doc.id;
     }
 
-    const nonNullIds = (Object.values(activeIds) as (string | null)[]).filter(
-      (v): v is string => v !== null,
-    );
+    const nonNullIds = (Object.values(activeIds) as (string | null)[]).filter((v): v is string => v !== null);
     const accepted = nonNullIds.length
       ? await this.acceptsRepo.find({
           where: { userId, termsDocumentId: In(nonNullIds) },
@@ -210,9 +208,7 @@ export class TermsService {
       countMap.set(row.docId, parseInt(row.count, 10));
     }
 
-    return new AdminTermsListDto(
-      docs.map(doc => new AdminTermsDocumentDto(doc, countMap.get(doc.id) ?? 0)),
-    );
+    return new AdminTermsListDto(docs.map(doc => new AdminTermsDocumentDto(doc, countMap.get(doc.id) ?? 0)));
   }
 
   // * ----------------------------------------------------------------------------------------------------------------
@@ -363,11 +359,7 @@ export class TermsService {
   // * ----------------------------------------------------------------------------------------------------------------
   // * ADMIN — PAGINATED ACCEPTANCES FOR A DOCUMENT
   // * ----------------------------------------------------------------------------------------------------------------
-  async adminGetAcceptances(
-    docId: string,
-    page = 1,
-    pageSize = 50,
-  ): Promise<AdminAcceptancesListDto> {
+  async adminGetAcceptances(docId: string, page = 1, pageSize = 50): Promise<AdminAcceptancesListDto> {
     const docExists = await this.docsRepo.exist({ where: { id: docId } });
     if (!docExists) throw new NotFoundException(`Terms document ${docId} not found`);
 

@@ -1,13 +1,4 @@
-import {
-  Controller,
-  Get,
-  Post,
-  Delete,
-  Param,
-  ParseUUIDPipe,
-  UseInterceptors,
-  UploadedFile,
-} from '@nestjs/common';
+import { Controller, Get, Post, Delete, Param, ParseUUIDPipe, UseInterceptors, UploadedFile } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { ApiTags, ApiConsumes, ApiOkResponse, ApiBody } from '@nestjs/swagger';
 import { Auth } from '../auth/decorators';
@@ -54,20 +45,14 @@ export class MenuController {
     },
   })
   @ApiOkResponse({ description: 'Upload and process menu file', type: MenuDto })
-  upload(
-    @Param('restaurantId', ParseUUIDPipe) restaurantId: string,
-    @UploadedFile() file: Express.Multer.File,
-  ) {
+  upload(@Param('restaurantId', ParseUUIDPipe) restaurantId: string, @UploadedFile() file: Express.Multer.File) {
     return this.menuService.processAndCreate(restaurantId, file);
   }
 
   @Delete(':menuId')
   @Auth()
   @ApiOkResponse({ description: 'Delete menu' })
-  delete(
-    @Param('restaurantId', ParseUUIDPipe) restaurantId: string,
-    @Param('menuId', ParseUUIDPipe) menuId: string,
-  ) {
+  delete(@Param('restaurantId', ParseUUIDPipe) restaurantId: string, @Param('menuId', ParseUUIDPipe) menuId: string) {
     return this.menuService.delete(menuId);
   }
 }

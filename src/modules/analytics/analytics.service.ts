@@ -57,9 +57,9 @@ export class AnalyticsService {
       take: per_page,
     });
 
-    const data = items.map((l) => {
+    const data = items.map(l => {
       const { latitude, longitude } = extractCoordinates(l.location);
-      const mainImage = l.images?.find((img) => img.order === 0);
+      const mainImage = l.images?.find(img => img.order === 0);
       return {
         id: l.id,
         name: l.name,
@@ -124,9 +124,9 @@ export class AnalyticsService {
       take: per_page,
     });
 
-    const data = items.map((r) => {
+    const data = items.map(r => {
       const { latitude, longitude } = extractCoordinates(r.location);
-      const mainImage = r.images?.find((img) => img.order === 0);
+      const mainImage = r.images?.find(img => img.order === 0);
       return {
         id: r.id,
         name: r.name,
@@ -189,10 +189,10 @@ export class AnalyticsService {
       take: per_page,
     });
 
-    const data = items.map((e) => {
+    const data = items.map(e => {
       const departure = extractCoordinates(e.departureLocation);
       const arrival = extractCoordinates(e.arrivalLocation);
-      const mainImage = e.images?.find((img) => img.order === 0);
+      const mainImage = e.images?.find(img => img.order === 0);
       return {
         id: e.id,
         title: e.title,
@@ -247,7 +247,7 @@ export class AnalyticsService {
       take: per_page,
     });
 
-    const data = items.map((t) => ({
+    const data = items.map(t => ({
       id: t.id,
       first_name: t.firstName,
       last_name: t.lastName,
@@ -289,9 +289,9 @@ export class AnalyticsService {
       take: per_page,
     });
 
-    const data = items.map((c) => {
+    const data = items.map(c => {
       const { latitude, longitude } = extractCoordinates(c.location);
-      const mainImage = c.images?.find((img) => img.order === 0);
+      const mainImage = c.images?.find(img => img.order === 0);
       return {
         id: c.id,
         name: c.name,
@@ -351,8 +351,8 @@ export class AnalyticsService {
       take: per_page,
     });
 
-    const data = items.map((g) => {
-      const mainImage = g.images?.find((img) => img.order === 0);
+    const data = items.map(g => {
+      const mainImage = g.images?.find(img => img.order === 0);
       return {
         id: g.id,
         slug: g.slug,
@@ -405,7 +405,7 @@ export class AnalyticsService {
       take: per_page,
     });
 
-    const data = items.map((c) => ({
+    const data = items.map(c => ({
       id: c.id,
       name: c.name,
       slug: c.slug,
@@ -427,7 +427,7 @@ export class AnalyticsService {
       take: per_page,
     });
 
-    const data = items.map((f) => ({
+    const data = items.map(f => ({
       id: f.id,
       name: f.name,
       slug: f.slug,
@@ -451,10 +451,10 @@ export class AnalyticsService {
     const orderCol = columns[0];
 
     const [rows, countResult] = await Promise.all([
-      this.dataSource.query(
-        `SELECT ${colList} FROM ${table} ORDER BY ${orderCol} LIMIT $1 OFFSET $2`,
-        [per_page, offset],
-      ),
+      this.dataSource.query(`SELECT ${colList} FROM ${table} ORDER BY ${orderCol} LIMIT $1 OFFSET $2`, [
+        per_page,
+        offset,
+      ]),
       this.dataSource.query(`SELECT COUNT(*)::int as count FROM ${table}`),
     ]);
 
@@ -519,7 +519,7 @@ export class AnalyticsService {
       take: per_page,
     });
 
-    const data = items.map((m) => {
+    const data = items.map(m => {
       let itemCount = 0;
       if (m.status === 'completed' && m.data?.categories) {
         for (const cat of m.data.categories) {

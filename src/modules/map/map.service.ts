@@ -44,21 +44,14 @@ export class MapService {
    * Calcula la distancia entre dos puntos geográficos usando la fórmula Haversine
    * (distancia en línea recta - usada para filtrar candidatos)
    */
-  private calculateDistance(
-    lat1: number,
-    lon1: number,
-    lat2: number,
-    lon2: number,
-  ): number {
+  private calculateDistance(lat1: number, lon1: number, lat2: number, lon2: number): number {
     const R = 6371000; // Radio de la Tierra en metros
     const φ1 = (lat1 * Math.PI) / 180;
     const φ2 = (lat2 * Math.PI) / 180;
     const Δφ = ((lat2 - lat1) * Math.PI) / 180;
     const Δλ = ((lon2 - lon1) * Math.PI) / 180;
 
-    const a =
-      Math.sin(Δφ / 2) * Math.sin(Δφ / 2) +
-      Math.cos(φ1) * Math.cos(φ2) * Math.sin(Δλ / 2) * Math.sin(Δλ / 2);
+    const a = Math.sin(Δφ / 2) * Math.sin(Δφ / 2) + Math.cos(φ1) * Math.cos(φ2) * Math.sin(Δλ / 2) * Math.sin(Δλ / 2);
 
     const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 
@@ -125,15 +118,12 @@ export class MapService {
         if (data.routes && data.routes.length > 0 && data.routes[0].distanceMeters) {
           const distanceMeters = data.routes[0].distanceMeters;
           distanceMap.set(destination.id, distanceMeters);
-          console.log(`  📏 Road distance to ${destination.id}: ${distanceMeters}m (${(distanceMeters / 1000).toFixed(1)} km)`);
+          console.log(
+            `  📏 Road distance to ${destination.id}: ${distanceMeters}m (${(distanceMeters / 1000).toFixed(1)} km)`,
+          );
         } else {
           // Si no hay ruta por carretera, usar distancia en línea recta
-          const straightDistance = this.calculateDistance(
-            origin.lat,
-            origin.lng,
-            destination.lat,
-            destination.lng,
-          );
+          const straightDistance = this.calculateDistance(origin.lat, origin.lng, destination.lat, destination.lng);
           distanceMap.set(destination.id, straightDistance);
           console.log(`  📏 No road route for ${destination.id}, using straight line: ${straightDistance}m`);
           if (data.error) {
@@ -146,12 +136,7 @@ export class MapService {
       } catch (error) {
         console.error(`❌ Error calculating route for ${destination.id}:`, error.message);
         // Fallback a distancia en línea recta
-        const straightDistance = this.calculateDistance(
-          origin.lat,
-          origin.lng,
-          destination.lat,
-          destination.lng,
-        );
+        const straightDistance = this.calculateDistance(origin.lat, origin.lng, destination.lat, destination.lng);
         distanceMap.set(destination.id, straightDistance);
       }
     }
@@ -179,11 +164,7 @@ export class MapService {
     const allPlaces: NearbyPlace[] = [];
 
     // Determinar qué tipos buscar
-    const typesToSearch = types && types.length > 0 ? types : [
-      'lodging',
-      'restaurant',
-      'place',
-    ];
+    const typesToSearch = types && types.length > 0 ? types : ['lodging', 'restaurant', 'place'];
 
     console.log('📍 Search parameters:', { radiusMeters, typesToSearch });
 
@@ -213,7 +194,7 @@ export class MapService {
         console.log(`  🏨 Lodging ${index + 1}:`, {
           name: lodging.name,
           hasLocation: !!lodging.location,
-          location: lodging.location
+          location: lodging.location,
         });
 
         if (lodging.location && (lodging.location as any).coordinates) {
@@ -221,9 +202,14 @@ export class MapService {
           console.log(`    📍 Coordinates:`, { lat, lon });
 
           // Validar que las coordenadas sean números válidos
-          if (typeof lat === 'number' && typeof lon === 'number' &&
-              !isNaN(lat) && !isNaN(lon) &&
-              lat !== 0 && lon !== 0) {
+          if (
+            typeof lat === 'number' &&
+            typeof lon === 'number' &&
+            !isNaN(lat) &&
+            !isNaN(lon) &&
+            lat !== 0 &&
+            lon !== 0
+          ) {
             const distance = this.calculateDistance(latitude, longitude, lat, lon);
             console.log(`    ✅ Valid! Distance: ${distance}m`);
 
@@ -271,9 +257,14 @@ export class MapService {
         if (restaurant.location && (restaurant.location as any).coordinates) {
           const [lon, lat] = (restaurant.location as any).coordinates;
 
-          if (typeof lat === 'number' && typeof lon === 'number' &&
-              !isNaN(lat) && !isNaN(lon) &&
-              lat !== 0 && lon !== 0) {
+          if (
+            typeof lat === 'number' &&
+            typeof lon === 'number' &&
+            !isNaN(lat) &&
+            !isNaN(lon) &&
+            lat !== 0 &&
+            lon !== 0
+          ) {
             const distance = this.calculateDistance(latitude, longitude, lat, lon);
 
             allPlaces.push({
@@ -324,9 +315,14 @@ export class MapService {
         if (location && (location as any).coordinates) {
           const [lon, lat] = (location as any).coordinates;
 
-          if (typeof lat === 'number' && typeof lon === 'number' &&
-              !isNaN(lat) && !isNaN(lon) &&
-              lat !== 0 && lon !== 0) {
+          if (
+            typeof lat === 'number' &&
+            typeof lon === 'number' &&
+            !isNaN(lat) &&
+            !isNaN(lon) &&
+            lat !== 0 &&
+            lon !== 0
+          ) {
             const distance = this.calculateDistance(latitude, longitude, lat, lon);
 
             allPlaces.push({
@@ -368,9 +364,14 @@ export class MapService {
         if (commerce.location && (commerce.location as any).coordinates) {
           const [lon, lat] = (commerce.location as any).coordinates;
 
-          if (typeof lat === 'number' && typeof lon === 'number' &&
-              !isNaN(lat) && !isNaN(lon) &&
-              lat !== 0 && lon !== 0) {
+          if (
+            typeof lat === 'number' &&
+            typeof lon === 'number' &&
+            !isNaN(lat) &&
+            !isNaN(lon) &&
+            lat !== 0 &&
+            lon !== 0
+          ) {
             const distance = this.calculateDistance(latitude, longitude, lat, lon);
 
             allPlaces.push({
@@ -412,9 +413,14 @@ export class MapService {
         if (place.location && (place.location as any).coordinates) {
           const [lon, lat] = (place.location as any).coordinates;
 
-          if (typeof lat === 'number' && typeof lon === 'number' &&
-              !isNaN(lat) && !isNaN(lon) &&
-              lat !== 0 && lon !== 0) {
+          if (
+            typeof lat === 'number' &&
+            typeof lon === 'number' &&
+            !isNaN(lat) &&
+            !isNaN(lon) &&
+            lat !== 0 &&
+            lon !== 0
+          ) {
             const distance = this.calculateDistance(latitude, longitude, lat, lon);
 
             allPlaces.push({
@@ -443,10 +449,7 @@ export class MapService {
       id: p.id,
     }));
 
-    const roadDistances = await this.calculateRoadDistances(
-      { lat: latitude, lng: longitude },
-      destinations,
-    );
+    const roadDistances = await this.calculateRoadDistances({ lat: latitude, lng: longitude }, destinations);
 
     // Actualizar distancias con las distancias reales por carretera
     allPlaces.forEach(place => {
@@ -470,7 +473,7 @@ export class MapService {
         lodging: sortedPlaces.filter(p => p.type === 'lodging').length,
         restaurant: sortedPlaces.filter(p => p.type === 'restaurant').length,
         place: sortedPlaces.filter(p => p.type === 'place').length,
-      }
+      },
     });
 
     return sortedPlaces;

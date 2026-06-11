@@ -1,15 +1,4 @@
-import {
-  Body,
-  Controller,
-  Delete,
-  Get,
-  HttpStatus,
-  Param,
-  ParseUUIDPipe,
-  Patch,
-  Post,
-  Query,
-} from '@nestjs/common';
+import { Body, Controller, Delete, Get, HttpStatus, Param, ParseUUIDPipe, Patch, Post, Query } from '@nestjs/common';
 import { ApiOperation, ApiResponse, ApiTags, ApiParam } from '@nestjs/swagger';
 import { SwaggerTags } from 'src/config';
 import { Auth } from 'src/modules/auth/decorators';
@@ -125,4 +114,4 @@ export class AppIconsController {
   remove(@Param('id', ParseUUIDPipe) id: string) {
     return this.appIconsService.remove(id);
   }
-} 
+}

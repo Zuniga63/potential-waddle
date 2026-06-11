@@ -30,4 +30,4 @@ export class UpdateFacilityDto extends PartialType(CreateFacilityDto) {
     required: false,
   })
   models?: string[];
-} 
+}

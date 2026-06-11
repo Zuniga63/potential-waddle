@@ -22,12 +22,7 @@ export class ConversationExpert extends BaseExpert {
   readonly name = 'Experto en Conversación';
   readonly description = 'Maneja saludos, despedidas y preguntas generales sobre turismo';
 
-  readonly handledIntents = [
-    RafaIntent.GREETING,
-    RafaIntent.FAREWELL,
-    RafaIntent.GENERAL_QUESTION,
-    RafaIntent.UNKNOWN,
-  ];
+  readonly handledIntents = [RafaIntent.GREETING, RafaIntent.FAREWELL, RafaIntent.GENERAL_QUESTION, RafaIntent.UNKNOWN];
 
   constructor(
     private readonly llmService: LlmService,
@@ -47,8 +42,12 @@ PERSONALIDAD:
 - Ocasionalmente usas expresiones colombianas naturalmente
 - Respuestas concisas (2-4 oraciones)
 
-${hasContext ? `CONTEXTO DEL VIAJE:
-${this.formatStateForPrompt(state)}` : ''}
+${
+  hasContext
+    ? `CONTEXTO DEL VIAJE:
+${this.formatStateForPrompt(state)}`
+    : ''
+}
 
 TU CONOCIMIENTO:
 - Pueblos de Antioquia: San Rafael, Guatapé, Jardín, Santa Fe, Jericó, El Retiro
@@ -197,11 +196,7 @@ Puedo ayudarte a:
     };
   }
 
-  private async handleGeneralQuestion(
-    userMessage: string,
-    state: TripState,
-    history: any[],
-  ): Promise<ExpertResponse> {
+  private async handleGeneralQuestion(userMessage: string, state: TripState, history: any[]): Promise<ExpertResponse> {
     // Check if it's a question about a specific destination
     const destinations = ['san rafael', 'guatapé', 'guatape', 'jardín', 'jardin', 'santa fe', 'jericó', 'jerico'];
     const messageLower = userMessage.toLowerCase();
@@ -209,7 +204,12 @@ Puedo ayudarte a:
 
     // Use RAG search if it seems like a specific question
     let ragResults: any[] = [];
-    if (mentionedDest || messageLower.includes('qué') || messageLower.includes('cómo') || messageLower.includes('donde')) {
+    if (
+      mentionedDest ||
+      messageLower.includes('qué') ||
+      messageLower.includes('cómo') ||
+      messageLower.includes('donde')
+    ) {
       try {
         ragResults = await this.toolsService.executeTool('ragSearch', state, userMessage);
       } catch (e) {
@@ -247,14 +247,11 @@ Puedo ayudarte a:
     };
   }
 
-  private async handleUnknown(
-    userMessage: string,
-    state: TripState,
-    history: any[],
-  ): Promise<ExpertResponse> {
+  private async handleUnknown(userMessage: string, state: TripState, history: any[]): Promise<ExpertResponse> {
     // Try to be helpful even with unknown intent
     const response = await this.llmService.generateExpertResponse(
-      this.getSystemPrompt(state) + `
+      this.getSystemPrompt(state) +
+        `
 
 NOTA: No entendí bien la solicitud. Responde amablemente y guía al usuario hacia algo que puedas ayudar:
 - Buscar alojamiento, restaurantes, experiencias
@@ -269,10 +266,7 @@ NOTA: No entendí bien la solicitud. Responde amablemente y guía al usuario hac
       message: response,
       cards: [],
       stateUpdates: {},
-      followUpQuestions: [
-        '¿Quieres buscar hoteles?',
-        '¿Te cuento sobre algún destino?',
-      ],
+      followUpQuestions: ['¿Quieres buscar hoteles?', '¿Te cuento sobre algún destino?'],
       suggestedActions: ['Buscar alojamiento', 'Ver destinos', 'Planear viaje'],
       requiresMoreInfo: false,
     };

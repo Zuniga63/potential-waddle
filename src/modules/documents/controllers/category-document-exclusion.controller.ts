@@ -1,12 +1,4 @@
-import {
-  Controller,
-  Get,
-  Post,
-  Delete,
-  Param,
-  Body,
-  ParseUUIDPipe,
-} from '@nestjs/common';
+import { Controller, Get, Post, Delete, Param, Body, ParseUUIDPipe } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { CategoryDocumentExclusionService } from '../services';
 import { Auth } from '../../auth/decorators';
@@ -14,9 +6,7 @@ import { Auth } from '../../auth/decorators';
 @ApiTags('Category Document Exclusions')
 @Controller('category-document-exclusions')
 export class CategoryDocumentExclusionController {
-  constructor(
-    private readonly exclusionService: CategoryDocumentExclusionService,
-  ) {}
+  constructor(private readonly exclusionService: CategoryDocumentExclusionService) {}
 
   @Get('category/:categoryId')
   @Auth()

@@ -1,14 +1,4 @@
-import {
-  Controller,
-  Get,
-  Post,
-  Body,
-  Patch,
-  Param,
-  Delete,
-  ParseUUIDPipe,
-  Query,
-} from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, ParseUUIDPipe } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiOkResponse, ApiBearerAuth, ApiQuery } from '@nestjs/swagger';
 import { TownDocumentRequirementService } from '../services';
 import {
@@ -90,10 +80,7 @@ export class TownDocumentRequirementController {
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Update a requirement' })
   @ApiOkResponse({ type: TownDocumentRequirementResponseDto })
-  update(
-    @Param('id', ParseUUIDPipe) id: string,
-    @Body() updateDto: UpdateTownDocumentRequirementDto,
-  ) {
+  update(@Param('id', ParseUUIDPipe) id: string, @Body() updateDto: UpdateTownDocumentRequirementDto) {
     return this.requirementService.update(id, updateDto);
   }
 

@@ -59,9 +59,7 @@ export class AuthService {
     if (enforcementEnabled) {
       // Pre-validate the active user T&C — fail fast if the client sent a stale id (no user is created)
       if (!createUserDto.acceptedUserTermsId) {
-        throw new BadRequestException(
-          'acceptedUserTermsId is required when T&C enforcement is enabled',
-        );
+        throw new BadRequestException('acceptedUserTermsId is required when T&C enforcement is enabled');
       }
       const activeDoc = await this.termsService.findActive(TermsTypeEnum.User);
       if (createUserDto.acceptedUserTermsId !== activeDoc.id) {

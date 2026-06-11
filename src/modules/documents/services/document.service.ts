@@ -116,11 +116,7 @@ export class DocumentService {
     return document;
   }
 
-  async updateStatus(
-    id: string,
-    updateDto: UpdateDocumentStatusDto,
-    reviewedById: string,
-  ): Promise<Document> {
+  async updateStatus(id: string, updateDto: UpdateDocumentStatusDto, reviewedById: string): Promise<Document> {
     const document = await this.findOne(id);
 
     document.status = updateDto.status;
@@ -159,7 +155,7 @@ export class DocumentService {
 
     // Get excluded document type IDs for the entity's categories
     // A document is only excluded if ALL categories exclude it
-    let excludedDocumentTypeIds: string[] = [];
+    const excludedDocumentTypeIds: string[] = [];
     if (categoryIds && categoryIds.length > 0) {
       const exclusions = await this.exclusionRepository.find({
         where: { category: { id: In(categoryIds) } },
@@ -168,7 +164,7 @@ export class DocumentService {
 
       // Count how many categories exclude each document type
       const exclusionCounts = new Map<string, number>();
-      exclusions.forEach((e) => {
+      exclusions.forEach(e => {
         const count = exclusionCounts.get(e.documentType.id) || 0;
         exclusionCounts.set(e.documentType.id, count + 1);
       });
@@ -182,24 +178,20 @@ export class DocumentService {
     }
 
     // Filter out excluded document types
-    const filteredRequirements = requirements.filter(
-      (req) => !excludedDocumentTypeIds.includes(req.documentTypeId),
-    );
+    const filteredRequirements = requirements.filter(req => !excludedDocumentTypeIds.includes(req.documentTypeId));
 
     // Get existing documents for this entity
     const documents = await this.findByEntity(entityType, entityId);
-    const documentMap = new Map(documents.map((d) => [d.documentTypeId, d]));
+    const documentMap = new Map(documents.map(d => [d.documentTypeId, d]));
 
     const now = new Date();
 
-    return filteredRequirements.map((req) => {
+    return filteredRequirements.map(req => {
       const document = documentMap.get(req.documentTypeId);
       const isExpired = document?.expirationDate ? new Date(document.expirationDate) < now : false;
       const isUploaded = !!document;
       const needsAttention =
-        (req.isRequired && !isUploaded) ||
-        isExpired ||
-        document?.status === DocumentStatus.REJECTED;
+        (req.isRequired && !isUploaded) || isExpired || document?.status === DocumentStatus.REJECTED;
 
       return {
         documentType: {
@@ -243,13 +235,9 @@ export class DocumentService {
   ): Promise<{ complete: boolean; missing: string[]; expired: string[] }> {
     const status = await this.getEntityDocumentStatus(townId, entityType, entityId, categoryIds);
 
-    const missing = status
-      .filter((s) => s.isRequired && !s.isUploaded)
-      .map((s) => s.documentType.name);
+    const missing = status.filter(s => s.isRequired && !s.isUploaded).map(s => s.documentType.name);
 
-    const expired = status
-      .filter((s) => s.isExpired)
-      .map((s) => s.documentType.name);
+    const expired = status.filter(s => s.isExpired).map(s => s.documentType.name);
 
     return {
       complete: missing.length === 0 && expired.length === 0,

@@ -115,16 +115,20 @@ export class ToolsService {
       });
     }
 
-    qb = qb.orderBy('l.rating', 'DESC').addOrderBy('l.reviewCount', 'DESC').take(filters.limit || 5);
+    qb = qb
+      .orderBy('l.rating', 'DESC')
+      .addOrderBy('l.reviewCount', 'DESC')
+      .take(filters.limit || 5);
 
     const lodgings = await qb.getMany();
     return lodgings.map(l => this.mapLodgingToCard(l));
   }
 
   private mapLodgingToCard(l: Lodging): ChatCard {
-    const images: EntityImage[] = l.images?.map(img => ({
-      imageResource: img.imageResource ? { url: img.imageResource.url } : undefined,
-    })) || [];
+    const images: EntityImage[] =
+      l.images?.map(img => ({
+        imageResource: img.imageResource ? { url: img.imageResource.url } : undefined,
+      })) || [];
 
     const data: EntityCardData = {
       id: l.id,
@@ -177,7 +181,10 @@ export class ToolsService {
       qb = qb.andWhere('town.id = :townId', { townId: filters.townId });
     }
 
-    qb = qb.orderBy('r.rating', 'DESC').addOrderBy('r.reviewCount', 'DESC').take(filters.limit || 5);
+    qb = qb
+      .orderBy('r.rating', 'DESC')
+      .addOrderBy('r.reviewCount', 'DESC')
+      .take(filters.limit || 5);
 
     const restaurants = await qb.getMany();
     return restaurants.map(r => this.mapRestaurantToCard(r));
@@ -185,10 +192,11 @@ export class ToolsService {
 
   private mapRestaurantToCard(r: Restaurant): ChatCard {
     // Frontend expects direct URL strings for restaurants
-    const images: EntityImage[] = r.images?.map(img => ({
-      url: img.imageResource?.url,
-      imageResource: img.imageResource ? { url: img.imageResource.url } : undefined,
-    })) || [];
+    const images: EntityImage[] =
+      r.images?.map(img => ({
+        url: img.imageResource?.url,
+        imageResource: img.imageResource ? { url: img.imageResource.url } : undefined,
+      })) || [];
 
     const data: EntityCardData = {
       id: r.id,
@@ -238,7 +246,10 @@ export class ToolsService {
       qb = qb.andWhere('town.id = :townId', { townId: filters.townId });
     }
 
-    qb = qb.orderBy('e.rating', 'DESC').addOrderBy('e.reviewsCount', 'DESC').take(filters.limit || 5);
+    qb = qb
+      .orderBy('e.rating', 'DESC')
+      .addOrderBy('e.reviewsCount', 'DESC')
+      .take(filters.limit || 5);
 
     const experiences = await qb.getMany();
     return experiences.map(e => this.mapExperienceToCard(e));
@@ -246,10 +257,11 @@ export class ToolsService {
 
   private mapExperienceToCard(e: Experience): ChatCard {
     // Frontend expects URL strings for experiences
-    const images: EntityImage[] = e.images?.map(img => ({
-      url: img.imageResource?.url,
-      imageResource: img.imageResource ? { url: img.imageResource.url } : undefined,
-    })) || [];
+    const images: EntityImage[] =
+      e.images?.map(img => ({
+        url: img.imageResource?.url,
+        imageResource: img.imageResource ? { url: img.imageResource.url } : undefined,
+      })) || [];
 
     const coords = e.departureLocation?.coordinates || [0, 0];
 
@@ -302,16 +314,20 @@ export class ToolsService {
       qb = qb.andWhere('town.id = :townId', { townId: filters.townId });
     }
 
-    qb = qb.orderBy('p.rating', 'DESC').addOrderBy('p.reviewCount', 'DESC').take(filters.limit || 5);
+    qb = qb
+      .orderBy('p.rating', 'DESC')
+      .addOrderBy('p.reviewCount', 'DESC')
+      .take(filters.limit || 5);
 
     const places = await qb.getMany();
     return places.map(p => this.mapPlaceToCard(p));
   }
 
   private mapPlaceToCard(p: Place): ChatCard {
-    const images: EntityImage[] = p.images?.map(img => ({
-      imageResource: img.imageResource ? { url: img.imageResource.url } : undefined,
-    })) || [];
+    const images: EntityImage[] =
+      p.images?.map(img => ({
+        imageResource: img.imageResource ? { url: img.imageResource.url } : undefined,
+      })) || [];
 
     const coords = p.location?.coordinates || [0, 0];
 
@@ -366,9 +382,10 @@ export class ToolsService {
   }
 
   private mapGuideToCard(g: Guide): ChatCard {
-    const images: EntityImage[] = g.images?.map(img => ({
-      imageResource: img.imageResource ? { url: img.imageResource.url } : undefined,
-    })) || [];
+    const images: EntityImage[] =
+      g.images?.map(img => ({
+        imageResource: img.imageResource ? { url: img.imageResource.url } : undefined,
+      })) || [];
 
     const fullName = `${g.firstName} ${g.lastName}`;
 
@@ -448,9 +465,7 @@ export class ToolsService {
       title: fullName,
       subtitle: `Placa: ${t.licensePlate}`,
       data,
-      actions: [
-        { text: 'Contactar', action: `contact_transport_${t.id}` },
-      ],
+      actions: [{ text: 'Contactar', action: `contact_transport_${t.id}` }],
     };
   }
 
@@ -478,9 +493,10 @@ export class ToolsService {
   }
 
   private mapCommerceToCard(c: Commerce): ChatCard {
-    const images: EntityImage[] = c.images?.map(img => ({
-      imageResource: img.imageResource ? { url: img.imageResource.url } : undefined,
-    })) || [];
+    const images: EntityImage[] =
+      c.images?.map(img => ({
+        imageResource: img.imageResource ? { url: img.imageResource.url } : undefined,
+      })) || [];
 
     const data: EntityCardData = {
       id: c.id,
@@ -506,16 +522,15 @@ export class ToolsService {
       title: c.name,
       subtitle: c.town?.name,
       data,
-      actions: [
-        { text: 'Ver detalles', action: `view_details_${c.id}` },
-      ],
+      actions: [{ text: 'Ver detalles', action: `view_details_${c.id}` }],
     };
   }
 
   // =============================================
   // RAG SEARCH
   // =============================================
-  async ragSearch(query: string, townId?: string): Promise<ChatCard[]> {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  async ragSearch(query: string, _townId?: string): Promise<ChatCard[]> {
     try {
       // TEMP: Use production San Rafael namespace until IDs are synced
       const PROD_SAN_RAFAEL_NAMESPACE = '3651a959-fb3f-40d3-a455-50004d69e48b';
@@ -571,9 +586,7 @@ export class ToolsService {
               description: ((metadata?.searchable_text as string) || '').substring(0, 200),
               entity_type: entityType,
             },
-            actions: [
-              { text: 'Ver más', action: `view_details_${entityId}` },
-            ],
+            actions: [{ text: 'Ver más', action: `view_details_${entityId}` }],
           });
         }
       }
@@ -609,9 +622,7 @@ export class ToolsService {
 
     // 2. Check if user selected by name
     if (!selectedId && selectedName) {
-      const found = items.find(item =>
-        item.name.toLowerCase().includes(selectedName.toLowerCase())
-      );
+      const found = items.find(item => item.name.toLowerCase().includes(selectedName.toLowerCase()));
       if (found) selectedId = found.id;
     }
 
@@ -621,11 +632,30 @@ export class ToolsService {
 
       if (msgLower.includes('más costoso') || msgLower.includes('más caro') || msgLower.includes('el caro')) {
         // Need to fetch the actual entity to compare prices
-        selectedId = await this.findByPriceCriteria(entityType, items.map(i => i.id), 'highest');
-      } else if (msgLower.includes('más barato') || msgLower.includes('más económico') || msgLower.includes('el barato')) {
-        selectedId = await this.findByPriceCriteria(entityType, items.map(i => i.id), 'lowest');
-      } else if (msgLower.includes('mejor valorado') || msgLower.includes('mejor rating') || msgLower.includes('mejor calificado')) {
-        selectedId = await this.findByRatingCriteria(entityType, items.map(i => i.id));
+        selectedId = await this.findByPriceCriteria(
+          entityType,
+          items.map(i => i.id),
+          'highest',
+        );
+      } else if (
+        msgLower.includes('más barato') ||
+        msgLower.includes('más económico') ||
+        msgLower.includes('el barato')
+      ) {
+        selectedId = await this.findByPriceCriteria(
+          entityType,
+          items.map(i => i.id),
+          'lowest',
+        );
+      } else if (
+        msgLower.includes('mejor valorado') ||
+        msgLower.includes('mejor rating') ||
+        msgLower.includes('mejor calificado')
+      ) {
+        selectedId = await this.findByRatingCriteria(
+          entityType,
+          items.map(i => i.id),
+        );
       }
     }
 
@@ -639,9 +669,7 @@ export class ToolsService {
       id: item.id,
       type: entityType as CardType,
       title: item.name,
-      actions: [
-        { text: 'Seleccionar', action: `select_${item.id}` },
-      ],
+      actions: [{ text: 'Seleccionar', action: `select_${item.id}` }],
     }));
   }
 
@@ -653,8 +681,8 @@ export class ToolsService {
     if (entityType === 'lodging') {
       const lodgings = await this.lodgingRepo.findByIds(ids);
       const sorted = lodgings.sort((a, b) => {
-        const priceA = criteria === 'highest' ? (b.highestPrice || b.lowestPrice || 0) : (a.lowestPrice || 0);
-        const priceB = criteria === 'highest' ? (a.highestPrice || a.lowestPrice || 0) : (b.lowestPrice || 0);
+        const priceA = criteria === 'highest' ? b.highestPrice || b.lowestPrice || 0 : a.lowestPrice || 0;
+        const priceB = criteria === 'highest' ? a.highestPrice || a.lowestPrice || 0 : b.lowestPrice || 0;
         return priceB - priceA;
       });
       return sorted[0]?.id || null;

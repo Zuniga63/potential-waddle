@@ -9,16 +9,7 @@ import { Town } from '../towns/entities';
 import { User } from '../users/entities';
 
 @Module({
-  imports: [
-    TypeOrmModule.forFeature([
-      PublicEvent,
-      PublicEventImage,
-      ImageResource,
-      Town,
-      User,
-    ]),
-    CloudinaryModule,
-  ],
+  imports: [TypeOrmModule.forFeature([PublicEvent, PublicEventImage, ImageResource, Town, User]), CloudinaryModule],
   controllers: [PublicEventsController],
   providers: [PublicEventsService],
   exports: [PublicEventsService],

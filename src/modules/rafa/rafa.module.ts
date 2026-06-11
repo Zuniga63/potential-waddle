@@ -7,13 +7,7 @@ import { RafaService, LlmService, ToolsService } from './services';
 import { RafaConversation, RafaMessage, RafaLead } from './entities';
 
 // Experts
-import {
-  SearchExpert,
-  ConversationExpert,
-  BudgetExpert,
-  ItineraryExpert,
-  LeadExpert,
-} from './experts';
+import { SearchExpert, ConversationExpert, BudgetExpert, ItineraryExpert, LeadExpert } from './experts';
 
 // Entities for search
 import { Lodging } from '../lodgings/entities';

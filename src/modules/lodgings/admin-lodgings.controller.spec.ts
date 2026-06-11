@@ -90,9 +90,7 @@ function buildLodging(overrides: Partial<Lodging> = {}): Lodging {
     facilities: [],
     reviews: [],
     places: [],
-    lodgingRoomTypes: [
-      { id: 'rt-1', name: 'Standard', price: 50000 as any, maxCapacity: 2, images: [] } as any,
-    ],
+    lodgingRoomTypes: [{ id: 'rt-1', name: 'Standard', price: 50000 as any, maxCapacity: 2, images: [] } as any],
     ...overrides,
   } as Lodging;
 }
@@ -162,7 +160,13 @@ async function buildModule() {
     ],
   }).compile();
 
-  return { service: module.get<LodgingsService>(LodgingsService), lodgingRepo, termsService, dataSource, resendService };
+  return {
+    service: module.get<LodgingsService>(LodgingsService),
+    lodgingRepo,
+    termsService,
+    dataSource,
+    resendService,
+  };
 }
 
 // ===========================================================================
@@ -204,11 +208,7 @@ describe('LodgingsService — approve', () => {
 
     // Email dispatcher called fire-and-forget
     await new Promise(r => setImmediate(r));
-    expect(resendService.sendLodgingApprovedEmail).toHaveBeenCalledWith(
-      lodging.user.email,
-      lodging.name,
-      lodging.slug,
-    );
+    expect(resendService.sendLodgingApprovedEmail).toHaveBeenCalledWith(lodging.user.email, lodging.name, lodging.slug);
   });
 
   // -------------------------------------------------------------------------
@@ -284,9 +284,7 @@ describe('LodgingsService — reject', () => {
     const lodging = buildLodging({ status: 'pending_review', submittedAt: NOW, rejectionReason: null });
     const afterSave = buildLodging({ status: 'rejected', rejectionReason: 'Missing price info', submittedAt: NOW });
 
-    lodgingRepo.findOne
-      .mockResolvedValueOnce(lodging)
-      .mockResolvedValueOnce(afterSave);
+    lodgingRepo.findOne.mockResolvedValueOnce(lodging).mockResolvedValueOnce(afterSave);
     lodgingRepo.save.mockResolvedValueOnce(afterSave);
 
     const result = await service.reject({ identifier: LODGING_ID, reason: 'Missing price info' });
@@ -395,7 +393,10 @@ describe('LodgingsService — findAllPaginated with status filter', () => {
     const result = await service.findAllPaginated({ page: 1, limit: 10, status: 'pending_review' } as any);
 
     // Verify andWhere was called with the status filter
-    expect(qb.andWhere).toHaveBeenCalledWith(expect.stringContaining('status'), expect.objectContaining({ status: 'pending_review' }));
+    expect(qb.andWhere).toHaveBeenCalledWith(
+      expect.stringContaining('status'),
+      expect.objectContaining({ status: 'pending_review' }),
+    );
     expect(result.count).toBe(1);
     expect(result.data).toHaveLength(1);
   });
@@ -442,8 +443,8 @@ describe('LodgingsService — findAllPaginated with status filter', () => {
 
     await service.findAllPaginated({ page: 1, limit: 10 });
 
-    const statusCallArgs = (qb.andWhere as jest.Mock).mock.calls.find((args: any[]) =>
-      typeof args[0] === 'string' && args[0].includes('status'),
+    const statusCallArgs = (qb.andWhere as jest.Mock).mock.calls.find(
+      (args: any[]) => typeof args[0] === 'string' && args[0].includes('status'),
     );
     expect(statusCallArgs).toBeUndefined();
   });

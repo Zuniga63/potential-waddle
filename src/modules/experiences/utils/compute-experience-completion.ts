@@ -39,7 +39,7 @@ export function computeExperienceInfoCompletion(experience: Experience): Experie
   // Bucket 2: Itinerario (20) — both critical
   const hasDeparture = !!(experience.departureLocation && experience.departureLocation.coordinates);
   const hasArrival = !!(experience.arrivalLocation && experience.arrivalLocation.coordinates);
-  totalScore += ((hasDeparture ? 1 : 0) + (hasArrival ? 1 : 0)) / 2 * 20;
+  totalScore += (((hasDeparture ? 1 : 0) + (hasArrival ? 1 : 0)) / 2) * 20;
   if (!hasDeparture) infoMissingFields.push('departureLocation');
   if (!hasArrival) infoMissingFields.push('arrivalLocation');
 
@@ -49,8 +49,16 @@ export function computeExperienceInfoCompletion(experience: Experience): Experie
   if (!hasPrice) infoMissingFields.push('price');
 
   // Bucket 4: Métricas (10)
-  const hasTravelTime = !!(experience.travelTime !== null && experience.travelTime !== undefined && experience.travelTime > 0);
-  const hasTotalDistance = !!(experience.totalDistance !== null && experience.totalDistance !== undefined && experience.totalDistance > 0);
+  const hasTravelTime = !!(
+    experience.travelTime !== null &&
+    experience.travelTime !== undefined &&
+    experience.travelTime > 0
+  );
+  const hasTotalDistance = !!(
+    experience.totalDistance !== null &&
+    experience.totalDistance !== undefined &&
+    experience.totalDistance > 0
+  );
   const hasDifficulty = !!(experience.difficultyLevel && Number(experience.difficultyLevel) > 0);
   const metricsCount = [hasTravelTime, hasTotalDistance, hasDifficulty].filter(Boolean).length;
   totalScore += (metricsCount / 3) * 10;

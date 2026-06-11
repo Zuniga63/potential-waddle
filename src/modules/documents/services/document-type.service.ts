@@ -62,7 +62,7 @@ export class DocumentTypeService {
     if (documentType.templateGcpPath) {
       try {
         await this.gcpStorageService.deleteFile(documentType.templateGcpPath);
-      } catch (error) {
+      } catch {
         // Ignore delete errors for old files
       }
     }

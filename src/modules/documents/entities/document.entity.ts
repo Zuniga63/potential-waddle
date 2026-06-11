@@ -16,7 +16,7 @@ export class Document {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @ManyToOne(() => DocumentType, (documentType) => documentType.documents, {
+  @ManyToOne(() => DocumentType, documentType => documentType.documents, {
     onDelete: 'RESTRICT',
   })
   @JoinColumn({ name: 'document_type_id' })

@@ -1,11 +1,6 @@
-import {
-  Injectable,
-  NotFoundException,
-  BadRequestException,
-  ConflictException,
-} from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException, ConflictException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, Between, ILike, MoreThanOrEqual, LessThanOrEqual } from 'typeorm';
+import { Repository } from 'typeorm';
 import { PublicEvent, PublicEventImage } from './entities';
 import { CreatePublicEventDto, UpdatePublicEventDto, PublicEventFiltersDto } from './dto';
 import { CloudinaryService } from '../cloudinary/cloudinary.service';
@@ -100,7 +95,8 @@ export class PublicEventsService {
         sortOrder = 'ASC',
       } = filters;
 
-      const query = this.publicEventRepository.createQueryBuilder('event')
+      const query = this.publicEventRepository
+        .createQueryBuilder('event')
         .leftJoinAndSelect('event.town', 'town')
         .leftJoinAndSelect('event.user', 'user')
         .leftJoinAndSelect('event.images', 'images')
@@ -273,9 +269,7 @@ export class PublicEventsService {
 
     // Delete folder from Cloudinary
     if (publicEvent.slug) {
-      await this.cloudinaryService.destroyFolder(
-        `${CLOUDINARY_FOLDERS.PUBLIC_EVENT_GALLERY}/${publicEvent.slug}`,
-      );
+      await this.cloudinaryService.destroyFolder(`${CLOUDINARY_FOLDERS.PUBLIC_EVENT_GALLERY}/${publicEvent.slug}`);
     }
 
     await this.publicEventRepository.remove(publicEvent);
@@ -296,7 +290,7 @@ export class PublicEventsService {
         const cloudinaryRes = await this.cloudinaryService.uploadImage({
           file,
           fileName: publicEvent.eventName,
-          preset: CloudinaryPresets.LODGING_IMAGE,  // Usar el preset de lodgings como hacen las guías
+          preset: CloudinaryPresets.LODGING_IMAGE, // Usar el preset de lodgings como hacen las guías
           folder: `${CLOUDINARY_FOLDERS.PUBLIC_EVENT_GALLERY}/${publicEvent.slug}`,
         });
 
@@ -382,7 +376,9 @@ export class PublicEventsService {
 
     try {
       await Promise.all(
-        newOrder.map(({ id, order }) => this.publicEventRepository.manager.update(PublicEventImage, id, { displayOrder: order }))
+        newOrder.map(({ id, order }) =>
+          this.publicEventRepository.manager.update(PublicEventImage, id, { displayOrder: order }),
+        ),
       );
 
       return { message: 'Images reordered successfully' };
@@ -391,8 +387,9 @@ export class PublicEventsService {
     }
   }
 
-  async setMainImage(eventId: string, imageId: string): Promise<void> {
-    const publicEvent = await this.findOne(eventId);
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  async setMainImage(eventId: string, _imageId: string): Promise<void> {
+    await this.findOne(eventId);
 
     // This method relies on a dataSource, which is not injected in the constructor.
     // Assuming it's meant to be removed or refactored if this functionality is critical.

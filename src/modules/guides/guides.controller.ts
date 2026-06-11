@@ -89,7 +89,11 @@ export class GuidesController {
   @Get('public')
   @OptionalAuth()
   @GuideListQueryDocsGroup()
-  findPublicGuides(@GuidesFilters() filters: GuidesFiltersDto, @GetUser() user: User | undefined, @Req() request: Request) {
+  findPublicGuides(
+    @GuidesFilters() filters: GuidesFiltersDto,
+    @GetUser() user: User | undefined,
+    @Req() request: Request,
+  ) {
     const tenantId = (request as any)[TENANT_ID_KEY];
     if (tenantId && !filters.townId) {
       filters.townId = tenantId;

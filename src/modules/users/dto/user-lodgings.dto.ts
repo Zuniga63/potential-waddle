@@ -171,7 +171,11 @@ export class UserLodgingDto {
   @ApiProperty({ required: false, type: String, nullable: true })
   website?: string | null;
 
-  @ApiProperty({ required: false, type: [String], description: 'Spoken languages (entity column spokenLanguages, surfaced as languages to match LodgingFullDto).' })
+  @ApiProperty({
+    required: false,
+    type: [String],
+    description: 'Spoken languages (entity column spokenLanguages, surfaced as languages to match LodgingFullDto).',
+  })
   languages?: string[];
 
   @ApiProperty({ required: false, type: String, nullable: true })
@@ -182,7 +186,11 @@ export class UserLodgingDto {
 
   // `places` count only — full array would inflate the payload. The penalty only cares whether
   // the field is "empty or not", so a length-equivalent value (the count) is enough.
-  @ApiProperty({ required: false, type: Number, description: 'Count of associated places (0 = empty for skip penalty).' })
+  @ApiProperty({
+    required: false,
+    type: Number,
+    description: 'Count of associated places (0 = empty for skip penalty).',
+  })
   placesCount?: number;
 
   @ApiProperty({
@@ -192,10 +200,7 @@ export class UserLodgingDto {
   })
   skippedOptionalFields?: string[];
 
-  constructor(
-    lodging?: Lodging,
-    context?: { termsStatus: LodgingTermsStatus; docsStatus: LodgingDocsStatus },
-  ) {
+  constructor(lodging?: Lodging, context?: { termsStatus: LodgingTermsStatus; docsStatus: LodgingDocsStatus }) {
     if (!lodging) return;
     this.id = lodging.id;
     this.town = new TownDto(lodging.town);

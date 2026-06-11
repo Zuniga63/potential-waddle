@@ -114,9 +114,7 @@ export abstract class BaseExpert {
       return 'Ninguno';
     }
 
-    return state.lastResults.items
-      .map((item, i) => `${i + 1}. ${item.name} (ID: ${item.id})`)
-      .join('\n');
+    return state.lastResults.items.map((item, i) => `${i + 1}. ${item.name} (ID: ${item.id})`).join('\n');
   }
 
   /**

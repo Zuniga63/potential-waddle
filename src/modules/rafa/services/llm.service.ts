@@ -84,10 +84,7 @@ export class LlmService {
         },
       });
 
-      const result = await chatModel.generateContent([
-        { text: systemPrompt },
-        { text: `User: "${userMessage}"` },
-      ]);
+      const result = await chatModel.generateContent([{ text: systemPrompt }, { text: `User: "${userMessage}"` }]);
 
       return result.response.text();
     } catch (error) {
@@ -275,10 +272,7 @@ Respond naturally in Spanish. Do NOT include JSON or technical information.`;
 
       fullPrompt += `\n\nResponde en español de forma natural y amigable. NO incluyas JSON ni información técnica.`;
 
-      const result = await chatModel.generateContent([
-        { text: fullPrompt },
-        { text: `Usuario: "${userMessage}"` },
-      ]);
+      const result = await chatModel.generateContent([{ text: fullPrompt }, { text: `Usuario: "${userMessage}"` }]);
 
       return result.response.text();
     } catch (error) {

@@ -3,10 +3,7 @@ import { TownDto } from 'src/modules/towns/dto';
 import { PlaceDto } from 'src/modules/places/dto';
 import { CategoryDto, FacilityDto } from 'src/modules/core/dto';
 import { ApiProperty } from '@nestjs/swagger';
-import type {
-  RestaurantTermsStatusState,
-  RestaurantDocsStatusState,
-} from '../utils/compute-restaurant-completion';
+import type { RestaurantTermsStatusState, RestaurantDocsStatusState } from '../utils/compute-restaurant-completion';
 
 // Owner-scoped sub-DTOs surfacing the 3-indicator completion model (mirror of LodgingFullDto).
 

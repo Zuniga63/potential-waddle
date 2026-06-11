@@ -15,21 +15,15 @@ import { MigrationInterface, QueryRunner } from 'typeorm';
  */
 export class AddGuideStatusWorkflowAndSkipState1774000000000 implements MigrationInterface {
   public async up(queryRunner: QueryRunner): Promise<void> {
-    await queryRunner.query(
-      `CREATE TYPE "guide_status" AS ENUM('draft', 'pending_review', 'published', 'rejected')`,
-    );
-    await queryRunner.query(
-      `ALTER TABLE "guide" ADD COLUMN "status" "guide_status" NOT NULL DEFAULT 'draft'`,
-    );
+    await queryRunner.query(`CREATE TYPE "guide_status" AS ENUM('draft', 'pending_review', 'published', 'rejected')`);
+    await queryRunner.query(`ALTER TABLE "guide" ADD COLUMN "status" "guide_status" NOT NULL DEFAULT 'draft'`);
     await queryRunner.query(`UPDATE "guide" SET "status" = 'published' WHERE "status" = 'draft'`);
     await queryRunner.query(`ALTER TABLE "guide" ADD COLUMN "submitted_at" timestamp`);
     await queryRunner.query(`ALTER TABLE "guide" ADD COLUMN "rejection_reason" text`);
 
     await queryRunner.query(`CREATE INDEX "idx_guide_status" ON "guide" ("status")`);
 
-    await queryRunner.query(
-      `ALTER TABLE "guide" ADD COLUMN "skipped_optional_fields" text[] NOT NULL DEFAULT '{}'`,
-    );
+    await queryRunner.query(`ALTER TABLE "guide" ADD COLUMN "skipped_optional_fields" text[] NOT NULL DEFAULT '{}'`);
   }
 
   public async down(queryRunner: QueryRunner): Promise<void> {

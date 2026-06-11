@@ -83,7 +83,7 @@ export class GcpStorageService {
     const baseUrl = process.env.GOOGLE_CLOUD_STORAGE_BASE_URL || 'https://storage.googleapis.com';
     const encodedPath = gcpPath
       .split('/')
-      .map((component) => encodeURIComponent(component))
+      .map(component => encodeURIComponent(component))
       .join('/');
     const publicUrl = `${baseUrl}/${this.bucketName}/${encodedPath}`;
 
@@ -113,7 +113,7 @@ export class GcpStorageService {
     try {
       const bucket = this.storage.bucket(this.bucketName);
       const [files] = await bucket.getFiles({ prefix });
-      return files.map((file) => file.name);
+      return files.map(file => file.name);
     } catch (error) {
       this.logger.error('Error listing files from GCP Storage:', error);
       throw error;

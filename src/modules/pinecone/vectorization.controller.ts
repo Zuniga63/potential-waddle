@@ -1,5 +1,5 @@
 import { Controller, Post, Get, Delete, Param, Query, UseGuards } from '@nestjs/common';
-import { VectorizationService, VectorizationResult } from './vectorization.service';
+import { VectorizationService } from './vectorization.service';
 import { EntityType } from './chunking.service';
 import { JwtAuthGuard } from '../auth/guards';
 
@@ -40,7 +40,15 @@ export class VectorizationController {
    */
   @Delete('all')
   async deleteAll() {
-    const entityTypes: EntityType[] = ['lodging', 'restaurant', 'experience', 'place', 'guide', 'transport', 'commerce'];
+    const entityTypes: EntityType[] = [
+      'lodging',
+      'restaurant',
+      'experience',
+      'place',
+      'guide',
+      'transport',
+      'commerce',
+    ];
     for (const entityType of entityTypes) {
       await this.vectorizationService.deleteByEntityType(entityType);
     }

@@ -14,17 +14,7 @@ import { AnalyticsService } from './analytics.service';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([
-      Lodging,
-      Restaurant,
-      Experience,
-      Transport,
-      Commerce,
-      Guide,
-      Category,
-      Facility,
-      Menu,
-    ]),
+    TypeOrmModule.forFeature([Lodging, Restaurant, Experience, Transport, Commerce, Guide, Category, Facility, Menu]),
   ],
   controllers: [AnalyticsController],
   providers: [AnalyticsService],

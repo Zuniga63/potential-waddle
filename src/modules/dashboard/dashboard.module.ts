@@ -12,18 +12,7 @@ import { Experience } from '../experiences/entities/experience.entity';
 import { Transport } from '../transport/entities/transport.entity';
 
 @Module({
-  imports: [
-    TypeOrmModule.forFeature([
-      Lodging,
-      Restaurant,
-      Place,
-      Commerce,
-      Review,
-      Guide,
-      Experience,
-      Transport,
-    ]),
-  ],
+  imports: [TypeOrmModule.forFeature([Lodging, Restaurant, Place, Commerce, Review, Guide, Experience, Transport])],
   controllers: [DashboardController],
   providers: [DashboardService],
   exports: [DashboardService],

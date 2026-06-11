@@ -25,7 +25,7 @@ export class TownDocumentRequirement {
   @Column('uuid', { name: 'town_id' })
   townId: string;
 
-  @ManyToOne(() => DocumentType, (documentType) => documentType.townRequirements, {
+  @ManyToOne(() => DocumentType, documentType => documentType.townRequirements, {
     onDelete: 'CASCADE',
   })
   @JoinColumn({ name: 'document_type_id' })

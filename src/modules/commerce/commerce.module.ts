@@ -19,7 +19,16 @@ import { DocumentsModule } from '../documents/documents.module';
   controllers: [CommerceController, CommerceProductsController],
   providers: [CommerceService, CommerceProductsService],
   imports: [
-    TypeOrmModule.forFeature([Commerce, CommerceProduct, CommerceProductImage, ImageResource, Category, Facility, Town, User]),
+    TypeOrmModule.forFeature([
+      Commerce,
+      CommerceProduct,
+      CommerceProductImage,
+      ImageResource,
+      Category,
+      Facility,
+      Town,
+      User,
+    ]),
     CloudinaryModule,
     ReviewsModule,
     TermsModule,

@@ -27,10 +27,7 @@ export class CommerceProductsController {
   @Post()
   @ApiOkResponse({ description: 'Product created successfully' })
   @ApiBadRequestResponse({ description: 'Bad request' })
-  async create(
-    @Param('commerceId', ParseUUIDPipe) commerceId: string,
-    @Body() createDto: CreateCommerceProductDto,
-  ) {
+  async create(@Param('commerceId', ParseUUIDPipe) commerceId: string, @Body() createDto: CreateCommerceProductDto) {
     const product = await this.productsService.create(commerceId, createDto);
     return new CommerceProductDto(product);
   }

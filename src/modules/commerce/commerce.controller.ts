@@ -20,7 +20,15 @@ import { FilesInterceptor } from '@nestjs/platform-express';
 import { ContentTypes } from '../common/constants';
 import { ReorderImagesDto } from '../common/dto/reoder-images.dto';
 
-import { CommerceFiltersDto, CreateCommerceDto, UpdateCommerceDto, CommerceFullDto, CommerceIndexDto, AdminCommerceFiltersDto, AdminCommerceListDto } from './dto';
+import {
+  CommerceFiltersDto,
+  CreateCommerceDto,
+  UpdateCommerceDto,
+  CommerceFullDto,
+  CommerceIndexDto,
+  AdminCommerceFiltersDto,
+  AdminCommerceListDto,
+} from './dto';
 import { Auth, OptionalAuth } from '../auth/decorators';
 import { CommerceService } from './commerce.service';
 import { CommerceFilters, CommerceListQueryParamsDocs } from './decorators';
@@ -54,7 +62,11 @@ export class CommerceController {
   @Get('public')
   @OptionalAuth()
   @ApiOkResponse({ description: 'Commerce List', type: [CommerceIndexDto] })
-  findPublicCommerce(@CommerceFilters() filters: CommerceFiltersDto, @GetUser() user: User | undefined, @Req() request: Request) {
+  findPublicCommerce(
+    @CommerceFilters() filters: CommerceFiltersDto,
+    @GetUser() user: User | undefined,
+    @Req() request: Request,
+  ) {
     const tenantId = (request as any)[TENANT_ID_KEY];
     if (tenantId && !filters.townId) {
       filters.townId = tenantId;

@@ -20,7 +20,14 @@ import { FilesInterceptor } from '@nestjs/platform-express';
 import { ContentTypes } from '../common/constants';
 import { ReorderImagesDto } from '../common/dto/reoder-images.dto';
 
-import { RestaurantFiltersDto, CreateRestaurantDto, UpdateRestaurantDto, RestaurantDto, AdminRestaurantsFiltersDto, AdminRestaurantsListDto } from './dto';
+import {
+  RestaurantFiltersDto,
+  CreateRestaurantDto,
+  UpdateRestaurantDto,
+  RestaurantDto,
+  AdminRestaurantsFiltersDto,
+  AdminRestaurantsListDto,
+} from './dto';
 import { Auth, OptionalAuth } from '../auth/decorators';
 import { RestaurantsService } from './restaurants.service';
 import { RestaurantFilters, RestaurantListApiQueries } from './decorators';
@@ -69,7 +76,11 @@ export class RestaurantsController {
   @Get('public')
   @OptionalAuth()
   @ApiOkResponse({ description: 'Restaurant List', type: [RestaurantDto] })
-  findPublicRestaurants(@RestaurantFilters() filters: RestaurantFiltersDto, @GetUser() user: User | undefined, @Req() request: Request) {
+  findPublicRestaurants(
+    @RestaurantFilters() filters: RestaurantFiltersDto,
+    @GetUser() user: User | undefined,
+    @Req() request: Request,
+  ) {
     const tenantId = (request as any)[TENANT_ID_KEY];
     if (tenantId && !filters.townId) {
       filters.townId = tenantId;

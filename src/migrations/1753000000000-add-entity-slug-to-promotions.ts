@@ -10,4 +10,4 @@ export class AddEntitySlugToPromotions1753000000000 implements MigrationInterfac
   public async down(queryRunner: QueryRunner): Promise<void> {
     await queryRunner.query(`ALTER TABLE "promotion" DROP COLUMN "entity_slug"`);
   }
-} 
+}

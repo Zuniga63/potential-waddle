@@ -113,7 +113,11 @@ export class PlacesController {
   @Get('public/full-info')
   @OptionalAuth()
   @ApiOkResponse({ description: 'Place List', type: [PlaceVectorDto] })
-  findPublicFullInfoPlaces(@PlaceFilters() filters: PlaceFiltersDto, @GetUser() user: User | null, @Req() request: Request) {
+  findPublicFullInfoPlaces(
+    @PlaceFilters() filters: PlaceFiltersDto,
+    @GetUser() user: User | null,
+    @Req() request: Request,
+  ) {
     const tenantId = (request as any)[TENANT_ID_KEY];
     if (tenantId && !filters.townId) {
       filters.townId = tenantId;

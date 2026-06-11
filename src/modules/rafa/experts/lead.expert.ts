@@ -116,10 +116,7 @@ INSTRUCCIONES:
           ...stateUpdates,
           currentGoal: 'Solicitud de reserva enviada',
         },
-        followUpQuestions: [
-          '¿Necesitas algo más?',
-          '¿Quieres agregar otra reserva?',
-        ],
+        followUpQuestions: ['¿Necesitas algo más?', '¿Quieres agregar otra reserva?'],
         suggestedActions: ['Nueva búsqueda', 'Ver itinerario'],
         requiresMoreInfo: false,
       };
@@ -129,7 +126,8 @@ INSTRUCCIONES:
     }
   }
 
-  private async requestContactInfo(state: TripState, history: any[]): Promise<ExpertResponse> {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  private async requestContactInfo(_state: TripState, _history: any[]): Promise<ExpertResponse> {
     const message = `Para procesar tu solicitud de reserva, necesito tu información de contacto.
 
 ¿Me puedes proporcionar tu **teléfono** o **email**? El establecimiento te contactará directamente para confirmar disponibilidad y detalles.
@@ -146,7 +144,8 @@ Tu información está protegida y solo se compartirá con el negocio seleccionad
     };
   }
 
-  private async noSelectionResponse(state: TripState, history: any[]): Promise<ExpertResponse> {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  private async noSelectionResponse(_state: TripState, _history: any[]): Promise<ExpertResponse> {
     const message = `Para crear una reserva, primero necesitas seleccionar qué quieres reservar.
 
 ¿Qué te gustaría reservar?
@@ -271,9 +270,7 @@ Tu información está protegida y solo se compartirá con el negocio seleccionad
         contact: lead.contactPhone || lead.contactEmail,
         notes: lead.notes,
       },
-      actions: [
-        { text: 'Ver estado', action: `view_lead_${lead.id}` },
-      ],
+      actions: [{ text: 'Ver estado', action: `view_lead_${lead.id}` }],
     };
   }
 
@@ -291,7 +288,9 @@ CONTACTO: ${state.contactPhone || state.contactEmail}
 `;
 
     return this.llmService.generateExpertResponse(
-      this.getSystemPrompt(state) + leadsContext + `
+      this.getSystemPrompt(state) +
+        leadsContext +
+        `
 
 INSTRUCCIONES ESPECIALES:
 - Confirma que la solicitud fue enviada

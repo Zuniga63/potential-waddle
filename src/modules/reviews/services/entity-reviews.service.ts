@@ -471,13 +471,7 @@ export class EntityReviewsService {
   // * ----------------------------------------------------------------------------------------------------------------
   // * GET USER REVIEWS FOR ENTITY TYPE
   // * ----------------------------------------------------------------------------------------------------------------
-  async getUserReviews({
-    entityType,
-    userId,
-  }: {
-    entityType: ReviewDomainsEnum;
-    userId: string;
-  }): Promise<Review[]> {
+  async getUserReviews({ entityType, userId }: { entityType: ReviewDomainsEnum; userId: string }): Promise<Review[]> {
     const relationKey = this.getEntityRelationKey(entityType);
 
     return this.reviewRepository.find({
@@ -671,9 +665,12 @@ export class EntityReviewsService {
       }
     }
 
-    const monthlyChange = lastMonthCount > 0
-      ? Number((((thisMonthCount - lastMonthCount) / lastMonthCount) * 100).toFixed(1))
-      : thisMonthCount > 0 ? 100 : 0;
+    const monthlyChange =
+      lastMonthCount > 0
+        ? Number((((thisMonthCount - lastMonthCount) / lastMonthCount) * 100).toFixed(1))
+        : thisMonthCount > 0
+          ? 100
+          : 0;
 
     return {
       averageRating,

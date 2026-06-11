@@ -4,7 +4,7 @@ import { Repository, In, ILike } from 'typeorm';
 import { ConfigService } from '@nestjs/config';
 import * as crypto from 'crypto';
 
-import { Subscription, Plan, Payment, EntityType } from '../entities';
+import { Subscription, Plan, EntityType } from '../entities';
 import { SubscriptionDto, CreateCheckoutDto, CheckoutResponseDto, AdminCreateSubscriptionDto } from '../dto';
 import { PlansService } from './plans.service';
 import { PaymentsService } from './payments.service';
@@ -307,7 +307,7 @@ export class SubscriptionsService {
 
     // Calcular fechas si no se proporcionan
     const now = new Date();
-    let periodStart = dto.currentPeriodStart ? new Date(dto.currentPeriodStart) : now;
+    const periodStart = dto.currentPeriodStart ? new Date(dto.currentPeriodStart) : now;
     let periodEnd: Date;
 
     if (dto.currentPeriodEnd) {

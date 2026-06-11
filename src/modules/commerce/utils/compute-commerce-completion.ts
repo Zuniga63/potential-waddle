@@ -47,7 +47,7 @@ export function computeCommerceInfoCompletion(commerce: Commerce): CommerceInfoC
   const hasEmailOrPhone =
     !!(commerce.email && commerce.email.trim().length > 0) ||
     !!(commerce.phoneNumbers && commerce.phoneNumbers.length >= 1);
-  totalScore += ((hasWhatsapp ? 1 : 0) + (hasEmailOrPhone ? 1 : 0)) / 2 * 15;
+  totalScore += (((hasWhatsapp ? 1 : 0) + (hasEmailOrPhone ? 1 : 0)) / 2) * 15;
   if (!hasWhatsapp) infoMissingFields.push('whatsappNumbers');
 
   // Bucket 3: Productos / Servicios (20) — at least 1 valid product (name + price>0) critical
@@ -68,7 +68,7 @@ export function computeCommerceInfoCompletion(commerce: Commerce): CommerceInfoC
   const hasServices = !!(commerce.services && commerce.services.length >= 1);
   const hasFacilities = !!(commerce.facilities && commerce.facilities.length >= 1);
   const hasPaymentMethods = !!(commerce.paymentMethods && commerce.paymentMethods.length >= 1);
-  totalScore += ((hasServices ? 1 : 0) + (hasFacilities ? 1 : 0) + (hasPaymentMethods ? 1 : 0)) / 3 * 10;
+  totalScore += (((hasServices ? 1 : 0) + (hasFacilities ? 1 : 0) + (hasPaymentMethods ? 1 : 0)) / 3) * 10;
   if (!hasServices) infoMissingFields.push('services');
   if (!hasFacilities) infoMissingFields.push('facilities');
   if (!hasPaymentMethods) infoMissingFields.push('paymentMethods');

@@ -1,13 +1,4 @@
-import {
-  IsOptional,
-  IsString,
-  IsUUID,
-  IsNumber,
-  IsBoolean,
-  IsDateString,
-  Min,
-  Max,
-} from 'class-validator';
+import { IsOptional, IsString, IsUUID, IsNumber, IsBoolean, IsDateString, Min, Max } from 'class-validator';
 import { Transform, Type } from 'class-transformer';
 import { ApiProperty } from '@nestjs/swagger';
 
@@ -107,16 +98,7 @@ export class PublicEventFiltersDto {
     description: 'Sort by field',
     required: false,
     default: 'startDate',
-    enum: [
-      'eventName',
-      'startDate',
-      'startTime',
-      'endDate',
-      'endTime',
-      'price',
-      'createdAt',
-      'updatedAt',
-    ],
+    enum: ['eventName', 'startDate', 'startTime', 'endDate', 'endTime', 'price', 'createdAt', 'updatedAt'],
   })
   @IsOptional()
   @IsString()

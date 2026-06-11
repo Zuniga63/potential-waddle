@@ -11,7 +11,14 @@ import { DataSource, FindOptionsRelations, In, Point, Repository } from 'typeorm
 
 import { Lodging, LodgingImage, LodgingPlace, LodgingRoomType } from './entities';
 import { Plan, Subscription } from '../subscriptions/entities';
-import { AdminLodgingsFiltersDto, AdminLodgingsListDto, CreateLodgingDto, LodgingFullDto, LodgingIndexDto, UpdateLodgingDto } from './dto';
+import {
+  AdminLodgingsFiltersDto,
+  AdminLodgingsListDto,
+  CreateLodgingDto,
+  LodgingFullDto,
+  LodgingIndexDto,
+  UpdateLodgingDto,
+} from './dto';
 import { LodgingFindAllParams } from './interfaces';
 import {
   computeLodgingCompletion,
@@ -101,7 +108,17 @@ export class LodgingsService {
   // Find all lodgings paginated (Admin)
   // ------------------------------------------------------------------------------------------------
   async findAllPaginated(filters: AdminLodgingsFiltersDto): Promise<AdminLodgingsListDto> {
-    const { page = 1, limit = 10, search, categoryId, townId, isPublic, status, sortBy = 'name', sortOrder = 'ASC' } = filters;
+    const {
+      page = 1,
+      limit = 10,
+      search,
+      categoryId,
+      townId,
+      isPublic,
+      status,
+      sortBy = 'name',
+      sortOrder = 'ASC',
+    } = filters;
 
     const queryBuilder = this.lodgingRespository
       .createQueryBuilder('lodging')
@@ -150,13 +167,8 @@ export class LodgingsService {
     const result = new AdminLodgingsListDto({ currentPage: page, pages, count }, lodgings);
 
     // Admin-only enrichment: per-row T&C acceptance flag for the owner
-    const ownerIds = Array.from(
-      new Set(lodgings.map(l => l.user?.id).filter((id): id is string => !!id)),
-    );
-    const ownersWithAcceptance = await this.termsService.getOwnersWithAcceptance(
-      TermsTypeEnum.Lodging,
-      ownerIds,
-    );
+    const ownerIds = Array.from(new Set(lodgings.map(l => l.user?.id).filter((id): id is string => !!id)));
+    const ownersWithAcceptance = await this.termsService.getOwnersWithAcceptance(TermsTypeEnum.Lodging, ownerIds);
     result.data.forEach((dto, i) => {
       const ownerId = lodgings[i].user?.id;
       dto.ownerHasAcceptedTerms = ownerId ? ownersWithAcceptance.has(ownerId) : false;
@@ -192,7 +204,7 @@ export class LodgingsService {
           town: { department: true },
           categories: { icon: true },
           images: { imageResource: true },
-          },
+        },
         order,
         where: {
           ...where,
@@ -346,7 +358,7 @@ export class LodgingsService {
           hasAcceptedLodgingTerms: termsDto?.hasAcceptedLodgingTerms ?? false,
           activeTermsId,
         })
-      : ({ state: 'no_aplica' as const, activeTermsId: null });
+      : { state: 'no_aplica' as const, activeTermsId: null };
     const docsStatus = computeLodgingDocsStatus(
       docsList.map(d => ({
         documentTypeName: d.documentType.name,

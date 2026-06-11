@@ -50,7 +50,7 @@ export function computeGuideInfoCompletion(guide: Guide): GuideInfoCompletionRes
   const hasWhatsapp = !!(guide.whatsapp && guide.whatsapp.trim().length > 0);
   const hasEmailOrPhone =
     !!(guide.email && guide.email.trim().length > 0) || !!(guide.phone && guide.phone.trim().length > 0);
-  totalScore += ((hasWhatsapp ? 1 : 0) + (hasEmailOrPhone ? 1 : 0)) / 2 * 15;
+  totalScore += (((hasWhatsapp ? 1 : 0) + (hasEmailOrPhone ? 1 : 0)) / 2) * 15;
   if (!hasWhatsapp) infoMissingFields.push('whatsapp');
 
   // Bucket 4: Idiomas (10) — critical

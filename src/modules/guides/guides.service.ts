@@ -107,7 +107,17 @@ export class GuidesService {
   // Find all guides paginated (Admin)
   // ------------------------------------------------------------------------------------------------
   async findAllPaginated(filters: AdminGuidesFiltersDto): Promise<AdminGuidesListDto> {
-    const { page = 1, limit = 10, search, categoryId, townId, isPublic, status, sortBy = 'firstName', sortOrder = 'ASC' } = filters;
+    const {
+      page = 1,
+      limit = 10,
+      search,
+      categoryId,
+      townId,
+      isPublic,
+      status,
+      sortBy = 'firstName',
+      sortOrder = 'ASC',
+    } = filters;
 
     const queryBuilder = this.guideRepository
       .createQueryBuilder('guide')
@@ -119,10 +129,9 @@ export class GuidesService {
       .leftJoinAndSelect('guide.user', 'user');
 
     if (search) {
-      queryBuilder.andWhere(
-        '(guide.firstName ILIKE :search OR guide.lastName ILIKE :search)',
-        { search: `%${search}%` }
-      );
+      queryBuilder.andWhere('(guide.firstName ILIKE :search OR guide.lastName ILIKE :search)', {
+        search: `%${search}%`,
+      });
     }
 
     if (categoryId) {
@@ -156,13 +165,8 @@ export class GuidesService {
     const result = new AdminGuidesListDto({ currentPage: page, pages, count }, guides);
 
     // Admin-only enrichment: per-row T&C acceptance flag for the owner
-    const ownerIds = Array.from(
-      new Set(guides.map(g => g.user?.id).filter((id): id is string => !!id)),
-    );
-    const ownersWithAcceptance = await this.termsService.getOwnersWithAcceptance(
-      TermsTypeEnum.Guide,
-      ownerIds,
-    );
+    const ownerIds = Array.from(new Set(guides.map(g => g.user?.id).filter((id): id is string => !!id)));
+    const ownersWithAcceptance = await this.termsService.getOwnersWithAcceptance(TermsTypeEnum.Guide, ownerIds);
     result.data.forEach((dto, i) => {
       const ownerId = guides[i].user?.id;
       dto.ownerHasAcceptedTerms = ownerId ? ownersWithAcceptance.has(ownerId) : false;
@@ -216,7 +220,7 @@ export class GuidesService {
     ]);
 
     const [_guides, count] = result;
-    let guides = _guides;
+    const guides = _guides;
 
     if (shouldRandomize) {
       // Fisher-Yates shuffle algorithm for better randomization
@@ -280,9 +284,7 @@ export class GuidesService {
 
     const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(identifier);
 
-    let guide = isUuid
-      ? await this.guideRepository.findOne({ where: { id: identifier }, relations })
-      : null;
+    let guide = isUuid ? await this.guideRepository.findOne({ where: { id: identifier }, relations }) : null;
     if (!guide) {
       guide = await this.guideRepository.findOne({ where: { slug: identifier }, relations });
     }
@@ -654,7 +656,7 @@ export class GuidesService {
           hasAcceptedGuideTerms: termsDto?.hasAcceptedGuideTerms ?? false,
           activeTermsId,
         })
-      : ({ state: 'no_aplica' as const, activeTermsId: null });
+      : { state: 'no_aplica' as const, activeTermsId: null };
     const docsStatus = computeGuideDocsStatus(
       docsList.map(d => ({
         documentTypeName: d.documentType.name,

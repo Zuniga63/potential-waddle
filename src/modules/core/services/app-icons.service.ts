@@ -125,8 +125,7 @@ export class AppIconsService {
 
     // Check if the icon has relationships
     const hasRelations =
-      (appIcon.categories && appIcon.categories.length > 0) ||
-      (appIcon.facilities && appIcon.facilities.length > 0);
+      (appIcon.categories && appIcon.categories.length > 0) || (appIcon.facilities && appIcon.facilities.length > 0);
 
     if (hasRelations) {
       throw new ConflictException(
@@ -137,4 +136,4 @@ export class AppIconsService {
     await this.appIconsRepository.remove(appIcon);
     return { message: `App Icon "${appIcon.name}" has been successfully deleted` };
   }
-} 
+}

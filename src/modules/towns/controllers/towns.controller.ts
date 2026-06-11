@@ -103,11 +103,7 @@ export class TownsController {
   @UseInterceptors(FilesInterceptor('files', 10))
   @ApiConsumes('multipart/form-data')
   @ApiOperation({ summary: 'Upload images to town (Admin only)' })
-  async uploadImages(
-    @Param('id') id: string,
-    @UploadedFiles() files: Express.Multer.File[],
-    @GetUser() user: User,
-  ) {
+  async uploadImages(@Param('id') id: string, @UploadedFiles() files: Express.Multer.File[], @GetUser() user: User) {
     if (!user.isSuperUser) {
       throw new ForbiddenException('Only super users can access this endpoint');
     }
@@ -134,11 +130,7 @@ export class TownsController {
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Delete town image (Admin only)' })
-  async deleteImage(
-    @Param('id') id: string,
-    @Param('imageId') imageId: string,
-    @GetUser() user: User,
-  ) {
+  async deleteImage(@Param('id') id: string, @Param('imageId') imageId: string, @GetUser() user: User) {
     if (!user.isSuperUser) {
       throw new ForbiddenException('Only super users can access this endpoint');
     }
@@ -149,11 +141,7 @@ export class TownsController {
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Reorder town images (Admin only)' })
-  async reorderImages(
-    @Param('id') id: string,
-    @Body() dto: ReorderImagesDto,
-    @GetUser() user: User,
-  ) {
+  async reorderImages(@Param('id') id: string, @Body() dto: ReorderImagesDto, @GetUser() user: User) {
     if (!user.isSuperUser) {
       throw new ForbiddenException('Only super users can access this endpoint');
     }
@@ -164,11 +152,7 @@ export class TownsController {
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Set hero images for town (Admin only)' })
-  async setHeroImages(
-    @Param('id') id: string,
-    @Body() dto: SetHeroImagesDto,
-    @GetUser() user: User,
-  ) {
+  async setHeroImages(@Param('id') id: string, @Body() dto: SetHeroImagesDto, @GetUser() user: User) {
     if (!user.isSuperUser) {
       throw new ForbiddenException('Only super users can access this endpoint');
     }

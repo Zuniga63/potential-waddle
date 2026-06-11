@@ -22,7 +22,11 @@ export class UpdateCommerceProductDto {
   @IsString()
   name?: string;
 
-  @ApiProperty({ description: 'Description of the product', example: 'Hermosa artesania hecha a mano', required: false })
+  @ApiProperty({
+    description: 'Description of the product',
+    example: 'Hermosa artesania hecha a mano',
+    required: false,
+  })
   @IsOptional()
   @IsString()
   description?: string;

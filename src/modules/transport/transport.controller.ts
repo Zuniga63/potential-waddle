@@ -58,7 +58,11 @@ export class TransportController {
   @Get('public')
   @OptionalAuth()
   @TransportListQueryDocsGroup()
-  findPublicTransports(@TransportFilters() filters: TransportFiltersDto, @GetUser() user: User | undefined, @Req() request: Request) {
+  findPublicTransports(
+    @TransportFilters() filters: TransportFiltersDto,
+    @GetUser() user: User | undefined,
+    @Req() request: Request,
+  ) {
     const tenantId = (request as any)[TENANT_ID_KEY];
     if (tenantId && !filters.townId) {
       filters.townId = tenantId;

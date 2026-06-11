@@ -1,5 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsArray, IsBoolean, IsNumber, IsOptional, IsString, IsUUID, Max, Min } from 'class-validator';
+import { IsArray, IsBoolean, IsNumber, IsOptional, IsUUID, Max, Min } from 'class-validator';
 import { TownImage } from '../entities/town-image.entity';
 
 export class TownImageDto {

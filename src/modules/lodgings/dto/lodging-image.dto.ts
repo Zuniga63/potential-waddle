@@ -72,4 +72,4 @@ export class LodgingImageDto {
     this.createdAt = lodgingImage.createdAt;
     this.updatedAt = lodgingImage.updatedAt;
   }
-} 
+}

@@ -1,8 +1,20 @@
 import { FindOptionsRelations, In, Point, Repository } from 'typeorm';
 import { InjectRepository } from '@nestjs/typeorm';
-import { BadRequestException, ForbiddenException, Injectable, NotFoundException, NotImplementedException } from '@nestjs/common';
+import {
+  BadRequestException,
+  ForbiddenException,
+  Injectable,
+  NotFoundException,
+  NotImplementedException,
+} from '@nestjs/common';
 
-import { AdminExperiencesFiltersDto, AdminExperiencesListDto, CreateExperienceDto, ExperienceDto, UpdateExperienceDto } from './dto';
+import {
+  AdminExperiencesFiltersDto,
+  AdminExperiencesListDto,
+  CreateExperienceDto,
+  ExperienceDto,
+  UpdateExperienceDto,
+} from './dto';
 import { Experience, ExperienceImage } from './entities';
 import type { ExperienceFindAllParams } from './interfaces';
 import { generateExperienceQueryFiltersAndSort } from './logic';
@@ -82,7 +94,17 @@ export class ExperiencesService {
   // Find all experiences paginated (Admin)
   // ------------------------------------------------------------------------------------------------
   async findAllPaginated(filters: AdminExperiencesFiltersDto): Promise<AdminExperiencesListDto> {
-    const { page = 1, limit = 10, search, categoryId, townId, isPublic, status, sortBy = 'title', sortOrder = 'ASC' } = filters;
+    const {
+      page = 1,
+      limit = 10,
+      search,
+      categoryId,
+      townId,
+      isPublic,
+      status,
+      sortBy = 'title',
+      sortOrder = 'ASC',
+    } = filters;
 
     const queryBuilder = this.experienceRepository
       .createQueryBuilder('experience')
@@ -637,9 +659,7 @@ export class ExperiencesService {
     void _unusedDocumentEntityType;
     const [termsDto, docsList] = await Promise.all([
       ownerId ? this.termsService.getStatusForUser(ownerId) : Promise.resolve(null),
-      Promise.resolve(
-        [] as Awaited<ReturnType<typeof this.documentService.getEntityDocumentStatus>>,
-      ),
+      Promise.resolve([] as Awaited<ReturnType<typeof this.documentService.getEntityDocumentStatus>>),
     ]);
     void townId;
     void categoryIds;
@@ -652,7 +672,7 @@ export class ExperiencesService {
           hasAcceptedGuideTerms: termsDto?.hasAcceptedGuideTerms ?? false,
           activeTermsId,
         })
-      : ({ state: 'no_aplica' as const, activeTermsId: null });
+      : { state: 'no_aplica' as const, activeTermsId: null };
     const docsStatus = computeExperienceDocsStatus(
       docsList.map(d => ({
         documentTypeName: d.documentType.name,

@@ -6,12 +6,7 @@ import { WhatsappClick } from './entities';
 import { User } from '../users/entities';
 
 @Module({
-  imports: [
-    TypeOrmModule.forFeature([
-      WhatsappClick,
-      User,
-    ]),
-  ],
+  imports: [TypeOrmModule.forFeature([WhatsappClick, User])],
   controllers: [WhatsappClicksController],
   providers: [WhatsappClicksService],
   exports: [WhatsappClicksService],
