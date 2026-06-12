@@ -125,21 +125,26 @@ export class SubscriptionsService {
 
     // 5. Crear las Subscriptions pendientes vinculadas al payment
     const now = new Date();
-    const periodEnd = new Date(now);
-    periodEnd.setMonth(periodEnd.getMonth() + 1); // 1 mes por defecto
 
     for (const item of dto.items) {
       const plan = plansMap.get(item.planId)!;
 
-      // Calcular fecha de fin según el billing interval del plan
-      const subscriptionEnd = new Date(now);
-      if (plan.billingInterval === 'lifetime') {
-        // Suscripción vitalicia: fecha muy lejana
-        subscriptionEnd.setFullYear(2099, 11, 31);
-      } else if (plan.billingInterval === 'yearly') {
-        subscriptionEnd.setFullYear(subscriptionEnd.getFullYear() + 1);
+      // Si el usuario eligió fechas en el carrito, las honramos.
+      // Si no, calculamos según billing interval del plan.
+      const periodStart = item.startDate ? new Date(item.startDate) : now;
+      let periodEnd: Date;
+
+      if (item.endDate) {
+        periodEnd = new Date(item.endDate);
       } else {
-        subscriptionEnd.setMonth(subscriptionEnd.getMonth() + 1);
+        periodEnd = new Date(periodStart);
+        if (plan.billingInterval === 'lifetime') {
+          periodEnd.setFullYear(2099, 11, 31);
+        } else if (plan.billingInterval === 'yearly') {
+          periodEnd.setFullYear(periodEnd.getFullYear() + 1);
+        } else {
+          periodEnd.setMonth(periodEnd.getMonth() + 1);
+        }
       }
 
       const subscription = this.subscriptionRepository.create({
@@ -150,8 +155,8 @@ export class SubscriptionsService {
         entityType: item.entityType,
         entityId: item.entityId,
         entityName: item.entityName,
-        currentPeriodStart: now,
-        currentPeriodEnd: subscriptionEnd,
+        currentPeriodStart: periodStart,
+        currentPeriodEnd: periodEnd,
       });
 
       await this.subscriptionRepository.save(subscription);
@@ -190,26 +195,11 @@ export class SubscriptionsService {
       where: { paymentId },
     });
 
-    const now = new Date();
+    // Honramos las fechas guardadas en createCheckout (que pueden venir del
+    // selector de fechas del carrito o del cálculo por billingInterval).
+    // Activar es solo un flip de status.
     for (const subscription of subscriptions) {
       subscription.status = 'active';
-      subscription.currentPeriodStart = now;
-
-      // Recalcular fecha de fin
-      const plan = await this.planRepository.findOne({ where: { id: subscription.planId } });
-      if (plan) {
-        const periodEnd = new Date(now);
-        if (plan.billingInterval === 'lifetime') {
-          // Suscripción vitalicia: fecha muy lejana
-          periodEnd.setFullYear(2099, 11, 31);
-        } else if (plan.billingInterval === 'yearly') {
-          periodEnd.setFullYear(periodEnd.getFullYear() + 1);
-        } else {
-          periodEnd.setMonth(periodEnd.getMonth() + 1);
-        }
-        subscription.currentPeriodEnd = periodEnd;
-      }
-
       await this.subscriptionRepository.save(subscription);
     }
   }

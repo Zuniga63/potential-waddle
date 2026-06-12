@@ -1,5 +1,15 @@
-import { ApiProperty } from '@nestjs/swagger';
-import { IsArray, IsEnum, IsUUID, ValidateNested, ArrayMinSize, IsString, IsNotEmpty } from 'class-validator';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import {
+  IsArray,
+  IsEnum,
+  IsUUID,
+  ValidateNested,
+  ArrayMinSize,
+  IsString,
+  IsNotEmpty,
+  IsOptional,
+  IsDateString,
+} from 'class-validator';
 import { Type } from 'class-transformer';
 import { EntityType } from '../entities';
 
@@ -23,6 +33,22 @@ export class CheckoutItemDto {
   @IsString()
   @IsNotEmpty()
   entityName: string;
+
+  @ApiPropertyOptional({
+    example: '2026-06-12',
+    description: 'Requested subscription start date (YYYY-MM-DD). If omitted, server uses payment date.',
+  })
+  @IsOptional()
+  @IsDateString()
+  startDate?: string;
+
+  @ApiPropertyOptional({
+    example: '2027-06-12',
+    description: 'Requested subscription end date (YYYY-MM-DD). If omitted, server uses plan billingInterval.',
+  })
+  @IsOptional()
+  @IsDateString()
+  endDate?: string;
 }
 
 export class CreateCheckoutDto {
