@@ -1,6 +1,9 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsString, IsInt, IsBoolean, IsOptional, Min, MaxLength, IsArray, ValidateNested } from 'class-validator';
+import { IsString, IsInt, IsBoolean, IsOptional, Min, MaxLength, IsArray, ValidateNested, IsIn } from 'class-validator';
 import { Type } from 'class-transformer';
+
+export const PLAN_ENTITY_TYPES = ['lodging', 'restaurant', 'commerce', 'transport', 'guide', 'experience'] as const;
+export type PlanEntityType = (typeof PLAN_ENTITY_TYPES)[number];
 
 export class CreatePlanFeatureDto {
   @ApiProperty({ example: 'max_photos', description: 'Feature key identifier' })
@@ -71,6 +74,17 @@ export class CreatePlanDto {
   @IsInt()
   @Min(0)
   sortOrder?: number;
+
+  @ApiPropertyOptional({
+    example: ['lodging', 'restaurant'],
+    enum: PLAN_ENTITY_TYPES,
+    isArray: true,
+    description: 'Business entity types this plan applies to. Empty array means "applies to all".',
+  })
+  @IsOptional()
+  @IsArray()
+  @IsIn(PLAN_ENTITY_TYPES as unknown as string[], { each: true })
+  entityTypes?: PlanEntityType[];
 
   @ApiPropertyOptional({ type: [CreatePlanFeatureDto], description: 'Plan features' })
   @IsOptional()

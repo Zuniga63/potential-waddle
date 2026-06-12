@@ -44,6 +44,9 @@ export class Plan {
   @Column('integer', { default: 0, name: 'sort_order' })
   sortOrder: number;
 
+  @Column('text', { array: true, default: () => "'{}'", name: 'entity_types' })
+  entityTypes: string[];
+
   // * ----------------------------------------------------------------------------------------------------------------
   // * TIMESTAMPS
   // * ----------------------------------------------------------------------------------------------------------------

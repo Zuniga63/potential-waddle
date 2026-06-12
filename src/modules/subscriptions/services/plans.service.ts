@@ -93,6 +93,7 @@ export class PlansService {
       billingInterval,
       isActive: dto.isActive ?? true,
       sortOrder: dto.sortOrder ?? 0,
+      entityTypes: dto.entityTypes ?? [],
     });
 
     const savedPlan = (await this.planRepository.save(plan)) as Plan;
@@ -137,6 +138,7 @@ export class PlansService {
       ...(dto.billingInterval && { billingInterval: dto.billingInterval as 'monthly' | 'yearly' }),
       ...(dto.isActive !== undefined && { isActive: dto.isActive }),
       ...(dto.sortOrder !== undefined && { sortOrder: dto.sortOrder }),
+      ...(dto.entityTypes !== undefined && { entityTypes: dto.entityTypes }),
     });
 
     await this.planRepository.save(plan);
@@ -205,6 +207,7 @@ export class PlansService {
       billingInterval: originalPlan.billingInterval,
       isActive: false, // Start as inactive
       sortOrder: originalPlan.sortOrder,
+      entityTypes: [...(originalPlan.entityTypes ?? [])],
     });
 
     const savedPlan = await this.planRepository.save(newPlan);

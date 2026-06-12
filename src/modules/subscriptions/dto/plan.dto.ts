@@ -33,6 +33,13 @@ export class PlanDto {
   @ApiProperty({ example: 1 })
   sortOrder: number;
 
+  @ApiProperty({
+    example: ['lodging', 'restaurant'],
+    isArray: true,
+    description: 'Business entity types this plan applies to. Empty array means "applies to all".',
+  })
+  entityTypes: string[];
+
   @ApiProperty({ type: [PlanFeatureDto], required: false })
   features?: PlanFeatureDto[];
 
@@ -54,6 +61,7 @@ export class PlanDto {
     this.billingInterval = plan.billingInterval;
     this.isActive = plan.isActive;
     this.sortOrder = plan.sortOrder;
+    this.entityTypes = plan.entityTypes ?? [];
     this.features = plan.features?.map(f => new PlanFeatureDto(f));
     this.createdAt = plan.createdAt?.toISOString();
     this.updatedAt = plan.updatedAt?.toISOString();
