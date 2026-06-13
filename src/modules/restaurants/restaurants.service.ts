@@ -32,6 +32,7 @@ import { TermsService } from '../terms/services';
 import { TermsTypeEnum } from '../terms/interfaces';
 import { isTermsEnforcementEnabled } from '../terms/utils';
 import { DocumentService } from '../documents/services';
+import { SubscriptionsService } from '../subscriptions/services';
 import { DocumentEntityType } from '../documents/enums';
 import {
   computeRestaurantCompletion,
@@ -64,13 +65,19 @@ export class RestaurantsService {
     private readonly entityReviewsService: EntityReviewsService,
     private readonly termsService: TermsService,
     private readonly documentService: DocumentService,
+    private readonly subscriptionsService: SubscriptionsService,
   ) {}
 
   async findAll({ filters }: RestaurantFindAllParams = {}) {
     const { where, order } = generateRestaurantQueryFiltersAndSort(filters);
+
+    // Public lists gated by active subscription.
+    const subscribedIds = await this.subscriptionsService.getActiveSubscribedEntityIds('restaurant');
+    if (subscribedIds.length === 0) return [];
+
     const restaurants = await this.restaurantRepository.find({
       relations: { town: { department: true }, categories: { icon: true }, images: { imageResource: true } },
-      where,
+      where: { ...where, id: In(subscribedIds) },
       order,
     });
 
@@ -168,6 +175,9 @@ export class RestaurantsService {
     const shouldRandomize = filters?.sortBy === 'random';
     const { where, order } = generateRestaurantQueryFiltersAndSort(filters);
 
+    const subscribedIds = await this.subscriptionsService.getActiveSubscribedEntityIds('restaurant');
+    if (subscribedIds.length === 0) return [];
+
     // Obtener restaurants y reviews del usuario en paralelo
     const [restaurants, userReviews] = await Promise.all([
       this.restaurantRepository.find({
@@ -176,6 +186,7 @@ export class RestaurantsService {
         where: {
           ...where,
           isPublic: true,
+          id: In(subscribedIds),
         },
       }),
       user
@@ -215,6 +226,10 @@ export class RestaurantsService {
   async findPublicFullInfoRestaurants({ filters }: RestaurantFindAllParams = {}) {
     const shouldRandomize = filters?.sortBy === 'random';
     const { where, order } = generateRestaurantQueryFiltersAndSort(filters);
+
+    const subscribedIds = await this.subscriptionsService.getActiveSubscribedEntityIds('restaurant');
+    if (subscribedIds.length === 0) return [];
+
     let restaurants = await this.restaurantRepository.find({
       relations: {
         town: { department: true },
@@ -226,6 +241,7 @@ export class RestaurantsService {
       where: {
         ...where,
         isPublic: true,
+        id: In(subscribedIds),
       },
     });
 

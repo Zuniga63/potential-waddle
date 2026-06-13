@@ -5,7 +5,7 @@ import { Plan } from './plan.entity';
 import { Payment } from './payment.entity';
 
 export type SubscriptionStatus = 'pending' | 'active' | 'canceled' | 'past_due' | 'expired';
-export type EntityType = 'lodging' | 'restaurant' | 'commerce' | 'transport' | 'guide';
+export type EntityType = 'lodging' | 'restaurant' | 'commerce' | 'transport' | 'guide' | 'experience';
 
 @Entity({ name: 'subscriptions' })
 export class Subscription {

@@ -27,6 +27,7 @@ import { TermsTypeEnum } from '../terms/interfaces';
 import { computeTransportCompletion } from './utils/compute-transport-completion';
 import { DocumentService } from '../documents/services';
 import { DocumentEntityType } from '../documents/enums';
+import { SubscriptionsService } from '../subscriptions/services';
 import {
   computeLodgingTermsStatus,
   computeLodgingDocsStatus,
@@ -53,6 +54,7 @@ export class TransportService {
     private readonly entityReviewsService: EntityReviewsService,
     private readonly termsService: TermsService,
     private readonly documentService: DocumentService,
+    private readonly subscriptionsService: SubscriptionsService,
   ) {}
 
   // ------------------------------------------------------------------------------------------------
@@ -126,12 +128,18 @@ export class TransportService {
     const { page = 1, limit = 25 } = filters ?? {};
     const skip = (page - 1) * limit;
     const { where, order } = generateTransportQueryFiltersAndSort(filters);
+
+    const subscribedIds = await this.subscriptionsService.getActiveSubscribedEntityIds('transport');
+    if (subscribedIds.length === 0) {
+      return new TransportListDto({ currentPage: page, pages: 0, count: 0 }, []);
+    }
+
     const [transports, count] = await this.transportRepository.findAndCount({
       skip,
       take: limit,
       relations: { categories: { icon: true }, town: { department: true }, user: true },
       order,
-      where,
+      where: { ...where, id: In(subscribedIds) },
     });
 
     return new TransportListDto({ currentPage: page, pages: Math.ceil(count / limit), count }, transports);
@@ -254,6 +262,11 @@ export class TransportService {
     const skip = (page - 1) * limit;
     const { where, order } = generateTransportQueryFiltersAndSort(filters);
 
+    const subscribedIds = await this.subscriptionsService.getActiveSubscribedEntityIds('transport');
+    if (subscribedIds.length === 0) {
+      return new TransportListDto({ currentPage: page, pages: 0, count: 0 }, []);
+    }
+
     // Obtener transports y reviews del usuario en paralelo
     const [result, userReviews] = await Promise.all([
       this.transportRepository.findAndCount({
@@ -264,6 +277,7 @@ export class TransportService {
         where: {
           ...where,
           isPublic: true,
+          id: In(subscribedIds),
         },
       }),
       user

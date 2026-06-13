@@ -29,6 +29,7 @@ import { TermsService } from '../terms/services';
 import { TermsTypeEnum } from '../terms/interfaces';
 import { isTermsEnforcementEnabled } from '../terms/utils';
 import { DocumentService } from '../documents/services';
+import { SubscriptionsService } from '../subscriptions/services';
 import { DocumentEntityType } from '../documents/enums';
 import {
   computeCommerceCompletion,
@@ -63,10 +64,15 @@ export class CommerceService {
     private readonly entityReviewsService: EntityReviewsService,
     private readonly termsService: TermsService,
     private readonly documentService: DocumentService,
+    private readonly subscriptionsService: SubscriptionsService,
   ) {}
 
   async findAll({ filters }: CommerceFindAllParams = {}) {
     const { where, order } = generateCommerceQueryFiltersAndSort(filters);
+
+    const subscribedIds = await this.subscriptionsService.getActiveSubscribedEntityIds('commerce');
+    if (subscribedIds.length === 0) return [];
+
     const commerces = await this.commerceRepository.find({
       relations: {
         town: { department: true },
@@ -74,7 +80,7 @@ export class CommerceService {
         images: { imageResource: true },
         user: true,
       },
-      where,
+      where: { ...where, id: In(subscribedIds) },
       order,
     });
 
@@ -169,6 +175,9 @@ export class CommerceService {
     const shouldRandomize = filters?.sortBy === 'random';
     const { where, order } = generateCommerceQueryFiltersAndSort(filters);
 
+    const subscribedIds = await this.subscriptionsService.getActiveSubscribedEntityIds('commerce');
+    if (subscribedIds.length === 0) return [];
+
     // Obtener commerces y reviews del usuario en paralelo
     const [commerces, userReviews] = await Promise.all([
       this.commerceRepository.find({
@@ -181,6 +190,7 @@ export class CommerceService {
         where: {
           ...where,
           isPublic: true,
+          id: In(subscribedIds),
         },
         order,
       }),

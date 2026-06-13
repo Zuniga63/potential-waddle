@@ -363,6 +363,28 @@ export class SubscriptionsService {
     return { deleted: result.affected ?? 0 };
   }
 
+  /**
+   * Return the IDs of all business entities of the given type that currently
+   * have an ACTIVE subscription. Used by public list endpoints to hide
+   * businesses without a paid (or admin-granted) subscription.
+   *
+   * "Active" here means:
+   *   • status = 'active'
+   *   • AND (currentPeriodEnd IS NULL OR currentPeriodEnd > NOW())
+   *     — null is treated as perpetual / lifetime, never expired.
+   */
+  async getActiveSubscribedEntityIds(entityType: EntityType): Promise<string[]> {
+    const rows = await this.subscriptionRepository
+      .createQueryBuilder('s')
+      .select('DISTINCT s.entity_id', 'entityId')
+      .where('s.entity_type = :entityType', { entityType })
+      .andWhere('s.status = :status', { status: 'active' })
+      .andWhere('(s.current_period_end IS NULL OR s.current_period_end > NOW())')
+      .getRawMany();
+
+    return rows.map(r => r.entityId).filter((id): id is string => !!id);
+  }
+
   // * ----------------------------------------------------------------------------------------------------------------
   // * ADMIN - CANCELAR SUSCRIPCIÓN (sin verificar userId)
   // * ----------------------------------------------------------------------------------------------------------------

@@ -12,6 +12,7 @@ import { CloudinaryModule } from '../cloudinary/cloudinary.module';
 import { ReviewsModule } from '../reviews/reviews.module';
 import { TermsModule } from '../terms/terms.module';
 import { DocumentsModule } from '../documents/documents.module';
+import { SubscriptionsModule } from '../subscriptions/subscriptions.module';
 
 @Module({
   controllers: [GuidesController],
@@ -22,6 +23,7 @@ import { DocumentsModule } from '../documents/documents.module';
     ReviewsModule,
     TermsModule,
     DocumentsModule,
+    SubscriptionsModule,
   ],
 })
 export class GuidesModule {}

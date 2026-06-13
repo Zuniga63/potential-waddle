@@ -38,6 +38,7 @@ import { TermsService } from '../terms/services';
 import { isTermsEnforcementEnabled } from '../terms/utils';
 import { DocumentService } from '../documents/services';
 import { DocumentEntityType } from '../documents/enums';
+import { SubscriptionsService } from '../subscriptions/services';
 import {
   computeExperienceCompletion,
   computeExperienceTermsStatus,
@@ -69,6 +70,7 @@ export class ExperiencesService {
     private readonly entityReviewsService: EntityReviewsService,
     private readonly termsService: TermsService,
     private readonly documentService: DocumentService,
+    private readonly subscriptionsService: SubscriptionsService,
   ) {}
 
   // ------------------------------------------------------------------------------------------------
@@ -76,6 +78,10 @@ export class ExperiencesService {
   // ------------------------------------------------------------------------------------------------
   async findAll({ filters }: ExperienceFindAllParams = {}): Promise<ExperienceDto[]> {
     const { where, order } = generateExperienceQueryFiltersAndSort(filters);
+
+    const subscribedIds = await this.subscriptionsService.getActiveSubscribedEntityIds('experience');
+    if (subscribedIds.length === 0) return [];
+
     const experiences = await this.experienceRepository.find({
       relations: {
         categories: { icon: true },
@@ -84,7 +90,7 @@ export class ExperiencesService {
         guide: true,
       },
       order,
-      where,
+      where: { ...where, id: In(subscribedIds) },
     });
 
     return experiences.map(experience => new ExperienceIndexDto({ data: experience }));
@@ -158,6 +164,9 @@ export class ExperiencesService {
     const shouldRandomize = filters?.sortBy === 'random';
     const { where, order } = generateExperienceQueryFiltersAndSort(filters);
 
+    const subscribedIds = await this.subscriptionsService.getActiveSubscribedEntityIds('experience');
+    if (subscribedIds.length === 0) return [];
+
     // Fetch experiences and user reviews in parallel
     const [experiences, userReviews] = await Promise.all([
       this.experienceRepository.find({
@@ -171,6 +180,7 @@ export class ExperiencesService {
         where: {
           ...where,
           isPublic: true,
+          id: In(subscribedIds),
         },
       }),
       user
@@ -210,6 +220,10 @@ export class ExperiencesService {
   async findPublicFullInfoExperiences({ filters }: ExperienceFindAllParams = {}): Promise<ExperienceVectorDto[]> {
     const shouldRandomize = filters?.sortBy === 'random';
     const { where, order } = generateExperienceQueryFiltersAndSort(filters);
+
+    const subscribedIds = await this.subscriptionsService.getActiveSubscribedEntityIds('experience');
+    if (subscribedIds.length === 0) return [];
+
     let experiences = await this.experienceRepository.find({
       relations: {
         categories: { icon: true },
@@ -221,6 +235,7 @@ export class ExperiencesService {
       where: {
         ...where,
         isPublic: true,
+        id: In(subscribedIds),
       },
     });
 

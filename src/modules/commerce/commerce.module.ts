@@ -14,6 +14,7 @@ import { CommerceProductsController } from './commerce-products.controller';
 import { ReviewsModule } from '../reviews/reviews.module';
 import { TermsModule } from '../terms/terms.module';
 import { DocumentsModule } from '../documents/documents.module';
+import { SubscriptionsModule } from '../subscriptions/subscriptions.module';
 
 @Module({
   controllers: [CommerceController, CommerceProductsController],
@@ -33,6 +34,7 @@ import { DocumentsModule } from '../documents/documents.module';
     ReviewsModule,
     TermsModule,
     DocumentsModule,
+    SubscriptionsModule,
   ],
 })
 export class CommerceModule {}

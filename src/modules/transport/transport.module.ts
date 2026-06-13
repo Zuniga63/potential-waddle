@@ -9,10 +9,17 @@ import { User } from '../users/entities';
 import { ReviewsModule } from '../reviews/reviews.module';
 import { TermsModule } from '../terms/terms.module';
 import { DocumentsModule } from '../documents/documents.module';
+import { SubscriptionsModule } from '../subscriptions/subscriptions.module';
 
 @Module({
   controllers: [TransportController],
   providers: [TransportService],
-  imports: [TypeOrmModule.forFeature([Transport, Category, Town, User]), ReviewsModule, TermsModule, DocumentsModule],
+  imports: [
+    TypeOrmModule.forFeature([Transport, Category, Town, User]),
+    ReviewsModule,
+    TermsModule,
+    DocumentsModule,
+    SubscriptionsModule,
+  ],
 })
 export class TransportModule {}

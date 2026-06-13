@@ -47,6 +47,7 @@ import { TermsService } from '../terms/services';
 import { TermsTypeEnum } from '../terms/interfaces';
 import { isTermsEnforcementEnabled } from '../terms/utils';
 import { ResendService } from '../email/services/resend.service';
+import { SubscriptionsService } from '../subscriptions/services';
 
 @Injectable()
 export class LodgingsService {
@@ -78,6 +79,7 @@ export class LodgingsService {
     private readonly documentService: DocumentService,
     private readonly dataSource: DataSource,
     private readonly resendService: ResendService,
+    private readonly subscriptionsService: SubscriptionsService,
   ) {}
 
   // ------------------------------------------------------------------------------------------------
@@ -85,6 +87,11 @@ export class LodgingsService {
   // ------------------------------------------------------------------------------------------------
   async findAll({ filters }: LodgingFindAllParams = {}) {
     const { where, order } = generateLodgingQueryFilters(filters);
+
+    // Public lists are gated by active subscription: businesses without one are invisible.
+    const subscribedIds = await this.subscriptionsService.getActiveSubscribedEntityIds('lodging');
+    if (subscribedIds.length === 0) return [];
+    where.id = In(subscribedIds);
 
     const relations: FindOptionsRelations<Lodging> = {
       town: { department: true },
@@ -192,6 +199,10 @@ export class LodgingsService {
     const shouldRandomize = filters?.sortBy === 'random';
     const { where, order } = generateLodgingQueryFilters(filters);
 
+    // Active-subscription gate.
+    const subscribedIds = await this.subscriptionsService.getActiveSubscribedEntityIds('lodging');
+    if (subscribedIds.length === 0) return [];
+
     // Obtener lodgings y reviews del usuario en paralelo
     const [lodgings, userReviews] = await Promise.all([
       this.lodgingRespository.find({
@@ -204,6 +215,7 @@ export class LodgingsService {
         where: {
           ...where,
           status: 'published' as const,
+          id: In(subscribedIds),
         },
       }),
       user
@@ -244,6 +256,10 @@ export class LodgingsService {
   async findPublicFullInfoLodgings({ filters }: LodgingFindAllParams = {}) {
     const shouldRandomize = filters?.sortBy === 'random';
     const { where, order } = generateLodgingQueryFilters(filters);
+
+    const subscribedIds = await this.subscriptionsService.getActiveSubscribedEntityIds('lodging');
+    if (subscribedIds.length === 0) return [];
+
     let lodgings = await this.lodgingRespository.find({
       relations: {
         town: { department: true },
@@ -255,6 +271,7 @@ export class LodgingsService {
       where: {
         ...where,
         status: 'published' as const,
+        id: In(subscribedIds),
       },
     });
 

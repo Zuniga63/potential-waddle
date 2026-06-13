@@ -30,6 +30,7 @@ import { TermsTypeEnum } from '../terms/interfaces';
 import { isTermsEnforcementEnabled } from '../terms/utils';
 import { DocumentService } from '../documents/services';
 import { DocumentEntityType } from '../documents/enums';
+import { SubscriptionsService } from '../subscriptions/services';
 import {
   computeGuideCompletion,
   computeGuideTermsStatus,
@@ -57,6 +58,7 @@ export class GuidesService {
     private readonly entityReviewsService: EntityReviewsService,
     private readonly termsService: TermsService,
     private readonly documentService: DocumentService,
+    private readonly subscriptionsService: SubscriptionsService,
   ) {}
 
   // ------------------------------------------------------------------------------------------------
@@ -85,6 +87,11 @@ export class GuidesService {
     const skip = (page - 1) * limit;
     const { where, order } = generateGuideQueryFilters(filters);
 
+    const subscribedIds = await this.subscriptionsService.getActiveSubscribedEntityIds('guide');
+    if (subscribedIds.length === 0) {
+      return new GuidesListDto({ currentPage: page, pages: 0, count: 0 }, []);
+    }
+
     const relations: FindOptionsRelations<Guide> = {
       categories: { icon: true },
       images: { imageResource: true },
@@ -97,7 +104,7 @@ export class GuidesService {
       take: limit,
       relations,
       order,
-      where,
+      where: { ...where, id: In(subscribedIds) },
     });
 
     return new GuidesListDto({ currentPage: page, pages: Math.ceil(count / limit), count }, guides);
@@ -192,6 +199,11 @@ export class GuidesService {
     const skip = (page - 1) * limit;
     const { where, order } = generateGuideQueryFilters(filters);
 
+    const subscribedIds = await this.subscriptionsService.getActiveSubscribedEntityIds('guide');
+    if (subscribedIds.length === 0) {
+      return { currentPage: page, pages: 0, count: 0, data: [] };
+    }
+
     const relations: FindOptionsRelations<Guide> = {
       categories: { icon: true },
       images: { imageResource: true },
@@ -209,6 +221,7 @@ export class GuidesService {
         where: {
           ...where,
           isPublic: true,
+          id: In(subscribedIds),
         },
       }),
       user
@@ -244,6 +257,9 @@ export class GuidesService {
   async findPublicFullInfoGuides(filters: GuidesFiltersDto = {}): Promise<GuideVectorDto[]> {
     const { where, order } = generateGuideQueryFilters(filters);
 
+    const subscribedIds = await this.subscriptionsService.getActiveSubscribedEntityIds('guide');
+    if (subscribedIds.length === 0) return [];
+
     const relations: FindOptionsRelations<Guide> = {
       categories: { icon: true },
       images: { imageResource: true },
@@ -261,6 +277,7 @@ export class GuidesService {
       where: {
         ...where,
         isPublic: true,
+        id: In(subscribedIds),
       },
     });
 
