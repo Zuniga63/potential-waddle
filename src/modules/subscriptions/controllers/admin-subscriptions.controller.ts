@@ -3,7 +3,7 @@ import { ApiTags, ApiOkResponse, ApiOperation, ApiQuery } from '@nestjs/swagger'
 
 import { SuperAdmin } from '../../auth/decorators';
 import { SubscriptionsService } from '../services';
-import { SubscriptionDto, AdminCreateSubscriptionDto } from '../dto';
+import { SubscriptionDto, AdminCreateSubscriptionDto, BulkDeleteSubscriptionsDto } from '../dto';
 import { EntityType } from '../entities';
 import { UsersService } from '../../users/services/users.service';
 
@@ -72,5 +72,12 @@ export class AdminSubscriptionsController {
   @ApiOkResponse({ description: 'Subscription deleted' })
   delete(@Param('id', ParseUUIDPipe) id: string) {
     return this.subscriptionsService.deleteSubscription(id);
+  }
+
+  @Post('bulk-delete')
+  @ApiOperation({ summary: 'Bulk delete subscriptions by id (admin)' })
+  @ApiOkResponse({ description: 'Count of subscriptions deleted', schema: { example: { deleted: 4 } } })
+  bulkDelete(@Body() dto: BulkDeleteSubscriptionsDto) {
+    return this.subscriptionsService.bulkDeleteSubscriptions(dto.ids);
   }
 }

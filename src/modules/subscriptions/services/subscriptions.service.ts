@@ -351,6 +351,18 @@ export class SubscriptionsService {
     await this.subscriptionRepository.remove(subscription);
   }
 
+  /**
+   * Bulk delete subscriptions by id. Returns the count actually removed.
+   * Ids that don't exist are silently skipped (idempotent — useful for
+   * concurrent admin sessions where one might have already deleted a row).
+   */
+  async bulkDeleteSubscriptions(ids: string[]): Promise<{ deleted: number }> {
+    if (!ids?.length) return { deleted: 0 };
+
+    const result = await this.subscriptionRepository.delete({ id: In(ids) });
+    return { deleted: result.affected ?? 0 };
+  }
+
   // * ----------------------------------------------------------------------------------------------------------------
   // * ADMIN - CANCELAR SUSCRIPCIÓN (sin verificar userId)
   // * ----------------------------------------------------------------------------------------------------------------
