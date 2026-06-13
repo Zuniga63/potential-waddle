@@ -10,7 +10,6 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { DataSource, FindOptionsRelations, In, Point, Repository } from 'typeorm';
 
 import { Lodging, LodgingImage, LodgingPlace, LodgingRoomType } from './entities';
-import { Plan, Subscription } from '../subscriptions/entities';
 import {
   AdminLodgingsFiltersDto,
   AdminLodgingsListDto,
@@ -78,10 +77,6 @@ export class LodgingsService {
     private readonly termsService: TermsService,
     private readonly documentService: DocumentService,
     private readonly dataSource: DataSource,
-    @InjectRepository(Plan)
-    private readonly planRepository: Repository<Plan>,
-    @InjectRepository(Subscription)
-    private readonly subscriptionRepository: Repository<Subscription>,
     private readonly resendService: ResendService,
   ) {}
 
@@ -426,7 +421,7 @@ export class LodgingsService {
   }
 
   // ------------------------------------------------------------------------------------------------
-  // Create lodging (transactional: lodging + Plan Free subscription in one DB transaction)
+  // Create lodging (transactional: lodging only — subscription is no longer auto-assigned)
   // ------------------------------------------------------------------------------------------------
   async create(createLodgingDto: CreateLodgingDto, userId: string) {
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -441,23 +436,17 @@ export class LodgingsService {
         : null;
 
     // Pre-load related entities outside the transaction (read-only, safe)
-    const [categories, facilities, town, user, places, freePlan] = await Promise.all([
+    const [categories, facilities, town, user, places] = await Promise.all([
       createLodgingDto.categoryIds ? this.categoryRepo.findBy({ id: In(createLodgingDto.categoryIds) }) : [],
       createLodgingDto.facilityIds ? this.facilityRepository.findBy({ id: In(createLodgingDto.facilityIds) }) : [],
       this.townRepository.findOne({ where: { id: createLodgingDto.townId } }),
       // Usar userId del JWT, no del DTO (seguridad)
       this.userRepository.findOne({ where: { id: userId } }),
       createLodgingDto.placeIds ? this.placeRepository.findBy({ id: In(createLodgingDto.placeIds) }) : [],
-      this.planRepository.findOne({ where: { slug: 'lodging-free' } }),
     ]);
 
     if (!town) throw new NotFoundException('Town not found');
     if (!user) throw new NotFoundException('User not found');
-
-    // Plan Free must be seeded — it is a critical setup requirement
-    if (!freePlan) {
-      throw new InternalServerErrorException('Plan Free not seeded');
-    }
 
     try {
       const newLodgingId = await this.dataSource.transaction(async manager => {
@@ -495,20 +484,7 @@ export class LodgingsService {
           }
         }
 
-        // 4. Auto-create Plan Free subscription for this lodging
-        const subscription = manager.create(Subscription, {
-          userId: user.id,
-          planId: freePlan.id,
-          entityType: 'lodging',
-          entityId: newLodging.id,
-          entityName: newLodging.name,
-          status: 'active',
-          currentPeriodStart: new Date(),
-          currentPeriodEnd: null,
-        });
-        await manager.save(Subscription, subscription);
-
-        // 5. Clear the business-interest follow-up flag — the user has now created
+        // 4. Clear the business-interest follow-up flag — the user has now created
         // their first business, so they no longer need the abandoned-intent nudge.
         await manager.update(User, user.id, { interestedInBusiness: false });
 

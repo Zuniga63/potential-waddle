@@ -1,5 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { ForbiddenException, InternalServerErrorException } from '@nestjs/common';
+import { ForbiddenException } from '@nestjs/common';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { DataSource } from 'typeorm';
 
@@ -9,7 +9,6 @@ import { Category, Facility } from '../core/entities';
 import { User } from '../users/entities';
 import { Town } from '../towns/entities';
 import { Place } from '../places/entities';
-import { Plan, Subscription } from '../subscriptions/entities';
 import { CloudinaryService } from '../cloudinary/cloudinary.service';
 import { GooglePlacesService } from '../google-places/google-places.service';
 import { PromotionsService } from '../promotions/promotions.service';
@@ -24,7 +23,6 @@ import { ResendService } from '../email/services/resend.service';
 
 const USER_ID = '00000000-0000-0000-0000-000000000001';
 const LODGING_ID = '00000000-0000-0000-0000-000000000010';
-const PLAN_ID = '00000000-0000-0000-0000-000000000020';
 const TERMS_DOC_ID = '00000000-0000-0000-0000-000000000030';
 
 const NOW = new Date('2026-05-13T00:00:00Z');
@@ -163,8 +161,6 @@ describe('LodgingsService — submitForReview', () => {
         { provide: getRepositoryToken(Place), useValue: makeRepo() },
         { provide: getRepositoryToken(LodgingPlace), useValue: makeRepo() },
         { provide: getRepositoryToken(LodgingRoomType), useValue: makeRepo() },
-        { provide: getRepositoryToken(Plan), useValue: makeRepo() },
-        { provide: getRepositoryToken(Subscription), useValue: makeRepo() },
         {
           provide: CloudinaryService,
           useValue: { uploadImage: jest.fn(), destroyFile: jest.fn(), destroyFolder: jest.fn() },
@@ -377,7 +373,6 @@ describe('LodgingsService — submitForReview', () => {
 describe('LodgingsService — create', () => {
   let service: LodgingsService;
   let lodgingRepo: ReturnType<typeof makeRepo>;
-  let planRepo: ReturnType<typeof makeRepo>;
   let townRepo: ReturnType<typeof makeRepo>;
   let userRepo: ReturnType<typeof makeRepo>;
   let categoryRepo: ReturnType<typeof makeRepo>;
@@ -386,7 +381,6 @@ describe('LodgingsService — create', () => {
   let dataSource: { transaction: jest.Mock };
   let termsService: jest.Mocked<Partial<TermsService>>;
 
-  const freePlan = { id: PLAN_ID, slug: 'lodging-free' } as Plan;
   const town = { id: 'town-1' } as Town;
   const user = mockUser;
 
@@ -394,7 +388,6 @@ describe('LodgingsService — create', () => {
     jest.clearAllMocks();
 
     lodgingRepo = makeRepo();
-    planRepo = makeRepo();
     townRepo = makeRepo();
     userRepo = makeRepo();
     categoryRepo = makeRepo();
@@ -415,8 +408,6 @@ describe('LodgingsService — create', () => {
         { provide: getRepositoryToken(Place), useValue: placeRepo },
         { provide: getRepositoryToken(LodgingPlace), useValue: makeRepo() },
         { provide: getRepositoryToken(LodgingRoomType), useValue: makeRepo() },
-        { provide: getRepositoryToken(Plan), useValue: planRepo },
-        { provide: getRepositoryToken(Subscription), useValue: makeRepo() },
         {
           provide: CloudinaryService,
           useValue: { uploadImage: jest.fn(), destroyFile: jest.fn(), destroyFolder: jest.fn() },
@@ -441,22 +432,21 @@ describe('LodgingsService — create', () => {
   });
 
   // -------------------------------------------------------------------------
-  // Test 7: happy path — transaction called, lodging + subscription persisted
+  // happy path — transaction called, lodging persisted (no auto subscription)
   // -------------------------------------------------------------------------
   it('happy path: calls dataSource.transaction and resolves with lodging name message', async () => {
     townRepo.findOne.mockResolvedValueOnce(town);
     userRepo.findOne.mockResolvedValueOnce(user);
-    planRepo.findOne.mockResolvedValueOnce(freePlan);
     categoryRepo.findBy.mockResolvedValueOnce([]);
     facilityRepo.findBy.mockResolvedValueOnce([]);
     placeRepo.findBy.mockResolvedValueOnce([]);
 
     const newLodging = { id: LODGING_ID, name: 'My Lodge' } as Lodging;
-    // Mock the transaction to execute the callback immediately
     dataSource.transaction.mockImplementationOnce(async (cb: (manager: any) => Promise<any>) => {
       const manager = {
-        save: jest.fn().mockResolvedValueOnce(newLodging).mockResolvedValue({ id: 'sub-id' }),
+        save: jest.fn().mockResolvedValueOnce(newLodging).mockResolvedValue({ id: 'lodging-id' }),
         create: jest.fn().mockReturnValue({}),
+        update: jest.fn().mockResolvedValue({ affected: 1 }),
       };
       return cb(manager);
     });
@@ -476,31 +466,5 @@ describe('LodgingsService — create', () => {
 
     expect(dataSource.transaction).toHaveBeenCalledTimes(1);
     expect(result).toEqual({ message: 'My Lodge' });
-  });
-
-  // -------------------------------------------------------------------------
-  // Test 8: Plan Free missing → InternalServerErrorException before transaction
-  // -------------------------------------------------------------------------
-  it('Plan Free missing → throws InternalServerErrorException without calling transaction', async () => {
-    townRepo.findOne.mockResolvedValueOnce(town);
-    userRepo.findOne.mockResolvedValueOnce(user);
-    planRepo.findOne.mockResolvedValueOnce(null); // lodging-free not seeded
-    categoryRepo.findBy.mockResolvedValueOnce([]);
-    facilityRepo.findBy.mockResolvedValueOnce([]);
-    placeRepo.findBy.mockResolvedValueOnce([]);
-
-    const dto: any = {
-      name: 'My Lodge',
-      townId: 'town-1',
-      latitude: null,
-      longitude: null,
-      categoryIds: [],
-      facilityIds: [],
-      placeIds: [],
-      lodgingRoomTypes: [],
-    };
-
-    await expect(service.create(dto, USER_ID)).rejects.toBeInstanceOf(InternalServerErrorException);
-    expect(dataSource.transaction).not.toHaveBeenCalled();
   });
 });
