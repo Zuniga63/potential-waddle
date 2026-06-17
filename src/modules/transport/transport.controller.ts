@@ -11,7 +11,7 @@ import {
   ApiConflictResponse,
 } from '@nestjs/swagger';
 import { Request } from 'express';
-import { TransportFiltersDto, AdminTransportFiltersDto, AdminTransportListDto } from './dto';
+import { TransportFiltersDto, AdminTransportFiltersDto, AdminTransportListDto, BulkDeleteTransportDto } from './dto';
 import { TransportFilters } from './decorators';
 import { TransportListQueryDocsGroup } from './decorators/transport-list-query-docs-group.decorator';
 import { TransportDto } from './dto/transport.dto';
@@ -143,6 +143,16 @@ export class TransportController {
   @ApiOperation({ summary: 'Delete a transport' })
   remove(@Param('id') id: string) {
     return this.transportService.remove(id);
+  }
+
+  // * ----------------------------------------------------------------------------------------------------------------
+  // * BULK DELETE TRANSPORTS (admin)
+  // * ----------------------------------------------------------------------------------------------------------------
+  @Post('admin/bulk-delete')
+  @ApiOperation({ summary: 'Bulk delete transports' })
+  @ApiOkResponse({ description: 'Count of transports deleted', schema: { example: { deleted: 4 } } })
+  bulkDelete(@Body() dto: BulkDeleteTransportDto) {
+    return this.transportService.bulkDelete(dto.ids);
   }
 
   // * ----------------------------------------------------------------------------------------------------------------

@@ -78,6 +78,12 @@ export class RestaurantIndexDto {
   /** Admin-only: info-section completion percentage (0-100). */
   infoPercentage?: number;
 
+  /** Admin-only: current workflow status of the restaurant. */
+  status?: 'draft' | 'pending_review' | 'published' | 'rejected';
+
+  /** Admin-only: reason provided when the restaurant was rejected. Null when not rejected. */
+  rejectionReason?: string | null;
+
   paymentMethods?: string[];
 
   googleMapsRating?: number;
@@ -134,5 +140,7 @@ export class RestaurantIndexDto {
     this.googleMapsReviewsCount = data.googleMapsReviewsCount ?? undefined;
     this.showGoogleMapsReviews = data.showGoogleMapsReviews ?? undefined;
     this.showBinntuReviews = data.showBinntuReviews ?? undefined;
+    this.status = data.status;
+    this.rejectionReason = data.rejectionReason ?? null;
   }
 }

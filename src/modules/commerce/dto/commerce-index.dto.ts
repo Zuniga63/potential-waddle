@@ -206,6 +206,24 @@ export class CommerceIndexDto {
   infoPercentage?: number;
 
   @ApiProperty({
+    example: 'pending_review',
+    description: 'Admin-only: current workflow status of the commerce.',
+    readOnly: true,
+    required: false,
+    enum: ['draft', 'pending_review', 'published', 'rejected'],
+  })
+  status?: 'draft' | 'pending_review' | 'published' | 'rejected';
+
+  @ApiProperty({
+    example: 'Missing required documentation',
+    description: 'Admin-only: reason provided when the commerce was rejected. Null when not rejected.',
+    readOnly: true,
+    required: false,
+    nullable: true,
+  })
+  rejectionReason?: string | null;
+
+  @ApiProperty({
     example: 123.456,
     description: 'Latitude of the commerce',
     required: false,
@@ -278,5 +296,7 @@ export class CommerceIndexDto {
     this.googleMapsReviewsCount = commerce.googleMapsReviewsCount || undefined;
     this.showGoogleMapsReviews = commerce.showGoogleMapsReviews || undefined;
     this.showBinntuReviews = commerce.showBinntuReviews ?? undefined;
+    this.status = commerce.status;
+    this.rejectionReason = commerce.rejectionReason ?? null;
   }
 }

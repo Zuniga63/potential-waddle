@@ -77,6 +77,9 @@ export class GuidesService {
       categories: categoriesEntities,
       towns: townsEntities,
       user,
+      // Explícito porque la columna DB heredada tiene default=false; alinear
+      // con lodging/restaurant/commerce/transport que arrancan public=true.
+      isPublic: true,
     });
 
     return await this.guideRepository.save(guide);
@@ -87,6 +90,7 @@ export class GuidesService {
     const skip = (page - 1) * limit;
     const { where, order } = generateGuideQueryFilters(filters);
 
+    // 3-state gating: status='published' + isPublic=true + active subscription.
     const subscribedIds = await this.subscriptionsService.getActiveSubscribedEntityIds('guide');
     if (subscribedIds.length === 0) {
       return new GuidesListDto({ currentPage: page, pages: 0, count: 0 }, []);
@@ -104,7 +108,7 @@ export class GuidesService {
       take: limit,
       relations,
       order,
-      where: { ...where, id: In(subscribedIds) },
+      where: { ...where, id: In(subscribedIds), status: 'published', isPublic: true },
     });
 
     return new GuidesListDto({ currentPage: page, pages: Math.ceil(count / limit), count }, guides);
@@ -221,6 +225,7 @@ export class GuidesService {
         where: {
           ...where,
           isPublic: true,
+          status: 'published',
           id: In(subscribedIds),
         },
       }),
@@ -277,6 +282,7 @@ export class GuidesService {
       where: {
         ...where,
         isPublic: true,
+        status: 'published',
         id: In(subscribedIds),
       },
     });
@@ -369,7 +375,9 @@ export class GuidesService {
   // ------------------------------------------------------------------------------------------------
   async update(identifier: string, updateGuideDto: UpdateGuideDto) {
     const { categories, userId, townIds, ...restDto } = updateGuideDto;
-    const categoriesEntities = categories ? await this.categoryRepo.findBy({ id: In(categories) }) : [];
+    // Solo resolver entities si el PATCH realmente trae el campo — undefined
+    // significa "no tocar", para no destruir relaciones al guardar otros steps.
+    const categoriesEntities = categories ? await this.categoryRepo.findBy({ id: In(categories) }) : undefined;
     const townsEntities = townIds ? await this.townRepo.findBy({ id: In(townIds) }) : undefined;
     const user = userId ? await this.userRepo.findOneBy({ id: userId }) : undefined;
     const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(identifier);
@@ -380,7 +388,7 @@ export class GuidesService {
     const updatedGuide = await this.guideRepository.save({
       ...guide,
       ...restDto,
-      categories: categoriesEntities || [],
+      ...(categoriesEntities !== undefined && { categories: categoriesEntities }),
       ...(townsEntities !== undefined && { towns: townsEntities }),
       user: user || undefined,
     });
@@ -445,6 +453,23 @@ export class GuidesService {
     } catch (error) {
       throw new BadRequestException(`Error deleting guide: ${JSON.stringify(error)}`);
     }
+  }
+
+  // ------------------------------------------------------------------------------------------------
+  // Bulk delete guides (admin)
+  // ------------------------------------------------------------------------------------------------
+  async bulkDelete(ids: string[]): Promise<{ deleted: number }> {
+    if (!ids?.length) return { deleted: 0 };
+    let deleted = 0;
+    for (const id of ids) {
+      try {
+        await this.remove(id);
+        deleted += 1;
+      } catch (err) {
+        console.error(`(GuidesService.bulkDelete): failed to delete ${id}`, err);
+      }
+    }
+    return { deleted };
   }
 
   // ------------------------------------------------------------------------------------------------

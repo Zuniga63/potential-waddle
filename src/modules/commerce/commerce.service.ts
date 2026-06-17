@@ -70,6 +70,7 @@ export class CommerceService {
   async findAll({ filters }: CommerceFindAllParams = {}) {
     const { where, order } = generateCommerceQueryFiltersAndSort(filters);
 
+    // 3-state gating: status='published' + isPublic=true + active subscription.
     const subscribedIds = await this.subscriptionsService.getActiveSubscribedEntityIds('commerce');
     if (subscribedIds.length === 0) return [];
 
@@ -80,7 +81,7 @@ export class CommerceService {
         images: { imageResource: true },
         user: true,
       },
-      where: { ...where, id: In(subscribedIds) },
+      where: { ...where, id: In(subscribedIds), status: 'published', isPublic: true },
       order,
     });
 
@@ -190,6 +191,7 @@ export class CommerceService {
         where: {
           ...where,
           isPublic: true,
+          status: 'published',
           id: In(subscribedIds),
         },
         order,
@@ -500,7 +502,11 @@ export class CommerceService {
       throw new NotFoundException('Town not found');
     }
     try {
-      await this.commerceRepository.save({
+      // Save, then re-hydrate via findOne so the response shape matches the FE
+      // adapter (CommerceFullDto with town + categories + relations) and the
+      // onboarding flow can route to /profile/commerce/:id/edit immediately
+      // — no slug fallback dance.
+      const saved = await this.commerceRepository.save({
         ...restCreateDto,
         location: restaurantLocation ?? undefined,
         categories,
@@ -509,7 +515,7 @@ export class CommerceService {
         user,
       });
 
-      return { message: restCreateDto.name };
+      return await this.findOne(saved.id, user);
     } catch (error) {
       throw new BadRequestException(`Error creating commerce: ${error.message}`);
     }
@@ -649,6 +655,23 @@ export class CommerceService {
     } catch (error) {
       throw new BadRequestException(`Error deleting commerce: ${error.message}`);
     }
+  }
+
+  // ------------------------------------------------------------------------------------------------
+  // Bulk delete commerces (admin)
+  // ------------------------------------------------------------------------------------------------
+  async bulkDelete(ids: string[]): Promise<{ deleted: number }> {
+    if (!ids?.length) return { deleted: 0 };
+    let deleted = 0;
+    for (const id of ids) {
+      try {
+        await this.delete(id);
+        deleted += 1;
+      } catch (err) {
+        console.error(`(CommerceService.bulkDelete): failed to delete ${id}`, err);
+      }
+    }
+    return { deleted };
   }
 
   // ------------------------------------------------------------------------------------------------

@@ -118,7 +118,7 @@ export class Guide {
   @Column('boolean', { name: 'is_available', nullable: false, default: true })
   isAvailable: boolean;
 
-  @Column('boolean', { name: 'is_public', nullable: false, default: false })
+  @Column('boolean', { name: 'is_public', nullable: false, default: true })
   isPublic: boolean;
 
   @Column('boolean', { name: 'show_binntu_reviews', default: true })

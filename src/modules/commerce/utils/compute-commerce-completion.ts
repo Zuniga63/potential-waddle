@@ -64,12 +64,12 @@ export function computeCommerceInfoCompletion(commerce: Commerce): CommerceInfoC
   totalScore += hasImages ? 20 : 0;
   if (!hasImages) infoMissingFields.push('images');
 
-  // Bucket 5: Servicios secundarios (10) — services + facilities + paymentMethods
-  const hasServices = !!(commerce.services && commerce.services.length >= 1);
+  // Bucket 5: Servicios secundarios (10) — facilities + paymentMethods only.
+  // The legacy `services` slug has no input in the commerce wizard, so counting
+  // it would permanently strand commerce completion at ~97%.
   const hasFacilities = !!(commerce.facilities && commerce.facilities.length >= 1);
   const hasPaymentMethods = !!(commerce.paymentMethods && commerce.paymentMethods.length >= 1);
-  totalScore += (((hasServices ? 1 : 0) + (hasFacilities ? 1 : 0) + (hasPaymentMethods ? 1 : 0)) / 3) * 10;
-  if (!hasServices) infoMissingFields.push('services');
+  totalScore += (((hasFacilities ? 1 : 0) + (hasPaymentMethods ? 1 : 0)) / 2) * 10;
   if (!hasFacilities) infoMissingFields.push('facilities');
   if (!hasPaymentMethods) infoMissingFields.push('paymentMethods');
 

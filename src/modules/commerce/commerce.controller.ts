@@ -28,6 +28,7 @@ import {
   CommerceIndexDto,
   AdminCommerceFiltersDto,
   AdminCommerceListDto,
+  BulkDeleteCommerceDto,
 } from './dto';
 import { Auth, OptionalAuth } from '../auth/decorators';
 import { CommerceService } from './commerce.service';
@@ -168,6 +169,16 @@ export class CommerceController {
   @ApiOkResponse({ description: 'Commerce Deleted' })
   deleteCommerce(@Param('identifier') identifier: string) {
     return this.commerceService.delete(identifier);
+  }
+
+  // * ----------------------------------------------------------------------------------------------------------------
+  // * BULK DELETE COMMERCES (admin)
+  // * ----------------------------------------------------------------------------------------------------------------
+  @Post('admin/bulk-delete')
+  @OptionalAuth()
+  @ApiOkResponse({ description: 'Count of commerces deleted', schema: { example: { deleted: 4 } } })
+  bulkDelete(@Body() dto: BulkDeleteCommerceDto) {
+    return this.commerceService.bulkDelete(dto.ids);
   }
 
   // * ----------------------------------------------------------------------------------------------------------------

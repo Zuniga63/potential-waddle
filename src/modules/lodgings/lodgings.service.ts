@@ -88,10 +88,15 @@ export class LodgingsService {
   async findAll({ filters }: LodgingFindAllParams = {}) {
     const { where, order } = generateLodgingQueryFilters(filters);
 
-    // Public lists are gated by active subscription: businesses without one are invisible.
+    // Public lists are gated by THREE invariants:
+    //   1. status = 'published' (admin-approved)
+    //   2. isPublic = true       (owner-toggled visibility)
+    //   3. active subscription   (paid or admin-granted)
     const subscribedIds = await this.subscriptionsService.getActiveSubscribedEntityIds('lodging');
     if (subscribedIds.length === 0) return [];
     where.id = In(subscribedIds);
+    where.status = 'published';
+    where.isPublic = true;
 
     const relations: FindOptionsRelations<Lodging> = {
       town: { department: true },
@@ -215,6 +220,7 @@ export class LodgingsService {
         where: {
           ...where,
           status: 'published' as const,
+          isPublic: true,
           id: In(subscribedIds),
         },
       }),
@@ -271,6 +277,7 @@ export class LodgingsService {
       where: {
         ...where,
         status: 'published' as const,
+        isPublic: true,
         id: In(subscribedIds),
       },
     });
@@ -738,6 +745,28 @@ export class LodgingsService {
     } catch (error) {
       throw new BadRequestException(`Error deleting lodging: ${JSON.stringify(error)}`);
     }
+  }
+
+  // ------------------------------------------------------------------------------------------------
+  // Bulk delete lodgings (admin)
+  // Runs `delete(id)` sequentially per id so each lodging's room types, images,
+  // ImageResource entries and Cloudinary assets are cleaned up by the existing
+  // transactional path. Errors are caught per id so one failure doesn't cancel
+  // the batch — caller gets back the count actually removed.
+  // ------------------------------------------------------------------------------------------------
+  async bulkDelete(ids: string[]): Promise<{ deleted: number }> {
+    if (!ids?.length) return { deleted: 0 };
+
+    let deleted = 0;
+    for (const id of ids) {
+      try {
+        await this.delete(id);
+        deleted += 1;
+      } catch (err) {
+        console.error(`(LodgingsService.bulkDelete): failed to delete ${id}`, err);
+      }
+    }
+    return { deleted };
   }
 
   // ------------------------------------------------------------------------------------------------

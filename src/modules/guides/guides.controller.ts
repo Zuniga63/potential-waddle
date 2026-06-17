@@ -27,6 +27,7 @@ import { CreateGuideDto } from './dto/create-guide.dto';
 import { UpdateGuideDto } from './dto/update-guide.dto';
 import { GuidesService } from './guides.service';
 import { GuideDto } from './dto/guide.dto';
+import { BulkDeleteGuidesDto } from './dto/bulk-delete-guides.dto';
 import { GuidesFilters } from './decorators/guides-filters.decorator';
 import { GuidesFiltersDto } from './dto/guides-filters.dto';
 import { AdminGuidesFiltersDto } from './dto/admin-guides-filters.dto';
@@ -180,6 +181,16 @@ export class GuidesController {
   @ApiOperation({ summary: 'Delete a guide' })
   remove(@Param('id') id: string) {
     return this.guidesService.remove(id);
+  }
+
+  // * ----------------------------------------------------------------------------------------------------------------
+  // * BULK DELETE GUIDES (admin)
+  // * ----------------------------------------------------------------------------------------------------------------
+  @Post('admin/bulk-delete')
+  @ApiOperation({ summary: 'Bulk delete guides' })
+  @ApiOkResponse({ description: 'Count of guides deleted', schema: { example: { deleted: 4 } } })
+  bulkDelete(@Body() dto: BulkDeleteGuidesDto) {
+    return this.guidesService.bulkDelete(dto.ids);
   }
 
   // * ----------------------------------------------------------------------------------------------------------------

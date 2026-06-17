@@ -24,6 +24,7 @@ import { ExperiencesService } from './experiences.service';
 import {
   AdminExperiencesFiltersDto,
   AdminExperiencesListDto,
+  BulkDeleteExperiencesDto,
   CreateExperienceDto,
   ExperienceDto,
   ExperienceFiltersDto,
@@ -106,8 +107,9 @@ export class ExperiencesController {
   // * GET EXPERIENCE BY IDENTIFIER
   // * ----------------------------------------------------------------------------------------------------------------
   @Get(':identifier')
-  findOne(@Param('identifier') id: string) {
-    return this.experiencesService.findOne(id);
+  @OptionalAuth()
+  findOne(@Param('identifier') id: string, @GetUser() user?: User) {
+    return this.experiencesService.findOne(id, user);
   }
 
   // * ----------------------------------------------------------------------------------------------------------------
@@ -189,6 +191,16 @@ export class ExperiencesController {
   @ApiOkResponse({ description: 'Experience Deleted' })
   deleteExperience(@Param('identifier') identifier: string) {
     return this.experiencesService.delete(identifier);
+  }
+
+  // * ----------------------------------------------------------------------------------------------------------------
+  // * BULK DELETE EXPERIENCES (admin)
+  // * ----------------------------------------------------------------------------------------------------------------
+  @Post('admin/bulk-delete')
+  @OptionalAuth()
+  @ApiOkResponse({ description: 'Count of experiences deleted', schema: { example: { deleted: 4 } } })
+  bulkDelete(@Body() dto: BulkDeleteExperiencesDto) {
+    return this.experiencesService.bulkDelete(dto.ids);
   }
 
   @Patch(':identifier/visibility')

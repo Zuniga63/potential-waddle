@@ -83,6 +83,15 @@ export class ExperienceIndexDto {
 
   userReview?: string;
 
+  /** Admin-only: current workflow status of the experience. */
+  status?: 'draft' | 'pending_review' | 'published' | 'rejected';
+
+  /** Admin-only: reason provided when the experience was rejected. Null when not rejected. */
+  rejectionReason?: string | null;
+
+  /** Admin-only: info-section completion percentage (0-100). Same value the owner sees. */
+  completionPercentage?: number;
+
   constructor({ data, userReview }: { data: Experience; userReview?: string }) {
     if (!data) return;
 
@@ -127,5 +136,7 @@ export class ExperienceIndexDto {
     this.paymentMethods = data.paymentMethods || [];
     this.showBinntuReviews = data.showBinntuReviews ?? undefined;
     this.userReview = userReview;
+    this.status = data.status;
+    this.rejectionReason = data.rejectionReason ?? null;
   }
 }

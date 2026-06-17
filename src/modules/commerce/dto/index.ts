@@ -8,3 +8,4 @@ export { UpdateCommerceProductDto } from './update-commerce-product.dto';
 export { CommerceProductDto } from './commerce-product.dto';
 export { AdminCommerceFiltersDto } from './admin-commerce-filters.dto';
 export { AdminCommerceListDto } from './admin-commerce-list.dto';
+export { BulkDeleteCommerceDto } from './bulk-delete-commerce.dto';

@@ -6,3 +6,4 @@ export { AdminRestaurantsFiltersDto } from './admin-restaurants-filters.dto';
 export { AdminRestaurantsListDto } from './admin-restaurants-list.dto';
 export { MenuDto } from './menu.dto';
 export { CreateMenuDto } from './create-menu.dto';
+export { BulkDeleteRestaurantsDto } from './bulk-delete-restaurants.dto';

@@ -279,7 +279,10 @@ export class GuideDto {
     this.showBinntuReviews = data.showBinntuReviews ?? undefined;
     this.userReview = userReview;
     this.skippedOptionalFields = data.skippedOptionalFields ?? [];
-    // status / completionPercentage / 3-indicator fields are populated by the
-    // service via applyOwnerEnrichment when the caller is the owner.
+    // status SIEMPRE se proyecta para que la admin list pueda renderizar el badge
+    // de Validación. completionPercentage / 3-indicator fields siguen siendo
+    // owner-only — se populan vía applyOwnerEnrichment cuando el caller es owner.
+    this.status = data.status;
+    this.rejectionReason = data.rejectionReason ?? null;
   }
 }

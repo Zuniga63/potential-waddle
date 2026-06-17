@@ -228,6 +228,14 @@ export class LodgingIndexDto {
   googleMapsUrl?: string;
 
   @ApiProperty({
+    example: 'contacto@hospedaje.com',
+    description: 'Owner contact email. Sent on list endpoints so the dashboard FE skip-penalty can read it.',
+    required: false,
+    nullable: true,
+  })
+  email?: string | null;
+
+  @ApiProperty({
     example: 4.7,
     description: 'Google Maps rating of the lodging',
     required: false,
@@ -288,6 +296,7 @@ export class LodgingIndexDto {
 
     this.rating = lodging.rating;
     this.googleMapsUrl = lodging.googleMapsUrl || undefined;
+    this.email = lodging.email ?? null;
     this.googleMapsRating = lodging.googleMapsRating || undefined;
     this.googleMapsReviewsCount = lodging.googleMapsReviewsCount || undefined;
     this.showGoogleMapsReviews = lodging.showGoogleMapsReviews;

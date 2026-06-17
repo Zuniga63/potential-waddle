@@ -129,6 +129,7 @@ export class TransportService {
     const skip = (page - 1) * limit;
     const { where, order } = generateTransportQueryFiltersAndSort(filters);
 
+    // 3-state gating: status='published' + isPublic=true + active subscription.
     const subscribedIds = await this.subscriptionsService.getActiveSubscribedEntityIds('transport');
     if (subscribedIds.length === 0) {
       return new TransportListDto({ currentPage: page, pages: 0, count: 0 }, []);
@@ -139,7 +140,7 @@ export class TransportService {
       take: limit,
       relations: { categories: { icon: true }, town: { department: true }, user: true },
       order,
-      where: { ...where, id: In(subscribedIds) },
+      where: { ...where, id: In(subscribedIds), status: 'published', isPublic: true },
     });
 
     return new TransportListDto({ currentPage: page, pages: Math.ceil(count / limit), count }, transports);
@@ -277,6 +278,7 @@ export class TransportService {
         where: {
           ...where,
           isPublic: true,
+          status: 'published',
           id: In(subscribedIds),
         },
       }),
@@ -465,7 +467,9 @@ export class TransportService {
 
   async update(id: string, updateTransportDto: UpdateTransportDto) {
     const { categoryIds, townId, userId, ...restDto } = updateTransportDto;
-    const categories = categoryIds ? await this.categoryRepo.findBy({ id: In(categoryIds) }) : [];
+    // Solo resolver entities si el PATCH realmente trae el campo — undefined
+    // significa "no tocar", para no destruir relaciones al guardar otros steps.
+    const categories = categoryIds ? await this.categoryRepo.findBy({ id: In(categoryIds) }) : undefined;
     const town = townId ? await this.townRepo.findOneBy({ id: townId }) : undefined;
     const transport = await this.transportRepository.findOne({ where: { id } });
     if (!transport) throw new NotFoundException('Transport not found');
@@ -485,7 +489,7 @@ export class TransportService {
     return this.transportRepository.save({
       ...transport,
       ...restDto,
-      categories: categories || [],
+      ...(categories !== undefined && { categories }),
       town: town || undefined,
       user: user || undefined,
     });
@@ -496,6 +500,23 @@ export class TransportService {
     if (!transport) throw new NotFoundException('Transport not found');
 
     return this.transportRepository.remove(transport);
+  }
+
+  // ------------------------------------------------------------------------------------------------
+  // Bulk delete transports (admin)
+  // ------------------------------------------------------------------------------------------------
+  async bulkDelete(ids: string[]): Promise<{ deleted: number }> {
+    if (!ids?.length) return { deleted: 0 };
+    let deleted = 0;
+    for (const id of ids) {
+      try {
+        await this.remove(id);
+        deleted += 1;
+      } catch (err) {
+        console.error(`(TransportService.bulkDelete): failed to delete ${id}`, err);
+      }
+    }
+    return { deleted };
   }
 
   async updateAvailability(id: string, isAvailable: boolean) {

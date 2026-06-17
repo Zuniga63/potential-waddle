@@ -163,6 +163,12 @@ export class UserLodgingDto {
   // show 100% on a list card while the wizard shows 92% for the same lodging.
   // ------------------------------------------------------------------------------------------------
   @ApiProperty({ required: false, type: String, nullable: true })
+  email?: string | null;
+
+  @ApiProperty({ required: false, type: String, nullable: true })
+  googleMapsUrl?: string | null;
+
+  @ApiProperty({ required: false, type: String, nullable: true })
   facebook?: string | null;
 
   @ApiProperty({ required: false, type: String, nullable: true })
@@ -231,6 +237,8 @@ export class UserLodgingDto {
     if (result.readyToSubmit !== undefined) this.readyToSubmit = result.readyToSubmit;
 
     // Optional channels (for FE skip-penalty parity with the wizard)
+    this.email = lodging.email ?? null;
+    this.googleMapsUrl = lodging.googleMapsUrl ?? null;
     this.facebook = lodging.facebook ?? null;
     this.instagram = lodging.instagram ?? null;
     this.website = lodging.website ?? null;

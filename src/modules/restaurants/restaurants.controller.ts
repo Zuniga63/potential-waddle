@@ -27,6 +27,7 @@ import {
   RestaurantDto,
   AdminRestaurantsFiltersDto,
   AdminRestaurantsListDto,
+  BulkDeleteRestaurantsDto,
 } from './dto';
 import { Auth, OptionalAuth } from '../auth/decorators';
 import { RestaurantsService } from './restaurants.service';
@@ -180,6 +181,16 @@ export class RestaurantsController {
   @ApiOkResponse({ description: 'Restaurant Deleted' })
   deleteRestaurant(@Param('identifier') identifier: string) {
     return this.restaurantsService.delete(identifier);
+  }
+
+  // * ----------------------------------------------------------------------------------------------------------------
+  // * BULK DELETE RESTAURANTS (admin)
+  // * ----------------------------------------------------------------------------------------------------------------
+  @Post('admin/bulk-delete')
+  @OptionalAuth()
+  @ApiOkResponse({ description: 'Count of restaurants deleted', schema: { example: { deleted: 4 } } })
+  bulkDelete(@Body() dto: BulkDeleteRestaurantsDto) {
+    return this.restaurantsService.bulkDelete(dto.ids);
   }
 
   // * ----------------------------------------------------------------------------------------------------------------

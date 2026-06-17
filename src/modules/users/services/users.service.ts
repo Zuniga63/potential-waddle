@@ -18,6 +18,7 @@ import { UserGuideDto } from '../dto/user-guide.dto';
 import { UserLodgingDto } from '../dto/user-lodgings.dto';
 import { UserRestaurantDto } from '../dto/user-restaurant.dto';
 import { UserCommerceDto } from '../dto/user-commerce.dto';
+import { UserTransportDto } from '../dto/user-transport.dto';
 import { AdminUsersFiltersDto, AdminUsersListDto, AdminUserDto } from '../dto';
 import { generateAdminUsersQueryFilters } from '../utils';
 import { Town } from 'src/modules/towns/entities/town.entity';
@@ -252,7 +253,8 @@ export class UsersService {
       .where('user.id = :id', { id })
       .getOne();
 
-    return user?.transport ?? {};
+    const userTransport = user?.transport ? new UserTransportDto(user, user.transport) : null;
+    return userTransport ?? {};
   }
 
   /*   async getFullUserWithRelations(id: string) {

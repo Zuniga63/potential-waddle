@@ -71,13 +71,13 @@ export class RestaurantsService {
   async findAll({ filters }: RestaurantFindAllParams = {}) {
     const { where, order } = generateRestaurantQueryFiltersAndSort(filters);
 
-    // Public lists gated by active subscription.
+    // 3-state gating: status='published' + isPublic=true + active subscription.
     const subscribedIds = await this.subscriptionsService.getActiveSubscribedEntityIds('restaurant');
     if (subscribedIds.length === 0) return [];
 
     const restaurants = await this.restaurantRepository.find({
       relations: { town: { department: true }, categories: { icon: true }, images: { imageResource: true } },
-      where: { ...where, id: In(subscribedIds) },
+      where: { ...where, id: In(subscribedIds), status: 'published', isPublic: true },
       order,
     });
 
@@ -186,6 +186,7 @@ export class RestaurantsService {
         where: {
           ...where,
           isPublic: true,
+          status: 'published',
           id: In(subscribedIds),
         },
       }),
@@ -241,6 +242,7 @@ export class RestaurantsService {
       where: {
         ...where,
         isPublic: true,
+        status: 'published',
         id: In(subscribedIds),
       },
     });
@@ -548,7 +550,11 @@ export class RestaurantsService {
       throw new NotFoundException('Town not found');
     }
     try {
-      await this.restaurantRepository.save({
+      // Save, then re-hydrate via findOne so the FE adapter receives the full
+      // RestaurantFullDto shape (town + categories + relations) and the
+      // onboarding flow can route to /profile/restaurants/:id/edit immediately
+      // — no slug fallback dance.
+      const saved = await this.restaurantRepository.save({
         ...restCreateDto,
         location: restaurantLocation ?? undefined,
         categories,
@@ -557,7 +563,7 @@ export class RestaurantsService {
         user,
       });
 
-      return { message: restCreateDto.name };
+      return await this.findOne(saved.id, user);
     } catch (error) {
       throw new BadRequestException(`Error creating restaurant: ${error.message}`);
     }
@@ -688,6 +694,25 @@ export class RestaurantsService {
     } catch (error) {
       throw new BadRequestException(`Error deleting restaurant: ${error.message}`);
     }
+  }
+
+  // ------------------------------------------------------------------------------------------------
+  // Bulk delete restaurants (admin) — sequential call to delete() per id so the
+  // cascade (images, Cloudinary assets) runs through the existing path. Errors
+  // are caught per id so one failure doesn't cancel the batch.
+  // ------------------------------------------------------------------------------------------------
+  async bulkDelete(ids: string[]): Promise<{ deleted: number }> {
+    if (!ids?.length) return { deleted: 0 };
+    let deleted = 0;
+    for (const id of ids) {
+      try {
+        await this.delete(id);
+        deleted += 1;
+      } catch (err) {
+        console.error(`(RestaurantsService.bulkDelete): failed to delete ${id}`, err);
+      }
+    }
+    return { deleted };
   }
 
   // ------------------------------------------------------------------------------------------------

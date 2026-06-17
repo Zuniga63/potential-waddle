@@ -15,6 +15,15 @@ export class UserTransportDto extends UserDto {
   @ApiProperty({ example: 'draft', enum: ['draft', 'pending_review', 'published', 'rejected'], required: false })
   status?: string;
 
+  @ApiProperty({
+    example: 'Missing required documents',
+    description: 'Reason provided when the transport was rejected. Null when not rejected.',
+    readOnly: true,
+    required: false,
+    nullable: true,
+  })
+  rejectionReason?: string | null;
+
   @ApiProperty({ example: 'true' })
   isAvailable: boolean;
 
@@ -54,6 +63,7 @@ export class UserTransportDto extends UserDto {
     this.transportId = transport.id || '';
     this.id = transport.id || '';
     this.status = transport.status;
+    this.rejectionReason = transport.rejectionReason ?? null;
     this.isAvailable = transport.isAvailable || false;
     this.firstName = transport.firstName || '';
     this.lastName = transport.lastName || '';

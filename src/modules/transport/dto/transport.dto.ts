@@ -69,6 +69,24 @@ export class TransportDto {
   })
   ownerHasAcceptedTerms?: boolean;
 
+  @ApiProperty({
+    example: 'pending_review',
+    description: 'Admin-only: current workflow status of the transport.',
+    readOnly: true,
+    required: false,
+    enum: ['draft', 'pending_review', 'published', 'rejected'],
+  })
+  status?: 'draft' | 'pending_review' | 'published' | 'rejected';
+
+  @ApiProperty({
+    example: 'Missing license documents',
+    description: 'Admin-only: reason provided when the transport was rejected. Null when not rejected.',
+    readOnly: true,
+    required: false,
+    nullable: true,
+  })
+  rejectionReason?: string | null;
+
   constructor({ data, userReview }: { data: Transport; userReview?: string }) {
     if (!data) return;
 
@@ -97,5 +115,7 @@ export class TransportDto {
     this.reviewCount = data.reviewCount ?? 0;
     this.showBinntuReviews = data.showBinntuReviews ?? undefined;
     this.userReview = userReview;
+    this.status = data.status;
+    this.rejectionReason = data.rejectionReason ?? null;
   }
 }

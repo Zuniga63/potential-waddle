@@ -127,6 +127,24 @@ export class UserGuideDto {
   })
   isPublic?: boolean;
 
+  @ApiProperty({
+    example: 'pending_review',
+    description: 'Current workflow status of the guide.',
+    readOnly: true,
+    required: false,
+    enum: ['draft', 'pending_review', 'published', 'rejected'],
+  })
+  status?: 'draft' | 'pending_review' | 'published' | 'rejected';
+
+  @ApiProperty({
+    example: 'Missing required documents',
+    description: 'Reason provided when the guide was rejected. Null when not rejected.',
+    readOnly: true,
+    required: false,
+    nullable: true,
+  })
+  rejectionReason?: string | null;
+
   /*   @ApiProperty({
     example: true,
     description: 'Whether the guide is currently available',
@@ -170,6 +188,8 @@ export class UserGuideDto {
     this.languages = data.languages;
     this.images = data.images?.map(image => image.imageResource?.url).slice(0, 4);
     this.isPublic = data.isPublic;
+    this.status = data.status;
+    this.rejectionReason = data.rejectionReason ?? null;
     // Map relationships
     this.userId = user?.id;
     this.categories = data.categories?.map(category => new CategoryDto(category));

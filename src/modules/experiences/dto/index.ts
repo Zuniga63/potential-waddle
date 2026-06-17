@@ -4,3 +4,4 @@ export { UpdateExperienceDto } from './update-experience.dto';
 export { ExperienceFiltersDto } from './experience-filters.dto';
 export { AdminExperiencesFiltersDto } from './admin-experiences-filters.dto';
 export { AdminExperiencesListDto } from './admin-experiences-list.dto';
+export { BulkDeleteExperiencesDto } from './bulk-delete-experiences.dto';

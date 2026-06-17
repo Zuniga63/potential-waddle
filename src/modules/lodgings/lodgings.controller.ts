@@ -27,6 +27,7 @@ import { LodgingFilters, LodgingListQueryParamsDocs } from './decorators';
 import {
   AdminLodgingsFiltersDto,
   AdminLodgingsListDto,
+  BulkDeleteLodgingsDto,
   CreateLodgingDto,
   LodgingFiltersDto,
   LodgingFullDto,
@@ -164,6 +165,19 @@ export class LodgingsController {
   @ApiOkResponse({ description: 'Lodging Deleted' })
   deleteLodging(@Param('identifier') identifier: string) {
     return this.lodgingsService.delete(identifier);
+  }
+
+  // * ----------------------------------------------------------------------------------------------------------------
+  // * BULK DELETE LODGINGS (admin)
+  // * ----------------------------------------------------------------------------------------------------------------
+  @Post('admin/bulk-delete')
+  @OptionalAuth()
+  @ApiOkResponse({
+    description: 'Count of lodgings deleted',
+    schema: { example: { deleted: 4 } },
+  })
+  bulkDelete(@Body() dto: BulkDeleteLodgingsDto) {
+    return this.lodgingsService.bulkDelete(dto.ids);
   }
 
   @Patch(':identifier/visibility')

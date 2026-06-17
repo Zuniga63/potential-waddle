@@ -10,6 +10,7 @@ import {
   IsString,
   IsUUID,
   MaxLength,
+  ValidateIf,
 } from 'class-validator';
 
 export class CreateCommerceDto {
@@ -109,6 +110,7 @@ export class CreateCommerceDto {
     example: 'contact@seasidegrill.com',
     required: false,
   })
+  @ValidateIf(o => o.email !== null && o.email !== '')
   @IsEmail()
   @IsOptional()
   email?: string;

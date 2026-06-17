@@ -41,6 +41,7 @@ import { DocumentEntityType } from '../documents/enums';
 import { SubscriptionsService } from '../subscriptions/services';
 import {
   computeExperienceCompletion,
+  computeExperienceInfoCompletion,
   computeExperienceTermsStatus,
   computeExperienceDocsStatus,
   ExperienceTermsStatus,
@@ -79,8 +80,13 @@ export class ExperiencesService {
   async findAll({ filters }: ExperienceFindAllParams = {}): Promise<ExperienceDto[]> {
     const { where, order } = generateExperienceQueryFiltersAndSort(filters);
 
-    const subscribedIds = await this.subscriptionsService.getActiveSubscribedEntityIds('experience');
-    if (subscribedIds.length === 0) return [];
+    // Experiences inherit public gating from their parent guide. So the 3-state
+    // gate runs on the GUIDE (not the experience): guide must be published,
+    // isPublic=true, and subscribed. The experience itself must also be
+    // status='published' + isPublic=true so the owner can hide individual
+    // experiences without unpublishing the guide profile.
+    const subscribedGuideIds = await this.subscriptionsService.getActiveSubscribedEntityIds('guide');
+    if (subscribedGuideIds.length === 0) return [];
 
     const experiences = await this.experienceRepository.find({
       relations: {
@@ -90,7 +96,12 @@ export class ExperiencesService {
         guide: true,
       },
       order,
-      where: { ...where, id: In(subscribedIds) },
+      where: {
+        ...where,
+        status: 'published',
+        isPublic: true,
+        guide: { id: In(subscribedGuideIds), status: 'published', isPublic: true },
+      },
     });
 
     return experiences.map(experience => new ExperienceIndexDto({ data: experience }));
@@ -154,7 +165,16 @@ export class ExperiencesService {
     const [experiences, count] = await queryBuilder.getManyAndCount();
     const pages = Math.ceil(count / limit);
 
-    return new AdminExperiencesListDto({ currentPage: page, pages, count }, experiences);
+    const listDto = new AdminExperiencesListDto({ currentPage: page, pages, count }, experiences);
+    // Popular completionPercentage por entry para que la admin list / pending
+    // panel muestren el mismo valor que el owner ve en su wizard. Usamos solo
+    // computeExperienceInfoCompletion (sin terms/docs context) — barato y
+    // suficiente para el panel de admin.
+    listDto.data.forEach((dto, i) => {
+      const info = computeExperienceInfoCompletion(experiences[i]);
+      dto.completionPercentage = info.infoPercentage;
+    });
+    return listDto;
   }
 
   // ------------------------------------------------------------------------------------------------
@@ -164,8 +184,9 @@ export class ExperiencesService {
     const shouldRandomize = filters?.sortBy === 'random';
     const { where, order } = generateExperienceQueryFiltersAndSort(filters);
 
-    const subscribedIds = await this.subscriptionsService.getActiveSubscribedEntityIds('experience');
-    if (subscribedIds.length === 0) return [];
+    // Gating inherits from guide: see findAll for the full reasoning.
+    const subscribedGuideIds = await this.subscriptionsService.getActiveSubscribedEntityIds('guide');
+    if (subscribedGuideIds.length === 0) return [];
 
     // Fetch experiences and user reviews in parallel
     const [experiences, userReviews] = await Promise.all([
@@ -180,7 +201,8 @@ export class ExperiencesService {
         where: {
           ...where,
           isPublic: true,
-          id: In(subscribedIds),
+          status: 'published',
+          guide: { id: In(subscribedGuideIds), status: 'published', isPublic: true },
         },
       }),
       user
@@ -221,8 +243,9 @@ export class ExperiencesService {
     const shouldRandomize = filters?.sortBy === 'random';
     const { where, order } = generateExperienceQueryFiltersAndSort(filters);
 
-    const subscribedIds = await this.subscriptionsService.getActiveSubscribedEntityIds('experience');
-    if (subscribedIds.length === 0) return [];
+    // Gating inherits from guide: see findAll for the full reasoning.
+    const subscribedGuideIds = await this.subscriptionsService.getActiveSubscribedEntityIds('guide');
+    if (subscribedGuideIds.length === 0) return [];
 
     let experiences = await this.experienceRepository.find({
       relations: {
@@ -235,7 +258,8 @@ export class ExperiencesService {
       where: {
         ...where,
         isPublic: true,
-        id: In(subscribedIds),
+        status: 'published',
+        guide: { id: In(subscribedGuideIds), status: 'published', isPublic: true },
       },
     });
 
@@ -248,7 +272,7 @@ export class ExperiencesService {
   // ------------------------------------------------------------------------------------------------
   // Find one experience by identifier
   // ------------------------------------------------------------------------------------------------
-  async findOne(identifier: string) {
+  async findOne(identifier: string, user?: User) {
     const experience = await this.experienceRepository.findOne({
       where: { id: identifier },
       relations: {
@@ -262,7 +286,19 @@ export class ExperiencesService {
     });
 
     if (!experience) throw new NotImplementedException('Experience not found');
-    return new ExperienceDto({ data: experience });
+
+    const dto = new ExperienceDto({ data: experience });
+
+    // Enrich con completion fields para el owner (su wizard) y super admins.
+    // Sin esto, el wizard recibe infoCriticalSatisfied=undefined → el botón
+    // "Enviar a validación" queda inhabilitable. Espejo del patrón de
+    // guides/restaurants/commerce.
+    const isOwner = !!user && experience.guide?.user?.id === user.id;
+    if (isOwner || user?.isSuperUser) {
+      await this.applyOwnerEnrichment(dto, experience);
+    }
+
+    return dto;
   }
 
   // ------------------------------------------------------------------------------------------------
@@ -368,35 +404,43 @@ export class ExperiencesService {
   // ------------------------------------------------------------------------------------------------
   async update(id: string, updateExperienceDto: UpdateExperienceDto) {
     const experience = await this.experienceRepository.findOne({ where: { id } });
-    const guide = await this.guideRepository.findOne({ where: { id: updateExperienceDto?.guideId } });
+    if (!experience) throw new NotFoundException('Experience not found');
+
+    // PATCH semantics: undefined = no tocar, para no destruir relaciones al
+    // guardar otros steps. Mismo patrón que lodging/restaurant/commerce.
+    // CRÍTICO: solo resolver guide si el patch lo trae explícitamente — un
+    // findOne con id=undefined puede retornar el primer registro o desasignar
+    // la relación, lo que rompe los últimos pasos del wizard.
+    const guide = updateExperienceDto.guideId
+      ? ((await this.guideRepository.findOne({ where: { id: updateExperienceDto.guideId } })) ?? undefined)
+      : undefined;
     const town = updateExperienceDto.townId
-      ? await this.townRepository.findOne({ where: { id: updateExperienceDto.townId } })
+      ? ((await this.townRepository.findOne({ where: { id: updateExperienceDto.townId } })) ?? undefined)
       : undefined;
     const categories = updateExperienceDto.categoryIds
       ? await this.categoryRepository.findBy({ id: In(updateExperienceDto.categoryIds) })
-      : [];
+      : undefined;
     const facilities = updateExperienceDto.facilityIds
       ? await this.facilityRepository.findBy({ id: In(updateExperienceDto.facilityIds) })
-      : [];
-    if (!experience) throw new NotFoundException('Experience not found');
+      : undefined;
 
     // Extraer lat y lng del DTO y crear el Point
     const { departure, arrival, ...restUpdateDto } = updateExperienceDto;
-    const departureLocation: Point | null =
+    const departureLocation: Point | undefined =
       departure?.latitude && departure.longitude
         ? {
             type: 'Point',
             coordinates: [departure.longitude, departure.latitude], // GeoJSON usa [longitude, latitude]
           }
-        : null;
+        : undefined;
 
-    const arrivalLocation: Point | null =
+    const arrivalLocation: Point | undefined =
       arrival?.latitude && arrival.longitude
         ? {
             type: 'Point',
             coordinates: [arrival.longitude, arrival.latitude], // GeoJSON usa [longitude, latitude]
           }
-        : null;
+        : undefined;
 
     const departureDescription = departure?.description;
     const arrivalDescription = arrival?.description;
@@ -404,14 +448,14 @@ export class ExperiencesService {
     await this.experienceRepository.save({
       id: experience.id,
       ...restUpdateDto,
-      arrivalLocation: arrivalLocation ?? undefined,
-      departureLocation: departureLocation ?? undefined,
-      departureDescription,
-      arrivalDescription,
-      categories,
-      guide: guide ?? undefined,
-      town: town ?? undefined,
-      facilities,
+      ...(arrivalLocation !== undefined && { arrivalLocation }),
+      ...(departureLocation !== undefined && { departureLocation }),
+      ...(departureDescription !== undefined && { departureDescription }),
+      ...(arrivalDescription !== undefined && { arrivalDescription }),
+      ...(categories !== undefined && { categories }),
+      ...(guide !== undefined && { guide }),
+      ...(town !== undefined && { town }),
+      ...(facilities !== undefined && { facilities }),
     });
 
     const relations: FindOptionsRelations<Experience> = {
@@ -490,6 +534,23 @@ export class ExperiencesService {
     } catch (error) {
       throw new BadRequestException(`Error deleting experience: ${error.message}`);
     }
+  }
+
+  // ------------------------------------------------------------------------------------------------
+  // Bulk delete experiences (admin)
+  // ------------------------------------------------------------------------------------------------
+  async bulkDelete(ids: string[]): Promise<{ deleted: number }> {
+    if (!ids?.length) return { deleted: 0 };
+    let deleted = 0;
+    for (const id of ids) {
+      try {
+        await this.delete(id);
+        deleted += 1;
+      } catch (err) {
+        console.error(`(ExperiencesService.bulkDelete): failed to delete ${id}`, err);
+      }
+    }
+    return { deleted };
   }
 
   // ------------------------------------------------------------------------------------------------
