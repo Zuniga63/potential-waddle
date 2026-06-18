@@ -140,7 +140,7 @@ export const appConfig = (): EnvironmentVariables => ({
   },
   anthropic: {
     apiKey: process.env.ANTHROPIC_API_KEY || '',
-    model: process.env.ANTHROPIC_MODEL || '',
+    model: process.env.ANTHROPIC_MODEL || 'claude-haiku-4-5',
   },
   openai: {
     apiKey: process.env.OPENAI_API_KEY || '',
