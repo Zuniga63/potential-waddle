@@ -37,6 +37,7 @@ export const JoiValidationSchema = Joi.object({
   KMIZEN_API_KEY: Joi.string().optional(),
   KMIZEN_BASE_URL: Joi.string().optional(),
   KMIZEN_SCHEMA_ID: Joi.string().optional(),
+  EXTRACTION_ENGINE: Joi.string().valid('anthropic', 'kmizen').default('anthropic'),
 
   ANALYTICS_API_KEY: Joi.string().optional(),
 });
