@@ -51,6 +51,11 @@ export const MenuExtractionOutputSchema = z.object({
   notes: z.string().nullable().optional(),
   categories: z.array(MenuCategorySchema),
   overall_confidence: z.number().int().min(0).max(100),
+  // Consolidated, human-style price buckets (Entradas, Platos fuertes, Bebidas, Postres...)
+  // produced by the model — NOT one per menu section. Sidecar: never written to menu.data.
+  price_ranges: z
+    .array(z.object({ label: z.string(), price_from: z.number().int() }))
+    .optional(),
 });
 
 export type MenuExtractionOutput = z.infer<typeof MenuExtractionOutputSchema>;

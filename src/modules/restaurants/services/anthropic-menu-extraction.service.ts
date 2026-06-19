@@ -28,6 +28,7 @@ Rules:
 4. CONFIDENCE: For each item provide item_confidence (0–100) reflecting how clearly you read the item name and price. Use lower values for blurry, angled, handwritten, or ambiguous text. Also provide overall_confidence for the entire extraction.
 5. LAYOUT: The menu may have multiple columns, sections with headers, or multiple pages. Treat each section header as a category_name. Each distinct section becomes its own category entry.
 6. NESTING: When the menu visually groups items under a parent heading that itself contains several sub-headings (e.g. a large "Bebidas" heading containing "Cócteles", "Sangría", "Vinos"), represent the parent as a category and each sub-heading as an entry in that category's "subcategories" (same shape, recursively). Put the items under the sub-heading they belong to. For flat sections with no sub-headings, just use "products" and omit "subcategories". Do NOT invent grouping that is not visually present.
+7. PRICE SUMMARY (price_ranges): SEPARATELY from the full menu, also produce a SHORT list (about 3–6) of consolidated price buckets the restaurant would advertise on its profile — think like a person, not like the menu's section headers. GROUP related sections into broad, meaningful categories: hamburgers, meats, fish/seafood, pastas, grilled and main dishes all belong to "Platos fuertes"; sodas, juices, beer, cocktails, coffee, lemonades belong to "Bebidas"; appetizers/sharing plates to "Entradas"; sweets to "Postres". Do NOT emit one bucket per menu section and do NOT create redundant or overlapping buckets ("Burgers desde", "Mariscos desde", "Carnes desde" are WRONG — they are all "Platos fuertes"). Use natural Spanish labels. price_from = the lowest integer-COP price among the items you grouped into that bucket. Only include buckets that have priced items.
 
 Use the extract_menu tool to return the result.`;
 
@@ -231,6 +232,7 @@ export class AnthropicMenuExtractionService {
       fileUrl,
       overallConfidence: output.overall_confidence,
       reviewFlags: this.buildReviewFlags(output),
+      priceRanges: (output.price_ranges ?? []).map(r => ({ label: r.label, priceFrom: r.price_from })),
     };
   }
 }

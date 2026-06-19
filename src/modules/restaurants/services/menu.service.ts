@@ -11,6 +11,7 @@ import { KmizenService } from './kmizen.service';
 import { AnthropicMenuExtractionService } from './anthropic-menu-extraction.service';
 import { MenuDto } from '../dto/menu.dto';
 import { derivePriceRangesFromMenu, deriveLowestHighest } from '../utils/derive-price-ranges';
+import type { PriceRange } from '../interfaces/price-range.interface';
 import type { MenuData } from '../interfaces/menu-extraction-result.interface';
 
 const MAX_ATTEMPTS = 2;
@@ -117,6 +118,8 @@ export class MenuService {
       // 5. Read engine flag and dispatch
       const engine = this.configService.get('menuExtraction', { infer: true })?.engine ?? 'anthropic';
 
+      let modelPriceRanges: PriceRange[] = [];
+
       if (engine === 'anthropic') {
         // Anthropic path — wrap in withRetry, NO Kmizen fallback (D-03/INTEG-03)
         const result = await this.withRetry(() =>
@@ -125,6 +128,7 @@ export class MenuService {
 
         savedMenu.data = result.data; // ExtractionResult.data is already the frozen MenuData — no extracted_data unwrap
         savedMenu.fileUrl = result.fileUrl;
+        modelPriceRanges = result.priceRanges ?? [];
 
         // Log confidence sidecar for ops — NOT persisted into menu.data (D-06/T-07-08)
         this.logger.log(
@@ -143,8 +147,11 @@ export class MenuService {
       // Auto-fill restaurant.menuUrl with uploaded file URL + derive priceRanges
       if (updatedMenu.fileUrl) {
         restaurant.menuUrl = updatedMenu.fileUrl;
-        const ranges = derivePriceRangesFromMenu(updatedMenu.data as MenuData);
+        // Prefer the model's consolidated buckets; fall back to deterministic per-category derive.
+        const ranges =
+          modelPriceRanges.length > 0 ? modelPriceRanges : derivePriceRangesFromMenu(updatedMenu.data as MenuData);
         if (ranges.length > 0) {
+          ranges[0].featured = true; // default the first as the listing-card range
           restaurant.priceRanges = ranges;
           const { lowestPrice, higherPrice } = deriveLowestHighest(ranges);
           restaurant.lowestPrice = lowestPrice;

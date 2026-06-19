@@ -36,4 +36,5 @@ export interface ExtractionResult {
   fileUrl: string; // from GcpStorageService publicUrl
   overallConfidence: number; // 0–100
   reviewFlags: string[]; // human-readable low-confidence flags
+  priceRanges: { label: string; priceFrom: number }[]; // consolidated price buckets from the model (sidecar)
 }

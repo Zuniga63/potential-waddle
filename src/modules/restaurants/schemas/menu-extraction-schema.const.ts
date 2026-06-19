@@ -86,6 +86,19 @@ export const MENU_EXTRACTION_SCHEMA = {
       maximum: 100,
       description: 'Overall extraction confidence 0–100 for the entire menu.',
     },
+    price_ranges: {
+      type: 'array',
+      description:
+        'A SHORT list (about 3–6) of consolidated, human-style price buckets the restaurant would advertise — NOT one per menu section. Group related sections into broad categories a person would naturally use: hamburgers, meats, fish/seafood, pastas, grilled and main dishes → "Platos fuertes"; sodas, juices, beer, cocktails, coffee, lemonades → "Bebidas"; appetizers/sharing plates → "Entradas"; sweets → "Postres"; etc. Do NOT create redundant or overlapping buckets. Use natural Spanish labels. price_from is the lowest integer-COP price among the items grouped into that bucket. Only include buckets that have at least one priced item.',
+      items: {
+        type: 'object',
+        properties: {
+          label: { type: 'string', description: 'Natural bucket name in Spanish (e.g. "Platos fuertes", "Bebidas")' },
+          price_from: { type: 'integer', description: 'Lowest integer-COP price among items grouped into this bucket' },
+        },
+        required: ['label', 'price_from'],
+      },
+    },
   },
   required: ['categories', 'overall_confidence'],
 } as const;
