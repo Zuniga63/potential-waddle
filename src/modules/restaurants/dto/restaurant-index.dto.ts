@@ -34,6 +34,8 @@ export class RestaurantIndexDto {
 
   menuUrl?: string;
 
+  priceRanges?: { label: string; priceFrom: number }[];
+
   instagram?: string;
 
   facebook?: string;
@@ -121,6 +123,7 @@ export class RestaurantIndexDto {
     this.email = data.email ?? undefined;
     this.website = data.website ?? undefined;
     this.menuUrl = data.menuUrl ?? undefined;
+    this.priceRanges = data.priceRanges ?? undefined;
     this.instagram = data.instagram ?? undefined;
     this.facebook = data.facebook ?? undefined;
     this.lowestPrice = data.lowestPrice ?? undefined;

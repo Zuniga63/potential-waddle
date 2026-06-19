@@ -48,17 +48,20 @@ export function computeRestaurantInfoCompletion(restaurant: Restaurant): Restaur
   if (!hasWhatsapp) infoMissingFields.push('whatsappNumbers');
 
   // Bucket 3: Price (10)
-  const hasLowestPrice = !!(
-    restaurant.lowestPrice !== null &&
-    restaurant.lowestPrice !== undefined &&
-    Number(restaurant.lowestPrice) > 0
-  );
+  const hasLowestPrice =
+    (restaurant.lowestPrice !== null &&
+      restaurant.lowestPrice !== undefined &&
+      Number(restaurant.lowestPrice) > 0) ||
+    restaurant.menuNotApplicable === true;
   totalScore += hasLowestPrice ? 10 : 0;
   if (!hasLowestPrice) infoMissingFields.push('lowestPrice');
 
   // Bucket 4: Menú (20) — critical UNLESS opted out via menuNotApplicable
   const completedMenus = (restaurant.menus ?? []).filter(m => m.status === 'completed');
-  const hasMenu = completedMenus.length >= 1 || restaurant.menuNotApplicable === true;
+  const hasMenu =
+    completedMenus.length >= 1 ||
+    !!(restaurant.menuUrl && restaurant.menuUrl.trim().length > 0) ||
+    restaurant.menuNotApplicable === true;
   totalScore += hasMenu ? 20 : 0;
   if (!hasMenu) infoMissingFields.push('menus');
 

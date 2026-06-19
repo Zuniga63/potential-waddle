@@ -125,6 +125,8 @@ export class Restaurant {
   @Column('decimal', { precision: 10, scale: 2, name: 'higher_price', nullable: true })
   higherPrice: number | null;
 
+  @Column('jsonb', { name: 'price_ranges', nullable: true }) priceRanges: { label: string; priceFrom: number }[] | null;
+
   @Column('geometry', { spatialFeatureType: 'Point', srid: 4326 })
   @Index({ spatial: true })
   location: Point;

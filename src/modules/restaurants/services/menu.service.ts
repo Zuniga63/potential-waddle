@@ -10,6 +10,8 @@ import { Restaurant } from '../entities/restaurant.entity';
 import { KmizenService } from './kmizen.service';
 import { AnthropicMenuExtractionService } from './anthropic-menu-extraction.service';
 import { MenuDto } from '../dto/menu.dto';
+import { derivePriceRangesFromMenu, deriveLowestHighest } from '../utils/derive-price-ranges';
+import type { MenuData } from '../interfaces/menu-extraction-result.interface';
 
 const MAX_ATTEMPTS = 2;
 const RETRY_DELAY_MS = 1000;
@@ -138,10 +140,16 @@ export class MenuService {
       savedMenu.status = 'completed';
       const updatedMenu = await this.menuRepository.save(savedMenu);
 
-      // Auto-fill the restaurant's public menu_url with the uploaded file URL so the
-      // detail page links to the carta. Only when an actual URL is available.
+      // Auto-fill restaurant.menuUrl with uploaded file URL + derive priceRanges
       if (updatedMenu.fileUrl) {
         restaurant.menuUrl = updatedMenu.fileUrl;
+        const ranges = derivePriceRangesFromMenu(updatedMenu.data as MenuData);
+        if (ranges.length > 0) {
+          restaurant.priceRanges = ranges;
+          const { lowestPrice, higherPrice } = deriveLowestHighest(ranges);
+          restaurant.lowestPrice = lowestPrice;
+          restaurant.higherPrice = higherPrice;
+        }
         await this.restaurantRepository.save(restaurant);
       }
 

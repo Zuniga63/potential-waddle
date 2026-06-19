@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { Transform } from 'class-transformer';
+import { Transform, Type } from 'class-transformer';
 import {
   IsArray,
   IsBoolean,
@@ -11,7 +11,16 @@ import {
   IsUUID,
   MaxLength,
   ValidateIf,
+  ValidateNested,
 } from 'class-validator';
+
+export class PriceRangeDto {
+  @IsString()
+  label: string;
+
+  @IsNumber()
+  priceFrom: number;
+}
 
 export class CreateRestaurantDto {
   @ApiProperty({
@@ -129,6 +138,12 @@ export class CreateRestaurantDto {
   @IsString()
   @IsOptional()
   menuUrl?: string;
+
+  @IsOptional()
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => PriceRangeDto)
+  priceRanges?: PriceRangeDto[];
 
   @ApiProperty({
     description: 'Instagram handle',

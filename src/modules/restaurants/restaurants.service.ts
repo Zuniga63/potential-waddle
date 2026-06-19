@@ -41,6 +41,7 @@ import {
   RestaurantTermsStatus,
   RestaurantDocsStatus,
 } from './utils/compute-restaurant-completion';
+import { deriveLowestHighest } from './utils/derive-price-ranges';
 
 @Injectable()
 export class RestaurantsService {
@@ -611,12 +612,21 @@ export class RestaurantsService {
           } as Point)
         : undefined;
 
+    const derivedPrices =
+      updateRestaurantDto.priceRanges !== undefined
+        ? deriveLowestHighest(updateRestaurantDto.priceRanges)
+        : undefined;
+
     await this.restaurantRepository.save({
       id: restaurant.id,
       ...restUpdateDto,
       ...(restaurantLocation !== undefined && { location: restaurantLocation }),
       ...(categories !== undefined && { categories }),
       ...(facilities !== undefined && { facilities }),
+      ...(derivedPrices !== undefined && {
+        lowestPrice: derivedPrices.lowestPrice,
+        higherPrice: derivedPrices.higherPrice,
+      }),
       town,
     });
 
