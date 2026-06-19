@@ -39,6 +39,10 @@ export class Menu {
   @Column('text', { default: 'processing' })
   status: 'processing' | 'completed' | 'failed';
 
+  // Internal-only column for idempotency — never exposed through MenuDto.
+  @Column('text', { name: 'file_hash', nullable: true })
+  fileHash: string | null;
+
   @CreateDateColumn({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP', name: 'created_at' })
   createdAt: Date;
 
