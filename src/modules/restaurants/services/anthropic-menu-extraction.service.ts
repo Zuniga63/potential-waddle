@@ -3,13 +3,12 @@ import { ConfigService } from '@nestjs/config';
 import Anthropic from '@anthropic-ai/sdk';
 import { EnvironmentVariables } from 'src/config/app-config';
 import { GcpStorageService } from 'src/modules/documents/services/gcp-storage.service';
-import { MenuExtractionOutputSchema, MenuExtractionOutput } from '../schemas/menu-data.schema';
+import { MenuExtractionOutputSchema, MenuExtractionOutput, MenuCategoryInput } from '../schemas/menu-data.schema';
 import { MENU_EXTRACTION_SCHEMA } from '../schemas/menu-extraction-schema.const';
 import { ExtractionResult, MenuData, MenuCategory, MenuProduct } from '../interfaces/menu-extraction-result.interface';
 
 const ALLOWED_MIME = ['image/jpeg', 'image/png', 'image/webp', 'application/pdf'] as const;
 const MAX_FILE_BYTES = 30 * 1024 * 1024; // 30 MB — menus (esp. PDFs) can be large
-const MAX_TOKENS = 4096;
 
 /**
  * Extraction prompt placed in the user message alongside the image/document block.
@@ -28,6 +27,7 @@ Rules:
 3. COMPLETENESS: Extract ALL categories and ALL items. Do not omit any section, column, page, or product — even if the text is small or partially visible.
 4. CONFIDENCE: For each item provide item_confidence (0–100) reflecting how clearly you read the item name and price. Use lower values for blurry, angled, handwritten, or ambiguous text. Also provide overall_confidence for the entire extraction.
 5. LAYOUT: The menu may have multiple columns, sections with headers, or multiple pages. Treat each section header as a category_name. Each distinct section becomes its own category entry.
+6. NESTING: When the menu visually groups items under a parent heading that itself contains several sub-headings (e.g. a large "Bebidas" heading containing "Cócteles", "Sangría", "Vinos"), represent the parent as a category and each sub-heading as an entry in that category's "subcategories" (same shape, recursively). Put the items under the sub-heading they belong to. For flat sections with no sub-headings, just use "products" and omit "subcategories". Do NOT invent grouping that is not visually present.
 
 Use the extract_menu tool to return the result.`;
 
@@ -36,6 +36,7 @@ export class AnthropicMenuExtractionService {
   private readonly logger = new Logger(AnthropicMenuExtractionService.name);
   private readonly anthropic: Anthropic;
   private readonly model: string;
+  private readonly maxTokens: number;
 
   constructor(
     private readonly configService: ConfigService<EnvironmentVariables>,
@@ -43,9 +44,10 @@ export class AnthropicMenuExtractionService {
   ) {
     const config = this.configService.get('anthropic', { infer: true });
     this.anthropic = new Anthropic({ apiKey: config?.apiKey || '' });
-    // Model is decoupled from Rafa's ANTHROPIC_MODEL — uses its own MENU_EXTRACTION_MODEL.
+    // Model + token budget are decoupled from Rafa — use the dedicated menuExtraction config.
     const menuExtraction = this.configService.get('menuExtraction', { infer: true });
     this.model = menuExtraction?.model || 'claude-haiku-4-5';
+    this.maxTokens = menuExtraction?.maxTokens || 16384;
   }
 
   /**
@@ -92,7 +94,7 @@ export class AnthropicMenuExtractionService {
     // 6. Call Anthropic with forced tool-use
     const response = await this.anthropic.messages.create({
       model: this.model,
-      max_tokens: MAX_TOKENS,
+      max_tokens: this.maxTokens,
       tool_choice: { type: 'tool', name: 'extract_menu' },
       tools: [
         {
@@ -170,22 +172,28 @@ export class AnthropicMenuExtractionService {
   private buildReviewFlags(output: MenuExtractionOutput): string[] {
     const flags: string[] = [];
 
-    for (const category of output.categories) {
-      for (const product of category.products) {
-        if (product.item_confidence < 70) {
-          flags.push(`Low confidence on item: ${product.product_name}`);
+    const walk = (categories: MenuCategoryInput[]): void => {
+      for (const category of categories) {
+        for (const product of category.products ?? []) {
+          if (product.item_confidence < 70) {
+            flags.push(`Low confidence on item: ${product.product_name}`);
+          }
+          if (product.product_price === null) {
+            flags.push(`No price found for: ${product.product_name}`);
+          }
+          if (product.product_price !== null && product.product_price < 500) {
+            flags.push(
+              `Suspicious price (possible separator error): ${product.product_name} = ${product.product_price}`,
+            );
+          }
         }
-        if (product.product_price === null) {
-          flags.push(`No price found for: ${product.product_name}`);
-        }
-        if (product.product_price !== null && product.product_price < 500) {
-          flags.push(
-            `Suspicious price (possible separator error): ${product.product_name} = ${product.product_price}`,
-          );
+        if (category.subcategories?.length) {
+          walk(category.subcategories);
         }
       }
-    }
+    };
 
+    walk(output.categories);
     return flags;
   }
 
@@ -195,17 +203,21 @@ export class AnthropicMenuExtractionService {
    * Confidence fields live only in sidecar fields (overallConfidence, reviewFlags).
    */
   private toExtractionResult(output: MenuExtractionOutput, fileUrl: string): ExtractionResult {
-    const categories: MenuCategory[] = output.categories.map((cat) => ({
+    // Recursively map categories → MenuData, DROPPING item_confidence at every level
+    // (incl. nested subcategories). Confidence never appears inside menu.data.
+    const stripCategory = (cat: MenuCategoryInput): MenuCategory => ({
       category_name: cat.category_name,
-      products: cat.products.map(
+      products: (cat.products ?? []).map(
         (p): MenuProduct => ({
           product_name: p.product_name,
           product_price: p.product_price,
           product_description: p.product_description ?? null,
-          // item_confidence is intentionally DROPPED here — never in MenuData
         }),
       ),
-    }));
+      ...(cat.subcategories?.length ? { subcategories: cat.subcategories.map(stripCategory) } : {}),
+    });
+
+    const categories: MenuCategory[] = output.categories.map(stripCategory);
 
     const data: MenuData = {
       restaurant_name: output.restaurant_name ?? null,

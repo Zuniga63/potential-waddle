@@ -16,13 +16,26 @@ export const MenuProductSchema = z.object({
 });
 
 /**
- * Zod schema for a menu category, containing a list of products.
- * Mirrors the FROZEN frontend MenuCategory interface.
+ * Zod schema for a menu category. Recursive: a category contains a list of
+ * products AND/OR a list of nested subcategories (same shape). This supports
+ * nested menus (e.g. "Bebidas" → "Cócteles" / "Vinos" → products) while staying
+ * backward-compatible — flat menus simply omit `subcategories`.
  */
-export const MenuCategorySchema = z.object({
-  category_name: z.string(),
-  products: z.array(MenuProductSchema),
-});
+export type MenuCategoryInput = {
+  category_name: string;
+  products?: z.infer<typeof MenuProductSchema>[];
+  subcategories?: MenuCategoryInput[];
+};
+
+// products is OPTIONAL: a grouping category (e.g. "Bebidas") may hold only
+// subcategories and no direct products. A leaf category holds products and no subcategories.
+export const MenuCategorySchema: z.ZodType<MenuCategoryInput> = z.lazy(() =>
+  z.object({
+    category_name: z.string(),
+    products: z.array(MenuProductSchema).optional(),
+    subcategories: z.array(MenuCategorySchema).optional(),
+  }),
+);
 
 /**
  * Zod schema for the full menu extraction output from the Anthropic tool.

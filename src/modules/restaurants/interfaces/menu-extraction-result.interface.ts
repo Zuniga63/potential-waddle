@@ -14,6 +14,7 @@ export interface MenuProduct {
 export interface MenuCategory {
   category_name: string;
   products: MenuProduct[];
+  subcategories?: MenuCategory[];
 }
 
 export interface MenuData {

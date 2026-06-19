@@ -58,6 +58,7 @@ export interface EnvironmentVariables {
   menuExtraction: {
     model: string;
     engine: 'anthropic' | 'kmizen';
+    maxTokens: number;
   };
   openai: {
     apiKey: string;
@@ -150,6 +151,9 @@ export const appConfig = (): EnvironmentVariables => ({
   menuExtraction: {
     model: process.env.MENU_EXTRACTION_MODEL || 'claude-haiku-4-5',
     engine: (process.env.EXTRACTION_ENGINE as 'anthropic' | 'kmizen') || 'anthropic',
+    // Output token ceiling for the extraction call. High default so large/nested
+    // menus are not truncated (haiku-4-5 supports up to 64k output). Billed on actual output.
+    maxTokens: parseInt(process.env.MENU_EXTRACTION_MAX_TOKENS || '16384', 10),
   },
   openai: {
     apiKey: process.env.OPENAI_API_KEY || '',

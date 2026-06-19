@@ -34,10 +34,21 @@ function mimeFor(p) {
   console.log(`\n[UAT] engine=${process.env.EXTRACTION_ENGINE || 'anthropic(default)'} restaurant=${restaurantId}`);
   console.log(`[UAT] file=${file.originalname} (${(file.size / 1024 / 1024).toFixed(2)}MB)\n`);
 
+  const countItems = (cats) =>
+    (cats || []).reduce(
+      (n, c) => n + ((c.products && c.products.length) || 0) + countItems(c.subcategories),
+      0,
+    );
+  const printTree = (cats, indent) =>
+    (cats || []).forEach(c => {
+      console.log(`${indent}${c.category_name}: ${(c.products || []).length} items${c.subcategories ? ' [+subcats]' : ''}`);
+      printTree(c.subcategories, indent + '   ');
+    });
+
   const t0 = Date.now();
   const first = await menuService.processAndCreate(restaurantId, file);
   const cats = (first.data && first.data.categories) || [];
-  const items = cats.reduce((n, c) => n + ((c.products && c.products.length) || 0), 0);
+  const items = countItems(cats);
   const leak = JSON.stringify(first.data || {}).match(/item_confidence|overall_confidence|fileHash|file_hash/);
   console.log(`[UAT] call#1 menuId=${first.id} status=${first.status} in ${Date.now() - t0}ms`);
   console.log(`[UAT] call#1 categories=${cats.length} items=${items}`);
@@ -50,8 +61,8 @@ function mimeFor(p) {
   console.log(`\n[UAT] call#2 menuId=${second.id} status=${second.status} in ${dt2}ms`);
   console.log(`[UAT] idempotent? sameId=${first.id === second.id} fast=${dt2 < 1000} (expect both true)`);
 
-  console.log('\n===== call#1 categories =====');
-  cats.forEach(c => console.log(`  ${c.category_name}: ${(c.products || []).length} items`));
+  console.log('\n===== call#1 category tree =====');
+  printTree(cats, '  ');
 
   await app.close();
   process.exit(0);
