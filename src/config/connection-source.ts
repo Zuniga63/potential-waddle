@@ -12,7 +12,8 @@ const config: DataSourceOptions = {
   database: process.env.DB_NAME,
   synchronize: process.env.DB_SYNCHRONIZE === 'true',
   entities: ['dist/**/*.entity{.ts,.js}'],
-  migrations: ['dist/migrations/*{.ts,.js}'],
+  // nest build emits to dist/src/** — match migrations there (was 'dist/migrations/*', which never matched)
+  migrations: ['dist/**/migrations/*{.ts,.js}'],
 };
 
 export const connectionSource = new DataSource(config);

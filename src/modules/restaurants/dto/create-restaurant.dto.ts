@@ -121,6 +121,16 @@ export class CreateRestaurantDto {
   website?: string;
 
   @ApiProperty({
+    description:
+      'Public URL of the menu/carta. Auto-filled with the uploaded file URL on menu upload, or set manually to an external link (interactive menu or existing PDF).',
+    example: 'https://storage.googleapis.com/binntu-documents/.../menu.pdf',
+    required: false,
+  })
+  @IsString()
+  @IsOptional()
+  menuUrl?: string;
+
+  @ApiProperty({
     description: 'Instagram handle',
     example: 'seasidegrill',
     required: false,

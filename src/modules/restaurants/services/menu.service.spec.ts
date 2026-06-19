@@ -227,6 +227,7 @@ describe('MenuService', () => {
           provide: getRepositoryToken(Restaurant),
           useValue: {
             findOne: restaurantFindOneMock,
+            save: jest.fn().mockImplementation((r) => Promise.resolve(r)),
           },
         },
         {

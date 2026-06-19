@@ -138,6 +138,13 @@ export class MenuService {
       savedMenu.status = 'completed';
       const updatedMenu = await this.menuRepository.save(savedMenu);
 
+      // Auto-fill the restaurant's public menu_url with the uploaded file URL so the
+      // detail page links to the carta. Only when an actual URL is available.
+      if (updatedMenu.fileUrl) {
+        restaurant.menuUrl = updatedMenu.fileUrl;
+        await this.restaurantRepository.save(restaurant);
+      }
+
       return new MenuDto(updatedMenu);
     } catch (error) {
       this.logger.error(`Failed to process menu for restaurant ${restaurantId}: ${(error as Error).message}`);

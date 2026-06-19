@@ -107,6 +107,12 @@ export class Restaurant {
   @Column('text', { nullable: true })
   website: string | null;
 
+  // Public URL of the menu/carta shown on the restaurant detail.
+  // Auto-filled with the uploaded file's public URL on menu upload, or set
+  // manually to an external link (e.g. an interactive menu or an existing PDF).
+  @Column('text', { name: 'menu_url', nullable: true })
+  menuUrl: string | null;
+
   @Column('text', { nullable: true })
   instagram: string | null;
 

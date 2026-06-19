@@ -32,6 +32,8 @@ export class RestaurantIndexDto {
 
   website?: string;
 
+  menuUrl?: string;
+
   instagram?: string;
 
   facebook?: string;
@@ -118,6 +120,7 @@ export class RestaurantIndexDto {
     this.openingHours = data.openingHours ?? [];
     this.email = data.email ?? undefined;
     this.website = data.website ?? undefined;
+    this.menuUrl = data.menuUrl ?? undefined;
     this.instagram = data.instagram ?? undefined;
     this.facebook = data.facebook ?? undefined;
     this.lowestPrice = data.lowestPrice ?? undefined;
