@@ -55,6 +55,9 @@ export interface EnvironmentVariables {
     apiKey: string;
     model: string;
   };
+  menuExtraction: {
+    model: string;
+  };
   openai: {
     apiKey: string;
   };
@@ -140,7 +143,11 @@ export const appConfig = (): EnvironmentVariables => ({
   },
   anthropic: {
     apiKey: process.env.ANTHROPIC_API_KEY || '',
-    model: process.env.ANTHROPIC_MODEL || 'claude-haiku-4-5',
+    model: process.env.ANTHROPIC_MODEL || '',
+  },
+  // Dedicated model for menu extraction — decoupled from Rafa's ANTHROPIC_MODEL.
+  menuExtraction: {
+    model: process.env.MENU_EXTRACTION_MODEL || 'claude-haiku-4-5',
   },
   openai: {
     apiKey: process.env.OPENAI_API_KEY || '',

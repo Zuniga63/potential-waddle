@@ -43,7 +43,9 @@ export class AnthropicMenuExtractionService {
   ) {
     const config = this.configService.get('anthropic', { infer: true });
     this.anthropic = new Anthropic({ apiKey: config?.apiKey || '' });
-    this.model = config?.model || 'claude-haiku-4-5';
+    // Model is decoupled from Rafa's ANTHROPIC_MODEL — uses its own MENU_EXTRACTION_MODEL.
+    const menuExtraction = this.configService.get('menuExtraction', { infer: true });
+    this.model = menuExtraction?.model || 'claude-haiku-4-5';
   }
 
   /**
