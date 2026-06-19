@@ -1,0 +1,5 @@
+# Real menu fixtures are local-only (can be large / contain real business data).
+# Keep the README and this ignore file tracked; ignore the actual menu binaries.
+*
+!.gitignore
+!README.md
