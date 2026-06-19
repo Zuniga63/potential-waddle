@@ -11,6 +11,7 @@ import { MenuController } from './menu.controller';
 import { MenuService } from './services/menu.service';
 import { KmizenService } from './services/kmizen.service';
 import { AnthropicMenuExtractionService } from './services/anthropic-menu-extraction.service';
+import { MenuSweeperService } from './services/menu-sweeper.service';
 import { CloudinaryModule } from '../cloudinary/cloudinary.module';
 import { Town } from '../towns/entities';
 import { User } from '../users/entities';
@@ -22,7 +23,7 @@ import { SubscriptionsModule } from '../subscriptions/subscriptions.module';
 
 @Module({
   controllers: [RestaurantsController, MenuController],
-  providers: [RestaurantsService, MenuService, KmizenService, AnthropicMenuExtractionService],
+  providers: [RestaurantsService, MenuService, KmizenService, AnthropicMenuExtractionService, MenuSweeperService],
   imports: [
     TypeOrmModule.forFeature([Restaurant, ImageResource, Category, Facility, Town, User, Menu]),
     HttpModule,
