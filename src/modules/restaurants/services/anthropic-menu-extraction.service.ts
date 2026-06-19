@@ -8,7 +8,7 @@ import { MENU_EXTRACTION_SCHEMA } from '../schemas/menu-extraction-schema.const'
 import { ExtractionResult, MenuData, MenuCategory, MenuProduct } from '../interfaces/menu-extraction-result.interface';
 
 const ALLOWED_MIME = ['image/jpeg', 'image/png', 'image/webp', 'application/pdf'] as const;
-const MAX_FILE_BYTES = 10 * 1024 * 1024; // 10 MB — vision base64 limit / cost guard
+const MAX_FILE_BYTES = 30 * 1024 * 1024; // 30 MB — menus (esp. PDFs) can be large
 const MAX_TOKENS = 4096;
 
 /**
@@ -69,7 +69,7 @@ export class AnthropicMenuExtractionService {
 
     // 2. Guard size
     if (file.size > MAX_FILE_BYTES) {
-      throw new BadRequestException('File exceeds 10MB limit');
+      throw new BadRequestException('File exceeds 30MB limit');
     }
 
     // 3. Log metadata ONLY — never log file.buffer or any base64 content (SEC-03)
