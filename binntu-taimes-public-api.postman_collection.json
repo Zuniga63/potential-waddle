@@ -1,0 +1,148 @@
+{
+  "info": {
+    "_postman_id": "b1nntu-taimes-public-2026",
+    "name": "Binntu Public API (full-info) - Taimes",
+    "description": "Endpoints públicos de binntu-nest con `full-info` para consumo desde Taimes.\n\nTodos los endpoints son `GET` sin autenticación (usan `@OptionalAuth`).\n\n**Variables de colección:**\n- `baseUrl`: URL base del backend (default: `http://localhost:8080`)\n- `townId`: UUID del pueblo a filtrar (opcional)\n\n**Filtros comunes (query params):**\n- `search`: texto de búsqueda\n- `sort-by`: campo de ordenamiento\n- `town-id`: UUID del pueblo\n- `categories`: lista UUIDs separados por coma\n- `facilities`: lista UUIDs separados por coma\n- `ratings`: lista de números 1-5 separados por coma\n- `distance-ranges`: rangos de distancia (ej: `0-5,5-10`)\n- `price-ranges`: rangos de precio (ej: `0-50000,50000-100000`)",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Restaurants - Full Info",
+      "request": {
+        "method": "GET",
+        "header": [
+          { "key": "Accept", "value": "application/json" }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/restaurants/public/full-info?town-id={{townId}}",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "restaurants", "public", "full-info"],
+          "query": [
+            { "key": "town-id", "value": "{{townId}}", "description": "UUID del pueblo (opcional)" },
+            { "key": "search", "value": "", "description": "Búsqueda por texto", "disabled": true },
+            { "key": "sort-by", "value": "", "description": "Campo de ordenamiento", "disabled": true },
+            { "key": "categories", "value": "", "description": "UUIDs separados por coma", "disabled": true },
+            { "key": "facilities", "value": "", "description": "UUIDs separados por coma", "disabled": true },
+            { "key": "ratings", "value": "", "description": "Ej: 4,5", "disabled": true },
+            { "key": "distance-ranges", "value": "", "description": "Ej: 0-5,5-10", "disabled": true },
+            { "key": "price-ranges", "value": "", "description": "Ej: 0-50000,50000-100000", "disabled": true }
+          ]
+        },
+        "description": "Lista de restaurantes públicos con información completa (incluye categorías, facilidades, imágenes, ratings, etc.)."
+      },
+      "response": []
+    },
+    {
+      "name": "Lodgings - Full Info",
+      "request": {
+        "method": "GET",
+        "header": [
+          { "key": "Accept", "value": "application/json" }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/lodgings/public/full-info?town-id={{townId}}",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "lodgings", "public", "full-info"],
+          "query": [
+            { "key": "town-id", "value": "{{townId}}", "description": "UUID del pueblo (opcional)" },
+            { "key": "search", "value": "", "disabled": true },
+            { "key": "sort-by", "value": "", "disabled": true },
+            { "key": "categories", "value": "", "disabled": true },
+            { "key": "facilities", "value": "", "disabled": true },
+            { "key": "ratings", "value": "", "disabled": true },
+            { "key": "distance-ranges", "value": "", "disabled": true },
+            { "key": "price-ranges", "value": "", "disabled": true }
+          ]
+        },
+        "description": "Lista de hospedajes públicos con información completa (habitaciones, servicios, imágenes, ratings, etc.)."
+      },
+      "response": []
+    },
+    {
+      "name": "Places - Full Info",
+      "request": {
+        "method": "GET",
+        "header": [
+          { "key": "Accept", "value": "application/json" }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/places/public/full-info?town-id={{townId}}",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "places", "public", "full-info"],
+          "query": [
+            { "key": "town-id", "value": "{{townId}}", "description": "UUID del pueblo (opcional)" },
+            { "key": "search", "value": "", "disabled": true },
+            { "key": "sort-by", "value": "", "disabled": true },
+            { "key": "categories", "value": "", "disabled": true },
+            { "key": "facilities", "value": "", "disabled": true },
+            { "key": "ratings", "value": "", "disabled": true },
+            { "key": "distance-ranges", "value": "", "disabled": true }
+          ]
+        },
+        "description": "Lista de lugares/atracciones públicas con información completa (categorías, imágenes, ubicación, etc.)."
+      },
+      "response": []
+    },
+    {
+      "name": "Guides - Full Info",
+      "request": {
+        "method": "GET",
+        "header": [
+          { "key": "Accept", "value": "application/json" }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/guides/public/full-info?town-id={{townId}}",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "guides", "public", "full-info"],
+          "query": [
+            { "key": "town-id", "value": "{{townId}}", "description": "UUID del pueblo (opcional)" },
+            { "key": "search", "value": "", "disabled": true },
+            { "key": "sort-by", "value": "", "disabled": true },
+            { "key": "categories", "value": "", "disabled": true },
+            { "key": "ratings", "value": "", "disabled": true }
+          ]
+        },
+        "description": "Lista de guías turísticos públicos con información completa (especialidades, idiomas, contacto, imágenes, etc.)."
+      },
+      "response": []
+    },
+    {
+      "name": "Experiences - Full Info",
+      "request": {
+        "method": "GET",
+        "header": [
+          { "key": "Accept", "value": "application/json" }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/experiences/public/full-info?town-id={{townId}}",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "experiences", "public", "full-info"],
+          "query": [
+            { "key": "town-id", "value": "{{townId}}", "description": "UUID del pueblo (opcional)" },
+            { "key": "search", "value": "", "disabled": true },
+            { "key": "sort-by", "value": "", "disabled": true },
+            { "key": "categories", "value": "", "disabled": true },
+            { "key": "ratings", "value": "", "disabled": true },
+            { "key": "price-ranges", "value": "", "disabled": true }
+          ]
+        },
+        "description": "Lista de experiencias públicas con información completa (duración, precio, incluye, imágenes, etc.)."
+      },
+      "response": []
+    }
+  ],
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:8080",
+      "type": "string",
+      "description": "URL base del backend binntu-nest"
+    },
+    {
+      "key": "townId",
+      "value": "",
+      "type": "string",
+      "description": "UUID del pueblo a filtrar (opcional)"
+    }
+  ]
+}
