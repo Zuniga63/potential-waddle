@@ -8,7 +8,7 @@ import { MENU_EXTRACTION_SCHEMA } from '../schemas/menu-extraction-schema.const'
 import { ExtractionResult, MenuData, MenuCategory, MenuProduct } from '../interfaces/menu-extraction-result.interface';
 
 const ALLOWED_MIME = ['image/jpeg', 'image/png', 'image/webp', 'application/pdf'] as const;
-const MAX_FILE_BYTES = 30 * 1024 * 1024; // 30 MB — menus (esp. PDFs) can be large
+const MAX_FILE_BYTES = 70 * 1024 * 1024; // 70 MB — menus (esp. PDFs) can be large
 
 /**
  * Extraction prompt placed in the user message alongside the image/document block.
@@ -72,7 +72,7 @@ export class AnthropicMenuExtractionService {
 
     // 2. Guard size
     if (file.size > MAX_FILE_BYTES) {
-      throw new BadRequestException('File exceeds 30MB limit');
+      throw new BadRequestException('File exceeds 70MB limit');
     }
 
     // 3. Log metadata ONLY — never log file.buffer or any base64 content (SEC-03)
@@ -89,8 +89,8 @@ export class AnthropicMenuExtractionService {
       folder: 'menus',
     });
 
-    // 5. Build the content block based on MIME type
-    const sourceBlock = this.buildSourceBlock(file);
+    // 5. Build the content block based on MIME type (URL source → no 32MB request cap)
+    const sourceBlock = this.buildSourceBlock(file, publicUrl);
 
     // 6. Call Anthropic with forced tool-use
     const response = await this.anthropic.messages.create({
@@ -140,17 +140,24 @@ export class AnthropicMenuExtractionService {
    * Build the Anthropic content block for the file.
    * PDF → document block (native multi-page support).
    * Image (JPEG/PNG/WebP) → image block.
+   *
+   * Uses a URL source (the already-uploaded GCS public URL) instead of inline
+   * base64. Anthropic fetches the file server-side, so the file bytes never
+   * travel in the request payload — this bypasses the 32MB per-request size
+   * limit that base64 inline hits, letting heavy menus (large PDFs/photos)
+   * extract correctly. The only remaining limit is pages (600 for large-context
+   * models), which menus never approach.
    */
   private buildSourceBlock(
     file: Express.Multer.File,
+    fileUrl: string,
   ): Anthropic.Messages.ImageBlockParam | Anthropic.Messages.DocumentBlockParam {
     if (file.mimetype === 'application/pdf') {
       return {
         type: 'document',
         source: {
-          type: 'base64',
-          media_type: 'application/pdf',
-          data: file.buffer.toString('base64'),
+          type: 'url',
+          url: fileUrl,
         },
       };
     }
@@ -158,9 +165,8 @@ export class AnthropicMenuExtractionService {
     return {
       type: 'image',
       source: {
-        type: 'base64',
-        media_type: file.mimetype as 'image/jpeg' | 'image/png' | 'image/webp',
-        data: file.buffer.toString('base64'),
+        type: 'url',
+        url: fileUrl,
       },
     };
   }
