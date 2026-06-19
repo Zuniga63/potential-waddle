@@ -34,7 +34,7 @@ export class RestaurantIndexDto {
 
   menuUrl?: string;
 
-  priceRanges?: { label: string; priceFrom: number }[];
+  priceRanges?: { label: string; priceFrom: number; featured?: boolean }[];
 
   instagram?: string;
 

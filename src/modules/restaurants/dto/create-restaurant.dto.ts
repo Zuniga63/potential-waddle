@@ -20,6 +20,10 @@ export class PriceRangeDto {
 
   @IsNumber()
   priceFrom: number;
+
+  @IsOptional()
+  @IsBoolean()
+  featured?: boolean;
 }
 
 export class CreateRestaurantDto {

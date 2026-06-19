@@ -36,6 +36,9 @@ export function derivePriceRangesFromMenu(data: MenuData): PriceRange[] {
     }
   }
 
+  // Default the first range as the one featured on the listing card.
+  if (ranges.length > 0) ranges[0].featured = true;
+
   return ranges;
 }
 
