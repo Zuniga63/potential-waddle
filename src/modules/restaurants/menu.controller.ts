@@ -7,8 +7,10 @@ import {
   ParseUUIDPipe,
   UseInterceptors,
   UploadedFile,
+  UseGuards,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
+import { RestaurantMenuAccessGuard } from './guards/restaurant-menu-access.guard';
 import { ApiTags, ApiConsumes, ApiOkResponse, ApiBody } from '@nestjs/swagger';
 import { Auth } from '../auth/decorators';
 import { MenuService } from './services/menu.service';
@@ -42,6 +44,7 @@ export class MenuController {
   }
 
   @Post('upload')
+  @UseGuards(RestaurantMenuAccessGuard)
   @Auth()
   @UseInterceptors(FileInterceptor('file'))
   @ApiConsumes(ContentTypes.MULTIPART_FORM_DATA)
@@ -59,6 +62,7 @@ export class MenuController {
   }
 
   @Delete(':menuId')
+  @UseGuards(RestaurantMenuAccessGuard)
   @Auth()
   @ApiOkResponse({ description: 'Delete menu' })
   delete(@Param('restaurantId', ParseUUIDPipe) restaurantId: string, @Param('menuId', ParseUUIDPipe) menuId: string) {
