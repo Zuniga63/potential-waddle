@@ -92,6 +92,9 @@ importers:
       langchain:
         specifier: ^0.3.24
         version: 0.3.24(@langchain/core@0.3.49(openai@6.15.0(zod@4.3.5)))(axios@1.7.7)(openai@6.15.0(zod@4.3.5))(typeorm@0.3.20(pg@8.12.0)(ts-node@10.9.2(@types/node@22.5.2)(typescript@5.5.4)))
+      mupdf:
+        specifier: ^1.27.0
+        version: 1.27.0
       nanoid:
         specifier: 3.3.7
         version: 3.3.7
@@ -2828,6 +2831,9 @@ packages:
   multer@1.4.4-lts.1:
     resolution: {integrity: sha512-WeSGziVj6+Z2/MwQo3GvqzgR+9Uc+qt8SwHKh3gvNPiISKfsMfG4SvCOFYlxxgkXt7yIV2i1yczehm0EOKIxIg==}
     engines: {node: '>= 6.0.0'}
+
+  mupdf@1.27.0:
+    resolution: {integrity: sha512-vEPUYwZeu5NgiFLz4e20R7Vp2pNY7szirGEvTxHyQQpQs6ab4DeGdonwT6sH1JZG5EhyHSrojZrZn2/0ee6qZQ==}
 
   mustache@4.2.0:
     resolution: {integrity: sha512-71ippSywq5Yb7/tVYyGbkBggbU8H3u5Rz56fH60jGFgr8uHwxs+aSKeqmluIVzM0m0kB7xQjKS6qPfd0b2ZoqQ==}
@@ -7225,6 +7231,8 @@ snapshots:
       object-assign: 4.1.1
       type-is: 1.6.18
       xtend: 4.0.2
+
+  mupdf@1.27.0: {}
 
   mustache@4.2.0: {}
 

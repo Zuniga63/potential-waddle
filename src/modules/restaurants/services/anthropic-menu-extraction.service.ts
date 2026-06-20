@@ -10,6 +10,20 @@ import { ExtractionResult, MenuData, MenuCategory, MenuProduct } from '../interf
 const ALLOWED_MIME = ['image/jpeg', 'image/png', 'image/webp', 'application/pdf'] as const;
 const MAX_FILE_BYTES = 70 * 1024 * 1024; // 70 MB — menus (esp. PDFs) can be large
 
+// Anthropic rejects PDF documents over ~32MB ("The file exceeds the maximum
+// allowed size") regardless of delivery method (base64 / url / files). PDFs
+// above this safe threshold are rendered page-by-page to downscaled JPEGs and
+// sent as images instead (Claude processes each PDF page as an image anyway).
+const ANTHROPIC_DOC_MAX_BYTES = 30 * 1024 * 1024; // 30 MB
+const RENDER_TARGET_LONG_EDGE_PX = 2000; // long-edge px of each rendered page
+const RENDER_MAX_SCALE = 3; // never upscale tiny pages beyond 3x
+const RENDER_JPEG_QUALITY = 80;
+
+// mupdf is ESM-only (top-level await). Under tsconfig module:commonjs a normal
+// dynamic import() is downleveled to require() and throws on the ESM graph.
+// Building it with Function keeps it a real ESM import() after transpilation.
+const importMupdf: () => Promise<any> = new Function('return import("mupdf")') as never;
+
 /**
  * Extraction prompt placed in the user message alongside the image/document block.
  * Five clauses per RESEARCH §"System Prompt Engineering":
@@ -89,8 +103,8 @@ export class AnthropicMenuExtractionService {
       folder: 'menus',
     });
 
-    // 5. Build the content block based on MIME type (URL source → no 32MB request cap)
-    const sourceBlock = this.buildSourceBlock(file, publicUrl);
+    // 5. Build the content blocks (URL source for small files; rendered images for oversized PDFs)
+    const sourceBlocks = await this.buildContentBlocks(file, publicUrl);
 
     // 6. Call Anthropic with forced tool-use
     const response = await this.anthropic.messages.create({
@@ -108,7 +122,7 @@ export class AnthropicMenuExtractionService {
       messages: [
         {
           role: 'user',
-          content: [sourceBlock, { type: 'text', text: EXTRACTION_PROMPT }],
+          content: [...sourceBlocks, { type: 'text', text: EXTRACTION_PROMPT }],
         },
       ],
     });
@@ -137,38 +151,70 @@ export class AnthropicMenuExtractionService {
   }
 
   /**
-   * Build the Anthropic content block for the file.
-   * PDF → document block (native multi-page support).
-   * Image (JPEG/PNG/WebP) → image block.
+   * Build the Anthropic content blocks for the file.
    *
-   * Uses a URL source (the already-uploaded GCS public URL) instead of inline
-   * base64. Anthropic fetches the file server-side, so the file bytes never
-   * travel in the request payload — this bypasses the 32MB per-request size
-   * limit that base64 inline hits, letting heavy menus (large PDFs/photos)
-   * extract correctly. The only remaining limit is pages (600 for large-context
-   * models), which menus never approach.
+   * - Image → single image block via URL source (GCS public URL).
+   * - PDF ≤ 30MB → single document block via URL source (keeps the native text
+   *   layer; Anthropic fetches it server-side so the 32MB request cap doesn't
+   *   apply to the payload).
+   * - PDF > 30MB → rendered page-by-page to downscaled JPEGs and sent as image
+   *   blocks. Anthropic rejects PDF documents over ~32MB ("file exceeds the
+   *   maximum allowed size") by any method, so for heavy "digital menu" PDFs we
+   *   rasterize each page ourselves (Claude already turns every PDF page into an
+   *   image internally) at a controlled resolution that stays well under limits.
    */
-  private buildSourceBlock(
+  private async buildContentBlocks(
     file: Express.Multer.File,
     fileUrl: string,
-  ): Anthropic.Messages.ImageBlockParam | Anthropic.Messages.DocumentBlockParam {
+  ): Promise<Array<Anthropic.Messages.ImageBlockParam | Anthropic.Messages.DocumentBlockParam>> {
     if (file.mimetype === 'application/pdf') {
-      return {
-        type: 'document',
-        source: {
-          type: 'url',
-          url: fileUrl,
-        },
-      };
+      if (file.size > ANTHROPIC_DOC_MAX_BYTES) {
+        this.logger.log(
+          `PDF (${(file.size / 1024 / 1024).toFixed(1)}MB) over Anthropic's document limit — rendering pages to images`,
+        );
+        return this.renderPdfToImageBlocks(file.buffer);
+      }
+      return [{ type: 'document', source: { type: 'url', url: fileUrl } }];
     }
 
-    return {
-      type: 'image',
-      source: {
-        type: 'url',
-        url: fileUrl,
-      },
-    };
+    return [{ type: 'image', source: { type: 'url', url: fileUrl } }];
+  }
+
+  /**
+   * Rasterize each PDF page to a downscaled JPEG and wrap it as an image block.
+   * Renders at ~2000px on the long edge (good enough to read menu prices) which
+   * keeps each page well under Anthropic's per-image and per-request limits.
+   */
+  private async renderPdfToImageBlocks(buffer: Buffer): Promise<Anthropic.Messages.ImageBlockParam[]> {
+    const mupdf = await importMupdf();
+    const doc = mupdf.Document.openDocument(buffer, 'application/pdf');
+    try {
+      const pageCount = doc.countPages();
+      const blocks: Anthropic.Messages.ImageBlockParam[] = [];
+
+      for (let i = 0; i < pageCount; i++) {
+        const page = doc.loadPage(i);
+        const [x0, y0, x1, y1] = page.getBounds();
+        const longEdgePts = Math.max(x1 - x0, y1 - y0) || 1;
+        const scale = Math.min(RENDER_MAX_SCALE, RENDER_TARGET_LONG_EDGE_PX / longEdgePts);
+
+        const pixmap = page.toPixmap(mupdf.Matrix.scale(scale, scale), mupdf.ColorSpace.DeviceRGB, false, true);
+        const jpeg = pixmap.asJPEG(RENDER_JPEG_QUALITY, false);
+
+        blocks.push({
+          type: 'image',
+          source: { type: 'base64', media_type: 'image/jpeg', data: Buffer.from(jpeg).toString('base64') },
+        });
+
+        pixmap.destroy();
+        page.destroy();
+      }
+
+      this.logger.log(`Rendered ${blocks.length} PDF pages to JPEG for extraction`);
+      return blocks;
+    } finally {
+      doc.destroy();
+    }
   }
 
   /**
