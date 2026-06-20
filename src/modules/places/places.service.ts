@@ -78,9 +78,13 @@ export class PlacesService {
 
     const { categoryIds, facilityIds, longitude, latitude, townId, ...restDto } = updatePlaceDto;
 
-    // Se recuperan las instancias de categories y facility
-    const categories = categoryIds ? await this.categoryRepo.findBy({ id: In(categoryIds) }) : [];
-    const facilities = facilityIds ? await this.facilityRepo.findBy({ id: In(facilityIds) }) : [];
+    // Se recuperan las instancias de categories y facility.
+    // IMPORTANTE: cuando el campo no viene en el PATCH (undefined) dejamos la
+    // relación SIN TOCAR (undefined), no en [] — si no, cada step del onboarding
+    // que no manda categoryIds/facilityIds borraría las categorías/facilidades
+    // guardadas en pasos anteriores. Un [] explícito sí limpia (deselección).
+    const categories = categoryIds ? await this.categoryRepo.findBy({ id: In(categoryIds) }) : undefined;
+    const facilities = facilityIds ? await this.facilityRepo.findBy({ id: In(facilityIds) }) : undefined;
 
     // Get town if townId is provided
     const town = townId ? await this.placeRepo.manager.findOne(Town, { where: { id: townId } }) : undefined;
