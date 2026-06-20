@@ -20,7 +20,7 @@ jest.mock('@anthropic-ai/sdk', () => {
 });
 
 import { Test, TestingModule } from '@nestjs/testing';
-import { BadRequestException } from '@nestjs/common';
+import { BadRequestException, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 
 import { AnthropicMenuExtractionService } from './anthropic-menu-extraction.service';
@@ -226,5 +226,157 @@ describe('AnthropicMenuExtractionService', () => {
 
     // The Anthropic SDK must NOT have been called
     expect(messageCreateSpy).not.toHaveBeenCalled();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// SEC-03: no base64 en logs
+// Ninguna entrada del Logger debe contener una cadena base64 larga (>=120 chars
+// de alfabeto base64 contiguos). El render PDF->imagenes produce base64 DENTRO
+// de los bloques de contenido enviados a Anthropic, pero ese dato nunca debe
+// cruzar a la salida de logs.
+// ---------------------------------------------------------------------------
+
+/** Patron para detectar cadenas base64 largas (>=120 chars contiguos) */
+const BASE64_BLOB = /[A-Za-z0-9+/]{120,}={0,2}/;
+
+/** Minimal valid tool_use response reutilizada en los tests SEC-03 */
+function makeMinimalToolUseResponse() {
+  return {
+    stop_reason: 'tool_use',
+    content: [
+      {
+        type: 'tool_use',
+        id: 'toolu_sec03',
+        name: 'extract_menu',
+        input: {
+          categories: [
+            {
+              category_name: 'Platos',
+              products: [
+                {
+                  product_name: 'Bandeja Paisa',
+                  product_price: 28000,
+                  product_description: null,
+                  item_confidence: 85,
+                },
+              ],
+            },
+          ],
+          overall_confidence: 82,
+        },
+      },
+    ],
+  };
+}
+
+describe('SEC-03: no base64 in logs', () => {
+  let service: AnthropicMenuExtractionService;
+  let messageCreateSpy: jest.Mock;
+  let gcpUploadMock: jest.Mock;
+  const logged: string[] = [];
+
+  beforeEach(async () => {
+    logged.length = 0;
+
+    // Espiar el Logger de Nest para capturar TODO lo logueado durante el test
+    jest.spyOn(Logger.prototype, 'log').mockImplementation((m: unknown) => {
+      logged.push(String(m));
+    });
+    jest.spyOn(Logger.prototype, 'warn').mockImplementation((m: unknown) => {
+      logged.push(String(m));
+    });
+    jest.spyOn(Logger.prototype, 'error').mockImplementation((m: unknown) => {
+      logged.push(String(m));
+    });
+
+    gcpUploadMock = jest.fn().mockResolvedValue({
+      publicUrl: 'https://storage.googleapis.com/binntu-documents/test.jpg',
+      gcpPath: 'documents/dev/restaurants/restaurant-uuid-123/menus/test.jpg',
+      fileName: 'test.jpg',
+      size: 10,
+    });
+
+    const module: TestingModule = await Test.createTestingModule({
+      providers: [
+        AnthropicMenuExtractionService,
+        {
+          provide: ConfigService,
+          useValue: {
+            get: jest.fn().mockReturnValue({ apiKey: 'test-key', model: 'claude-haiku-4-5' }),
+          },
+        },
+        {
+          provide: GcpStorageService,
+          useValue: { uploadFile: gcpUploadMock },
+        },
+      ],
+    }).compile();
+
+    service = module.get<AnthropicMenuExtractionService>(AnthropicMenuExtractionService);
+    messageCreateSpy = (service as unknown as { anthropic: { messages: { create: jest.Mock } } }).anthropic.messages
+      .create;
+    messageCreateSpy.mockReset();
+  });
+
+  afterEach(() => jest.restoreAllMocks());
+
+  // -------------------------------------------------------------------------
+  // Test-guardia: el regex realmente detecta base64 (evita falso verde)
+  // -------------------------------------------------------------------------
+  it('regex detecta base64 real (guardia de falso verde)', () => {
+    const realBase64 = Buffer.from('a'.repeat(400)).toString('base64');
+    expect(realBase64).toMatch(BASE64_BLOB);
+  });
+
+  // -------------------------------------------------------------------------
+  // Imagen: ninguna linea de log contiene base64
+  // -------------------------------------------------------------------------
+  it('imagen: logs no contienen base64 largo', async () => {
+    messageCreateSpy.mockResolvedValueOnce(makeMinimalToolUseResponse());
+
+    await service.processMenuFile(
+      makeFile({ mimetype: 'image/jpeg', buffer: Buffer.from('x'.repeat(500)) }),
+      ctx,
+    );
+
+    // Al menos un log debe haberse emitido (metadata del archivo)
+    expect(logged.length).toBeGreaterThan(0);
+
+    // El nombre del archivo debe aparecer en los logs (metadata si se loguea)
+    expect(logged.some((l) => l.includes('menu.jpg'))).toBe(true);
+
+    // Ningun log debe contener base64 largo
+    for (const line of logged) {
+      expect(line).not.toMatch(BASE64_BLOB);
+    }
+  });
+
+  // -------------------------------------------------------------------------
+  // PDF pequeno (<30MB): ruta URL source, sin render a imagenes
+  // El service envia el PDF via URL a Anthropic (no renderiza a base64 interno).
+  // Solo debe loguearse metadata — nunca el contenido base64 del buffer.
+  // -------------------------------------------------------------------------
+  it('pdf: ruta url-source no loguea base64', async () => {
+    messageCreateSpy.mockResolvedValueOnce(makeMinimalToolUseResponse());
+
+    // PDF pequeño (< 30 MB ANTHROPIC_DOC_MAX_BYTES) -> ruta URL source, sin mupdf render
+    const pdfFile = makeFile({
+      mimetype: 'application/pdf',
+      originalname: 'menu.pdf',
+      // Simular buffer con contenido base64-like para probar que no se loguea
+      buffer: Buffer.from('x'.repeat(500)),
+      size: 500,
+    });
+
+    await service.processMenuFile(pdfFile, ctx);
+
+    // Al menos un log de metadata
+    expect(logged.length).toBeGreaterThan(0);
+
+    // Ningun log contiene base64 largo
+    for (const line of logged) {
+      expect(line).not.toMatch(BASE64_BLOB);
+    }
   });
 });
