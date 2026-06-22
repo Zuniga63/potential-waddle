@@ -44,7 +44,7 @@ export class TownsService {
   }
 
   async findAllPaginated(filters: AdminTownsFiltersDto): Promise<AdminTownsListDto> {
-    const { page = 1, limit = 10, search, departmentId, isEnable, sortBy = 'name', sortOrder = 'ASC' } = filters;
+    const { page = 1, limit = 10, search, departmentId, isEnable, sortBy = 'name', sortOrder = 'ASC', townIds } = filters;
 
     const where: FindOptionsWhere<Town> = {};
 
@@ -75,6 +75,14 @@ export class TownsService {
 
     if (departmentId) {
       queryBuilder.andWhere('department.id = :departmentId', { departmentId });
+    }
+
+    if (townIds !== undefined) {
+      if (townIds.length === 0) {
+        queryBuilder.andWhere('1 = 0');
+      } else {
+        queryBuilder.andWhere('town.id IN (:...townIds)', { townIds });
+      }
     }
 
     // Sorting: always sort by isEnable first (active first), then by selected field

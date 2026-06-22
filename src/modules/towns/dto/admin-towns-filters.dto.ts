@@ -1,5 +1,5 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
-import { IsOptional, IsString, IsNumber, Min, IsBoolean } from 'class-validator';
+import { IsOptional, IsString, IsNumber, Min, IsBoolean, IsArray } from 'class-validator';
 import { Type, Transform } from 'class-transformer';
 
 export class AdminTownsFiltersDto {
@@ -42,4 +42,9 @@ export class AdminTownsFiltersDto {
   @IsOptional()
   @IsString()
   sortOrder?: 'ASC' | 'DESC' = 'ASC';
+
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  townIds?: string[];
 }

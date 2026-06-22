@@ -9,11 +9,13 @@ import { User } from '../users/entities/user.entity';
 import { ImageResource } from '../core/entities';
 import { CloudinaryModule } from '../cloudinary/cloudinary.module';
 import { Guide } from '../guides/entities';
+import { UsersModule } from '../users/users.module';
 
 @Module({
   imports: [
     TypeOrmModule.forFeature([Department, Town, TownInfo, TownFestivity, TownImage, User, ImageResource, Guide]),
     CloudinaryModule,
+    UsersModule,
   ],
   controllers: [TownsController, MucipalitiesController],
   providers: [TownsService, MunicipalitiesService, TownImagesService],

@@ -25,6 +25,7 @@ import { SwaggerTags } from 'src/config';
 import { JwtAuthGuard } from 'src/modules/auth/guards/jwt-auth.guard';
 import { GetUser } from 'src/modules/common/decorators/get-user.decorator';
 import { User } from 'src/modules/users/entities/user.entity';
+import { UsersService } from 'src/modules/users/services/users.service';
 
 @Controller('towns')
 @ApiTags(SwaggerTags.Town)
@@ -32,7 +33,21 @@ export class TownsController {
   constructor(
     private readonly townsService: TownsService,
     private readonly townImagesService: TownImagesService,
+    private readonly usersService: UsersService,
   ) {}
+
+  private async getUserTownIds(user: User): Promise<string[]> {
+    const fullUser = await this.usersService.getFullUser(user.email);
+    return fullUser?.towns?.map((t) => t.id) ?? [];
+  }
+
+  private async assertCanManageTown(user: User, townId: string): Promise<void> {
+    if (user.isSuperUser) return;
+    const ids = await this.getUserTownIds(user);
+    if (!ids.includes(townId)) {
+      throw new ForbiddenException('No tienes permisos para gestionar este municipio');
+    }
+  }
 
   // ============================================================================
   // ADMIN ENDPOINTS
@@ -43,10 +58,9 @@ export class TownsController {
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Get paginated towns list (Admin only)' })
   async findAllAdmin(@Query() filters: AdminTownsFiltersDto, @GetUser() user: User) {
-    if (!user.isSuperUser) {
-      throw new ForbiddenException('Only super users can access this endpoint');
-    }
-    return this.townsService.findAllPaginated(filters);
+    if (user.isSuperUser) return this.townsService.findAllPaginated(filters);
+    const townIds = await this.getUserTownIds(user);
+    return this.townsService.findAllPaginated({ ...filters, townIds });
   }
 
   @Post('admin')
@@ -65,9 +79,7 @@ export class TownsController {
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Update town (Admin only)' })
   async updateAdmin(@Param('id') id: string, @Body() updateTownDto: UpdateTownDto, @GetUser() user: User) {
-    if (!user.isSuperUser) {
-      throw new ForbiddenException('Only super users can access this endpoint');
-    }
+    await this.assertCanManageTown(user, id);
     return this.townsService.update(id, updateTownDto);
   }
 
@@ -91,9 +103,7 @@ export class TownsController {
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Get town images (Admin only)' })
   async getImages(@Param('id') id: string, @GetUser() user: User) {
-    if (!user.isSuperUser) {
-      throw new ForbiddenException('Only super users can access this endpoint');
-    }
+    await this.assertCanManageTown(user, id);
     return this.townImagesService.getImages(id);
   }
 
@@ -104,9 +114,7 @@ export class TownsController {
   @ApiConsumes('multipart/form-data')
   @ApiOperation({ summary: 'Upload images to town (Admin only)' })
   async uploadImages(@Param('id') id: string, @UploadedFiles() files: Express.Multer.File[], @GetUser() user: User) {
-    if (!user.isSuperUser) {
-      throw new ForbiddenException('Only super users can access this endpoint');
-    }
+    await this.assertCanManageTown(user, id);
     return this.townImagesService.uploadImages(id, files);
   }
 
@@ -120,9 +128,7 @@ export class TownsController {
     @Body() dto: UpdateTownImageDto,
     @GetUser() user: User,
   ) {
-    if (!user.isSuperUser) {
-      throw new ForbiddenException('Only super users can access this endpoint');
-    }
+    await this.assertCanManageTown(user, id);
     return this.townImagesService.updateImage(id, imageId, dto);
   }
 
@@ -131,9 +137,7 @@ export class TownsController {
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Delete town image (Admin only)' })
   async deleteImage(@Param('id') id: string, @Param('imageId') imageId: string, @GetUser() user: User) {
-    if (!user.isSuperUser) {
-      throw new ForbiddenException('Only super users can access this endpoint');
-    }
+    await this.assertCanManageTown(user, id);
     return this.townImagesService.deleteImage(id, imageId);
   }
 
@@ -142,9 +146,7 @@ export class TownsController {
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Reorder town images (Admin only)' })
   async reorderImages(@Param('id') id: string, @Body() dto: ReorderImagesDto, @GetUser() user: User) {
-    if (!user.isSuperUser) {
-      throw new ForbiddenException('Only super users can access this endpoint');
-    }
+    await this.assertCanManageTown(user, id);
     return this.townImagesService.reorderImages(id, dto);
   }
 
@@ -153,9 +155,7 @@ export class TownsController {
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Set hero images for town (Admin only)' })
   async setHeroImages(@Param('id') id: string, @Body() dto: SetHeroImagesDto, @GetUser() user: User) {
-    if (!user.isSuperUser) {
-      throw new ForbiddenException('Only super users can access this endpoint');
-    }
+    await this.assertCanManageTown(user, id);
     return this.townImagesService.setHeroImages(id, dto);
   }
 
@@ -164,9 +164,7 @@ export class TownsController {
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Get hero images for town (Admin only)' })
   async getHeroImages(@Param('id') id: string, @GetUser() user: User) {
-    if (!user.isSuperUser) {
-      throw new ForbiddenException('Only super users can access this endpoint');
-    }
+    await this.assertCanManageTown(user, id);
     return this.townImagesService.getHeroImages(id);
   }
 
