@@ -20,12 +20,12 @@ export class HomeService {
     private readonly experienceRepository: Repository<Experience>,
   ) {}
 
-  async getHomeData(): Promise<HomeDataDto> {
+  async getHomeData(tenantId?: string | null): Promise<HomeDataDto> {
     const [places, lodgings, restaurants, experiences] = await Promise.all([
-      this.getRandomPlaces(),
-      this.getRandomLodgings(),
-      this.getRandomRestaurants(),
-      this.getRandomExperiences(),
+      this.getRandomPlaces(tenantId),
+      this.getRandomLodgings(tenantId),
+      this.getRandomRestaurants(tenantId),
+      this.getRandomExperiences(tenantId),
     ]);
 
     return {
@@ -36,16 +36,20 @@ export class HomeService {
     };
   }
 
-  private async getRandomPlaces(): Promise<HomeItemDto[]> {
-    const places = await this.placeRepository
+  private async getRandomPlaces(tenantId?: string | null): Promise<HomeItemDto[]> {
+    const query = this.placeRepository
       .createQueryBuilder('place')
       .leftJoinAndSelect('place.images', 'images', 'images.isPublic = :imageIsPublic AND images.order = 1')
       .leftJoinAndSelect('images.imageResource', 'imageResource')
       .where('place.isPublic = :isPublic', { isPublic: true })
-      .setParameter('imageIsPublic', true)
-      .orderBy('RANDOM()')
-      .limit(6)
-      .getMany();
+      .setParameter('imageIsPublic', true);
+
+    // Scope to the current tenant's town (apex / no tenant → unfiltered).
+    if (tenantId) {
+      query.innerJoin('place.town', 'town').andWhere('town.id = :tenantId', { tenantId });
+    }
+
+    const places = await query.orderBy('RANDOM()').limit(6).getMany();
 
     return places.map(place => ({
       id: place.id,
@@ -55,16 +59,19 @@ export class HomeService {
     }));
   }
 
-  private async getRandomLodgings(): Promise<HomeItemDto[]> {
-    const lodgings = await this.lodgingRepository
+  private async getRandomLodgings(tenantId?: string | null): Promise<HomeItemDto[]> {
+    const query = this.lodgingRepository
       .createQueryBuilder('lodging')
       .leftJoinAndSelect('lodging.images', 'images', 'images.isPublic = :imageIsPublic AND images.order = 1')
       .leftJoinAndSelect('images.imageResource', 'imageResource')
       .where('lodging.isPublic = :isPublic', { isPublic: true })
-      .setParameter('imageIsPublic', true)
-      .orderBy('RANDOM()')
-      .limit(6)
-      .getMany();
+      .setParameter('imageIsPublic', true);
+
+    if (tenantId) {
+      query.innerJoin('lodging.town', 'town').andWhere('town.id = :tenantId', { tenantId });
+    }
+
+    const lodgings = await query.orderBy('RANDOM()').limit(6).getMany();
 
     return lodgings.map(lodging => ({
       id: lodging.id,
@@ -74,16 +81,19 @@ export class HomeService {
     }));
   }
 
-  private async getRandomRestaurants(): Promise<HomeItemDto[]> {
-    const restaurants = await this.restaurantRepository
+  private async getRandomRestaurants(tenantId?: string | null): Promise<HomeItemDto[]> {
+    const query = this.restaurantRepository
       .createQueryBuilder('restaurant')
       .leftJoinAndSelect('restaurant.images', 'images', 'images.isPublic = :imageIsPublic AND images.order = 1')
       .leftJoinAndSelect('images.imageResource', 'imageResource')
       .where('restaurant.isPublic = :isPublic', { isPublic: true })
-      .setParameter('imageIsPublic', true)
-      .orderBy('RANDOM()')
-      .limit(6)
-      .getMany();
+      .setParameter('imageIsPublic', true);
+
+    if (tenantId) {
+      query.innerJoin('restaurant.town', 'town').andWhere('town.id = :tenantId', { tenantId });
+    }
+
+    const restaurants = await query.orderBy('RANDOM()').limit(6).getMany();
 
     return restaurants.map(restaurant => ({
       id: restaurant.id,
@@ -93,16 +103,19 @@ export class HomeService {
     }));
   }
 
-  private async getRandomExperiences(): Promise<HomeItemDto[]> {
-    const experiences = await this.experienceRepository
+  private async getRandomExperiences(tenantId?: string | null): Promise<HomeItemDto[]> {
+    const query = this.experienceRepository
       .createQueryBuilder('experience')
       .leftJoinAndSelect('experience.images', 'images', 'images.isPublic = :imageIsPublic AND images.order = 1')
       .leftJoinAndSelect('images.imageResource', 'imageResource')
       .where('experience.isPublic = :isPublic', { isPublic: true })
-      .setParameter('imageIsPublic', true)
-      .orderBy('RANDOM()')
-      .limit(6)
-      .getMany();
+      .setParameter('imageIsPublic', true);
+
+    if (tenantId) {
+      query.innerJoin('experience.town', 'town').andWhere('town.id = :tenantId', { tenantId });
+    }
+
+    const experiences = await query.orderBy('RANDOM()').limit(6).getMany();
 
     return experiences.map(experience => ({
       id: experience.id,
