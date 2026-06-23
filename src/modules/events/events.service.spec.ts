@@ -82,6 +82,32 @@ describe('EventsService.ingest (EVENT-01/02/08)', () => {
     expect(repo.create).toHaveBeenCalledWith(expect.objectContaining({ isBot: true }));
   });
 
+  it('drops an entity-scoped event when no town resolved server-side (D-03 guard)', async () => {
+    const warnSpy = jest.fn();
+    (service as any).logger = { warn: warnSpy, error: jest.fn() };
+    await service.ingest({
+      dto: { eventType: 'page_view', entityType: 'lodging', entityId: 'abc' } as any,
+      ip: null,
+      townId: null, // unresolved tenant on an entity event → must NOT persist
+      userAgent: 'Chrome',
+      user: null,
+    });
+    expect(repo.save).not.toHaveBeenCalled();
+    expect(warnSpy).toHaveBeenCalled();
+  });
+
+  it('persists an apex/platform event with null town (D-03 — no entity)', async () => {
+    await service.ingest({
+      dto: { eventType: 'search_performed' } as any, // no entity → platform event, null town OK
+      ip: null,
+      townId: null,
+      userAgent: 'Chrome',
+      user: null,
+    });
+    expect(repo.save).toHaveBeenCalled();
+    expect(repo.create).toHaveBeenCalledWith(expect.objectContaining({ townId: null, entityId: null }));
+  });
+
   it('logs a repository error via Logger.error and does NOT rethrow (EVENT-08)', async () => {
     repo.save.mockRejectedValueOnce(new Error('db down'));
     const errorSpy = jest.fn();

@@ -49,6 +49,18 @@ export class EventsService {
     try {
       const { dto } = input;
 
+      // D-03: entity-scoped events MUST resolve to a town server-side. An entity event
+      // whose tenant could not be resolved (e.g. missing/invalid x-tenant) is a client
+      // misconfiguration — drop it rather than silently persist town_id=null, which would
+      // corrupt per-town analytics. Apex/platform events (no entity) legitimately have null.
+      const isEntityScoped = !!(dto.entityType || dto.entityId);
+      if (isEntityScoped && !input.townId) {
+        this.logger.warn(
+          `(events.ingest) dropped entity-scoped ${dto.eventType} event for entity ${dto.entityType ?? '?'}:${dto.entityId ?? '?'} — no resolvable town (missing/invalid x-tenant)`,
+        );
+        return;
+      }
+
       const geo = this.geoIp.lookup(input.ip); // IP used here ONLY; never stored (D-06)
       const device = this.deviceParser.parse(input.userAgent);
       const isBot = this.botFilter.isBot(input.userAgent);
