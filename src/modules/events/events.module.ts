@@ -7,10 +7,14 @@ import { BotFilterService } from './enrichment/bot-filter.service';
 import { DeviceParserService } from './enrichment/device-parser.service';
 import { GeoipRefreshCron } from './geoip-refresh.cron';
 import { EventsCanaryCron } from './events-canary.cron';
+import { EntityAnalyticsService } from './entity-analytics.service';
+import { EntityOwnershipResolver } from './entity-ownership.resolver';
 import { Event } from './entities';
 import { User } from '../users/entities';
 
 @Module({
+  // EntityAnalyticsService + EntityOwnershipResolver use the injected DataSource (raw SQL),
+  // so no extra TypeOrmModule.forFeature entities are required for the read endpoint.
   imports: [TypeOrmModule.forFeature([Event, User])],
   controllers: [EventsController],
   providers: [
@@ -20,6 +24,8 @@ import { User } from '../users/entities';
     DeviceParserService,
     GeoipRefreshCron,
     EventsCanaryCron,
+    EntityAnalyticsService,
+    EntityOwnershipResolver,
   ],
   exports: [EventsService],
 })

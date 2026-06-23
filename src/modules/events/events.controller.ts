@@ -1,15 +1,23 @@
-import { Body, Controller, HttpCode, HttpStatus, Ip, Post, Req } from '@nestjs/common';
-import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
+import { Body, Controller, Get, HttpCode, HttpStatus, Ip, Post, Query, Req } from '@nestjs/common';
+import { ApiBearerAuth, ApiForbiddenResponse, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { Request } from 'express';
-import { OptionalAuth } from '../auth/decorators';
+import { Auth, OptionalAuth } from '../auth/decorators';
+import { GetUser } from '../common/decorators';
 import { TenantId } from '../tenant/tenant.decorator';
-import { CreateEventDto } from './dto';
+import { User } from '../users/entities';
+import { CreateEventDto, EntityAnalyticsQueryDto } from './dto';
 import { EventsService } from './events.service';
+import { EntityOwnershipResolver } from './entity-ownership.resolver';
+import { EntityAnalyticsService, EntityAnalyticsResponse } from './entity-analytics.service';
 
 @ApiTags('Events')
 @Controller('events') // real path is /api/events due to the global 'api' prefix (Pitfall 6)
 export class EventsController {
-  constructor(private readonly events: EventsService) {}
+  constructor(
+    private readonly events: EventsService,
+    private readonly ownership: EntityOwnershipResolver,
+    private readonly entityAnalytics: EntityAnalyticsService,
+  ) {}
 
   @Post()
   @OptionalAuth() // attaches req.user if Bearer present, else anonymous — never 401 (T-15-04)
@@ -26,5 +34,22 @@ export class EventsController {
     const user = (req as any).user ?? null; // set by @OptionalAuth
     // Do NOT await — 202 returns immediately; ingest never throws to the client.
     void this.events.ingest({ dto, ip, townId, userAgent, user });
+  }
+
+  // BIZ-08: per-entity analytics read. @Auth() => 401 without a valid Bearer (never public).
+  // The IDOR gate (assertCanRead) runs BEFORE any data query: non-owner/non-town-admin/non-super
+  // gets 403; a missing entity gets 404 (T-17-01/02/06).
+  @Get('analytics/entity') // real path /api/events/analytics/entity (global 'api' prefix)
+  @Auth()
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Per-entity analytics for the business dashboard (auth + ownership-scoped)' })
+  @ApiResponse({ status: 200, description: 'Analytics for the owned entity' })
+  @ApiForbiddenResponse({ description: 'Caller is not owner / town-admin / super-admin of this entity' })
+  async getEntityAnalytics(
+    @Query() query: EntityAnalyticsQueryDto,
+    @GetUser() user: User,
+  ): Promise<EntityAnalyticsResponse> {
+    const { townId } = await this.ownership.assertCanRead(query.entityType, query.entityId, user);
+    return this.entityAnalytics.getEntityAnalytics({ ...query, townId });
   }
 }
