@@ -26,6 +26,7 @@ import { HomeModule } from './modules/home/home.module';
 import { PromotionsModule } from './modules/promotions/promotions.module';
 import { PublicEventsModule } from './modules/public-events/public-events.module';
 import { WhatsappClicksModule } from './modules/whatsapp-clicks/whatsapp-clicks.module';
+import { EventsModule } from './modules/events/events.module';
 import { MapModule } from './modules/map/map.module';
 import { EmailModule } from './modules/email/email.module';
 import { TurnstileModule } from './modules/turnstile/turnstile.module';
@@ -79,6 +80,7 @@ import { NotificationsModule } from './modules/notifications/notifications.modul
     PromotionsModule,
     PublicEventsModule,
     WhatsappClicksModule,
+    EventsModule,
     MapModule,
     PineconeModule,
     RafaModule,
