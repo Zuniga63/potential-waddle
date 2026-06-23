@@ -40,7 +40,7 @@ export class GeoIpService implements OnModuleInit {
    * no/invalid IP, private/loopback IPs, or an unresolved address. Never throws.
    * D-06: returns coarse fields only (no precise coordinates); the caller stores no IP.
    */
-  lookup(ip: string | undefined): CoarseGeo {
+  lookup(ip: string | null | undefined): CoarseGeo {
     const empty: CoarseGeo = { country: null, department: null, city: null };
     if (!this.reader || !ip || !maxmind.validate(ip)) return empty;
 
