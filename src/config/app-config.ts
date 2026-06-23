@@ -84,6 +84,11 @@ export interface EnvironmentVariables {
   analytics: {
     apiKey: string;
   };
+  maxmind: {
+    accountId: string;
+    licenseKey: string;
+    dbPath: string;
+  };
   frontendUrl: string;
 }
 
@@ -178,6 +183,13 @@ export const appConfig = (): EnvironmentVariables => ({
   },
   analytics: {
     apiKey: process.env.ANALYTICS_API_KEY || '',
+  },
+  // MaxMind GeoLite2 (EVENT-03): credentials for the boot-time .mmdb download.
+  // Optional/fail-soft — if absent, geo enrichment degrades to null (Pitfall 4).
+  maxmind: {
+    accountId: process.env.MAXMIND_ACCOUNT_ID || '',
+    licenseKey: process.env.MAXMIND_LICENSE_KEY || '',
+    dbPath: process.env.GEOLITE_DB_PATH || './geoip/GeoLite2-City.mmdb',
   },
   frontendUrl: process.env.FRONTEND_URL || 'http://localhost:3000',
 });

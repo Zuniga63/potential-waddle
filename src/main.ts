@@ -13,6 +13,11 @@ async function bootstrap() {
 
   const app = await NestFactory.create(AppModule);
 
+  // Trust the Railway reverse proxy so Express honors X-Forwarded-For and @Ip()
+  // yields the real client IP (Pitfall 2 — gates EVENT-03 geo accuracy). Without
+  // this, every event resolves to the datacenter IP behind Railway's proxy.
+  app.getHttpAdapter().getInstance().set('trust proxy', true);
+
   // Enable CORS
   app.enableCors();
 

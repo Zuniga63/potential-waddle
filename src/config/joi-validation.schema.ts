@@ -40,4 +40,9 @@ export const JoiValidationSchema = Joi.object({
   EXTRACTION_ENGINE: Joi.string().valid('anthropic', 'kmizen').default('anthropic'),
 
   ANALYTICS_API_KEY: Joi.string().optional(),
+
+  // MaxMind GeoLite2 (EVENT-03) — optional so the app still boots without geo (fail-soft, Pitfall 4)
+  MAXMIND_ACCOUNT_ID: Joi.string().optional(),
+  MAXMIND_LICENSE_KEY: Joi.string().optional(),
+  GEOLITE_DB_PATH: Joi.string().optional(),
 });
