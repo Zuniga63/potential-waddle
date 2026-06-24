@@ -40,6 +40,34 @@ export interface EntityAnalyticsCity {
   visitors: number;
 }
 
+// Geo + tech breakdowns (quick 260624-n9q). Same `visitors = distinct page_view sessions`
+// metric as byCity, same bot/internal exclusion. Null labels keep Spanish gender:
+// country -> 'Desconocido', department/city -> 'Desconocida', device/browser/os -> 'Desconocido'.
+export interface EntityAnalyticsCountry {
+  country: string; // 'Desconocido' for null
+  visitors: number;
+}
+
+export interface EntityAnalyticsDepartment {
+  department: string; // 'Desconocida' for null
+  visitors: number;
+}
+
+export interface EntityAnalyticsDevice {
+  device: string; // raw device_type ('mobile' | 'desktop' | 'tablet'); 'Desconocido' for null
+  visitors: number;
+}
+
+export interface EntityAnalyticsBrowser {
+  browser: string; // 'Desconocido' for null
+  visitors: number;
+}
+
+export interface EntityAnalyticsOs {
+  os: string; // 'Desconocido' for null
+  visitors: number;
+}
+
 export interface EntityAnalyticsChannels {
   whatsapp: number;
   phone: number;
@@ -53,6 +81,11 @@ export interface EntityAnalyticsResponse {
   deltas: EntityAnalyticsDeltas;
   trend: EntityAnalyticsTrendPoint[];
   byCity: EntityAnalyticsCity[];
+  byCountry: EntityAnalyticsCountry[];
+  byDepartment: EntityAnalyticsDepartment[];
+  byDevice: EntityAnalyticsDevice[];
+  byBrowser: EntityAnalyticsBrowser[];
+  byOs: EntityAnalyticsOs[];
   byChannel: EntityAnalyticsChannels;
   range: { from: string; to: string };
 }
@@ -67,6 +100,10 @@ interface AggregateRow {
 // Shared traffic-quality + scope predicate (kept identical across every query for consistency).
 const BASE_WHERE =
   'entity_type = $1 AND entity_id = $2 AND is_bot = false AND is_internal = false AND created_at >= $3 AND created_at <= $4';
+
+// Whitelisted breakdown columns — a closed literal union so `breakdownBy` can interpolate the
+// identifier without any risk of injection (these are never derived from user input).
+type BreakdownColumn = 'country' | 'department' | 'device_type' | 'browser' | 'os';
 
 @Injectable()
 export class EntityAnalyticsService {
@@ -141,6 +178,17 @@ export class EntityAnalyticsService {
       [entityType, entityId, from, to],
     )) as { whatsapp: string; phone: string; web: string; map: string; share: string }[];
 
+    // 6) Geo + tech breakdowns (quick 260624-n9q) — run concurrently. Each mirrors the byCity
+    //    shape: distinct page_view sessions per group, top-N desc. Geo top 10, tech top 8.
+    const breakdownParams: [string, string, Date, Date] = [entityType, entityId, from, to];
+    const [countryRows, departmentRows, deviceRows, browserRows, osRows] = await Promise.all([
+      this.breakdownBy('country', breakdownParams, 10),
+      this.breakdownBy('department', breakdownParams, 10),
+      this.breakdownBy('device_type', breakdownParams, 8),
+      this.breakdownBy('browser', breakdownParams, 8),
+      this.breakdownBy('os', breakdownParams, 8),
+    ]);
+
     const summary = this.buildSummary(currentRow);
     const prevSummary = this.buildSummary(prevRow);
 
@@ -154,6 +202,14 @@ export class EntityAnalyticsService {
       },
       trend: zeroFillTrend(trendRows, from, to),
       byCity: cityRows.map((r) => ({ city: r.city ?? 'Desconocida', visitors: toInt(r.visitors) })),
+      byCountry: (countryRows ?? []).map((r) => ({ country: r.key ?? 'Desconocido', visitors: toInt(r.visitors) })),
+      byDepartment: (departmentRows ?? []).map((r) => ({
+        department: r.key ?? 'Desconocida',
+        visitors: toInt(r.visitors),
+      })),
+      byDevice: (deviceRows ?? []).map((r) => ({ device: r.key ?? 'Desconocido', visitors: toInt(r.visitors) })),
+      byBrowser: (browserRows ?? []).map((r) => ({ browser: r.key ?? 'Desconocido', visitors: toInt(r.visitors) })),
+      byOs: (osRows ?? []).map((r) => ({ os: r.key ?? 'Desconocido', visitors: toInt(r.visitors) })),
       byChannel: {
         whatsapp: toInt(channelRow?.whatsapp),
         phone: toInt(channelRow?.phone),
@@ -195,6 +251,31 @@ export class EntityAnalyticsService {
         (SELECT COUNT(*) FROM scoped WHERE event_type = 'whatsapp_click')  AS whatsapp_contacts,
         (SELECT COUNT(*) FROM sessions WHERE viewed AND contacted)         AS converted_sessions
     `;
+  }
+
+  /**
+   * Visitors grouped by a coarse dimension (geo or tech), top-N desc.
+   * `visitors` = distinct page_view sessions (identical to byCity).
+   *
+   * `column` is a compile-time literal union — it is NEVER user input, so interpolating it as a
+   * SQL identifier is safe (T-17-05). `limit` is a hardcoded number from our own call sites. Every
+   * user-facing value stays a bound parameter ($1..$4 via BASE_WHERE).
+   */
+  private breakdownBy(
+    column: BreakdownColumn,
+    params: [string, string, Date, Date],
+    limit: number,
+  ): Promise<{ key: string | null; visitors: string }[]> {
+    return this.dataSource.query(
+      `SELECT ${column} AS key,
+              COUNT(DISTINCT session_id) FILTER (WHERE event_type = 'page_view') AS visitors
+         FROM events
+        WHERE ${BASE_WHERE}
+        GROUP BY ${column}
+        ORDER BY visitors DESC
+        LIMIT ${limit}`,
+      params,
+    );
   }
 
   private buildSummary(row: AggregateRow | undefined): EntityAnalyticsSummary {

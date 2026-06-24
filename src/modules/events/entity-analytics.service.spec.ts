@@ -94,20 +94,32 @@ describe('EntityAnalyticsService (BIZ-01..05 — math)', () => {
 
   // The service runs several queries; we drive them by call order. The service implementation
   // must call, in order: (1) current-window aggregate, (2) previous-window aggregate,
-  // (3) daily trend, (4) byCity, (5) byChannel. Each test stubs that sequence.
+  // (3) daily trend, (4) byCity, (5) byChannel, then the geo+tech breakdowns issued together via
+  // Promise.all in array order: (6) byCountry, (7) byDepartment, (8) byDevice, (9) byBrowser,
+  // (10) byOs. Each breakdown row is { key, visitors }. Each test stubs that sequence.
   const stub = (opts: {
     current: any;
     previous?: any;
     trend?: any[];
     byCity?: any[];
     byChannel?: any;
+    byCountry?: any[];
+    byDepartment?: any[];
+    byDevice?: any[];
+    byBrowser?: any[];
+    byOs?: any[];
   }) => {
     dataSource.query
       .mockResolvedValueOnce([opts.current])
       .mockResolvedValueOnce([opts.previous ?? { views: '0', unique_visitors: '0', whatsapp_contacts: '0', converted_sessions: '0' }])
       .mockResolvedValueOnce(opts.trend ?? [])
       .mockResolvedValueOnce(opts.byCity ?? [])
-      .mockResolvedValueOnce([opts.byChannel ?? { whatsapp: '0', phone: '0', web: '0', map: '0', share: '0' }]);
+      .mockResolvedValueOnce([opts.byChannel ?? { whatsapp: '0', phone: '0', web: '0', map: '0', share: '0' }])
+      .mockResolvedValueOnce(opts.byCountry ?? [])
+      .mockResolvedValueOnce(opts.byDepartment ?? [])
+      .mockResolvedValueOnce(opts.byDevice ?? [])
+      .mockResolvedValueOnce(opts.byBrowser ?? [])
+      .mockResolvedValueOnce(opts.byOs ?? []);
   };
 
   it('computes summary and clamps conversion <= 100 (same-session converted/unique)', async () => {
@@ -180,5 +192,36 @@ describe('EntityAnalyticsService (BIZ-01..05 — math)', () => {
     expect(res.byCity[0]).toEqual({ city: 'Medellín', visitors: 3 });
     expect(res.byCity.find((c) => c.city === 'Desconocida')).toBeDefined();
     expect(res.byChannel).toEqual({ whatsapp: 1, phone: 2, web: 3, map: 4, share: 5 });
+  });
+
+  it('returns geo + tech breakdowns with the correct Spanish null labels (quick 260624-n9q)', async () => {
+    stub({
+      current: { views: '5', unique_visitors: '3', whatsapp_contacts: '1', converted_sessions: '1' },
+      byCountry: [{ key: 'Colombia', visitors: '4' }, { key: null, visitors: '1' }],
+      byDepartment: [{ key: 'Antioquia', visitors: '3' }, { key: null, visitors: '1' }],
+      byDevice: [{ key: 'mobile', visitors: '3' }, { key: null, visitors: '1' }],
+      byBrowser: [{ key: 'Chrome', visitors: '2' }, { key: null, visitors: '1' }],
+      byOs: [{ key: 'Android', visitors: '2' }, { key: null, visitors: '1' }],
+    });
+    const res = await service.getEntityAnalytics({ entityType: 'lodging', entityId: 'l-1', townId: 'town-1' });
+
+    expect(res.byCountry[0]).toEqual({ country: 'Colombia', visitors: 4 });
+    expect(res.byCountry.find((c) => c.country === 'Desconocido')).toBeDefined(); // masculine
+    expect(res.byDepartment[0]).toEqual({ department: 'Antioquia', visitors: 3 });
+    expect(res.byDepartment.find((d) => d.department === 'Desconocida')).toBeDefined(); // feminine
+    expect(res.byDevice[0]).toEqual({ device: 'mobile', visitors: 3 }); // raw value, UI maps to label
+    expect(res.byDevice.find((d) => d.device === 'Desconocido')).toBeDefined();
+    expect(res.byBrowser[0]).toEqual({ browser: 'Chrome', visitors: 2 });
+    expect(res.byOs[0]).toEqual({ os: 'Android', visitors: 2 });
+  });
+
+  it('empty range -> geo + tech breakdowns are empty arrays', async () => {
+    stub({ current: { views: '0', unique_visitors: '0', whatsapp_contacts: '0', converted_sessions: '0' } });
+    const res = await service.getEntityAnalytics({ entityType: 'lodging', entityId: 'l-1', townId: 'town-1' });
+    expect(res.byCountry).toEqual([]);
+    expect(res.byDepartment).toEqual([]);
+    expect(res.byDevice).toEqual([]);
+    expect(res.byBrowser).toEqual([]);
+    expect(res.byOs).toEqual([]);
   });
 });
