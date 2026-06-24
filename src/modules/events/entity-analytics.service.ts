@@ -228,15 +228,19 @@ function signedDelta(current: number, prev: number): number | null {
   return Math.round(((current - prev) / prev) * 100 * 10) / 10;
 }
 
+// NOTE: events.created_at is stored in UTC (timestamptz) and `ymd` formats via toISOString
+// (UTC). Day boundaries MUST therefore be computed in UTC too — using local setHours on a
+// negative-offset server (e.g. America/Bogota, UTC-5) rolled `endOfDay('2026-06-24')` back to
+// 2026-06-24T04:59Z, silently excluding the rest of the UTC day's events from the dashboard.
 function startOfDay(iso: string): Date {
   const d = new Date(iso);
-  d.setHours(0, 0, 0, 0);
+  d.setUTCHours(0, 0, 0, 0);
   return d;
 }
 
 function endOfDay(iso: string): Date {
   const d = new Date(iso);
-  d.setHours(23, 59, 59, 999);
+  d.setUTCHours(23, 59, 59, 999);
   return d;
 }
 
