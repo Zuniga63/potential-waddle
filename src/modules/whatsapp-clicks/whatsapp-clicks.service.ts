@@ -4,6 +4,7 @@ import { Repository, LessThan } from 'typeorm';
 import { WhatsappClick } from './entities';
 import { CreateWhatsappClickDto } from './dto';
 import { User } from '../users/entities';
+import { WhatsappClicksReadAdapter } from './whatsapp-clicks-read.adapter';
 
 // Simple user-agent parser (lightweight alternative to ua-parser-js)
 interface ParsedUserAgent {
@@ -12,6 +13,14 @@ interface ParsedUserAgent {
   device: { type: string | null };
 }
 
+/**
+ * MIG-01: the three READ methods (getDetailedAnalytics, getAggregatedAnalytics,
+ * getDashboardStats) now delegate to WhatsappClicksReadAdapter, which serves data from
+ * the generic `events` table (Phase 15) — byte-identical shapes, zero frontend change.
+ * The `whatsapp_click` table is retained READ-ONLY (the client stopped writing to it in
+ * Phase 16) pending the user's prod cutover and is NOT dropped in this phase. The
+ * `create()` write + `getAnalytics()` methods are intentionally left untouched.
+ */
 @Injectable()
 export class WhatsappClicksService {
   private readonly logger = new Logger(WhatsappClicksService.name);
@@ -21,6 +30,7 @@ export class WhatsappClicksService {
     private readonly whatsappClickRepository: Repository<WhatsappClick>,
     @InjectRepository(User)
     private readonly userRepository: Repository<User>,
+    private readonly readAdapter: WhatsappClicksReadAdapter,
   ) {}
 
   /**
@@ -232,7 +242,8 @@ export class WhatsappClicksService {
   }
 
   /**
-   * Get aggregated analytics for admin panel (all entities)
+   * Get aggregated analytics for admin panel (all entities).
+   * MIG-01: delegates to the events-backed read adapter (byte-identical shape).
    */
   async getAggregatedAnalytics(filters: {
     startDate?: string;
@@ -241,410 +252,22 @@ export class WhatsappClicksService {
     page: number;
     limit: number;
   }) {
-    const { startDate, endDate, entityType, page, limit } = filters;
-    const offset = (page - 1) * limit;
-
-    // Build WHERE clause for date filters
-    let dateFilter = '';
-    const params: any[] = [];
-    let paramIndex = 1;
-
-    if (startDate) {
-      dateFilter += ` AND wc.clicked_at >= $${paramIndex}`;
-      params.push(new Date(startDate));
-      paramIndex++;
-    }
-
-    if (endDate) {
-      const endDateTime = new Date(endDate);
-      endDateTime.setHours(23, 59, 59, 999);
-      dateFilter += ` AND wc.clicked_at <= $${paramIndex}`;
-      params.push(endDateTime);
-      paramIndex++;
-    }
-
-    if (entityType) {
-      dateFilter += ` AND wc.entity_type = $${paramIndex}`;
-      params.push(entityType);
-      paramIndex++;
-    }
-
-    // Query to get aggregated data with entity names
-    const query = `
-      WITH entity_clicks AS (
-        SELECT
-          wc.entity_id,
-          wc.entity_type,
-          wc.entity_slug,
-          COUNT(*) as total_clicks,
-          COUNT(*) FILTER (WHERE wc.is_repeat_click = false) as unique_clicks,
-          MAX(wc.clicked_at) as last_click_at,
-          CASE
-            WHEN wc.entity_type = 'restaurant' THEN (SELECT name FROM restaurant WHERE id = wc.entity_id::uuid LIMIT 1)
-            WHEN wc.entity_type = 'lodging' THEN (SELECT name FROM lodging WHERE id = wc.entity_id::uuid LIMIT 1)
-            WHEN wc.entity_type = 'experience' THEN (SELECT title FROM experience WHERE id = wc.entity_id::uuid LIMIT 1)
-            WHEN wc.entity_type = 'guide' THEN (SELECT CONCAT(first_name, ' ', last_name) FROM guide WHERE id = wc.entity_id::uuid LIMIT 1)
-            WHEN wc.entity_type = 'commerce' THEN (SELECT name FROM commerce WHERE id = wc.entity_id::uuid LIMIT 1)
-            WHEN wc.entity_type = 'transport' THEN (SELECT CONCAT(first_name, ' ', last_name) FROM transport WHERE id = wc.entity_id::uuid LIMIT 1)
-            WHEN wc.entity_type = 'place' THEN (SELECT name FROM place WHERE id = wc.entity_id::uuid LIMIT 1)
-            ELSE 'Unknown'
-          END as entity_name
-        FROM whatsapp_click wc
-        WHERE 1=1 ${dateFilter}
-        GROUP BY wc.entity_id, wc.entity_type, wc.entity_slug
-      )
-      SELECT
-        entity_id,
-        entity_type,
-        entity_slug,
-        entity_name,
-        total_clicks,
-        unique_clicks,
-        last_click_at
-      FROM entity_clicks
-      WHERE entity_name IS NOT NULL
-      ORDER BY total_clicks DESC
-      LIMIT $${paramIndex} OFFSET $${paramIndex + 1}
-    `;
-
-    params.push(limit, offset);
-
-    // Execute query
-    const entities = await this.whatsappClickRepository.query(query, params);
-
-    // Get total count for pagination
-    const countQuery = `
-      WITH entity_clicks AS (
-        SELECT
-          wc.entity_id,
-          wc.entity_type,
-          CASE
-            WHEN wc.entity_type = 'restaurant' THEN (SELECT name FROM restaurant WHERE id = wc.entity_id::uuid LIMIT 1)
-            WHEN wc.entity_type = 'lodging' THEN (SELECT name FROM lodging WHERE id = wc.entity_id::uuid LIMIT 1)
-            WHEN wc.entity_type = 'experience' THEN (SELECT title FROM experience WHERE id = wc.entity_id::uuid LIMIT 1)
-            WHEN wc.entity_type = 'guide' THEN (SELECT CONCAT(first_name, ' ', last_name) FROM guide WHERE id = wc.entity_id::uuid LIMIT 1)
-            WHEN wc.entity_type = 'commerce' THEN (SELECT name FROM commerce WHERE id = wc.entity_id::uuid LIMIT 1)
-            WHEN wc.entity_type = 'transport' THEN (SELECT CONCAT(first_name, ' ', last_name) FROM transport WHERE id = wc.entity_id::uuid LIMIT 1)
-            WHEN wc.entity_type = 'place' THEN (SELECT name FROM place WHERE id = wc.entity_id::uuid LIMIT 1)
-            ELSE 'Unknown'
-          END as entity_name
-        FROM whatsapp_click wc
-        WHERE 1=1 ${dateFilter}
-        GROUP BY wc.entity_id, wc.entity_type
-      )
-      SELECT COUNT(DISTINCT entity_id) as count
-      FROM entity_clicks
-      WHERE entity_name IS NOT NULL
-    `;
-
-    const countParams = params.slice(0, -2); // Remove limit and offset
-    const [countResult] = await this.whatsappClickRepository.query(countQuery, countParams);
-    const total = parseInt(countResult?.count || '0', 10);
-
-    // Get summary stats
-    const summaryQuery = `
-      SELECT
-        COUNT(DISTINCT wc.entity_id) as total_entities,
-        COUNT(*) as total_clicks,
-        COUNT(*) FILTER (WHERE wc.is_repeat_click = false) as total_unique_clicks
-      FROM whatsapp_click wc
-      WHERE 1=1 ${dateFilter}
-    `;
-
-    const [summary] = await this.whatsappClickRepository.query(summaryQuery, countParams);
-
-    return {
-      entities: entities.map((e: any) => ({
-        entityId: e.entity_id,
-        entityType: e.entity_type,
-        entitySlug: e.entity_slug,
-        entityName: e.entity_name,
-        totalClicks: parseInt(e.total_clicks, 10),
-        uniqueClicks: parseInt(e.unique_clicks, 10),
-        lastClickAt: e.last_click_at,
-      })),
-      pagination: {
-        total,
-        page,
-        limit,
-        totalPages: Math.ceil(total / limit),
-      },
-      summary: {
-        totalEntities: parseInt(summary?.total_entities || '0', 10),
-        totalClicks: parseInt(summary?.total_clicks || '0', 10),
-        totalUniqueClicks: parseInt(summary?.total_unique_clicks || '0', 10),
-      },
-    };
+    return this.readAdapter.getAggregatedAnalytics(filters);
   }
 
   /**
-   * Get detailed analytics for entity dashboard
+   * Get detailed analytics for entity dashboard.
+   * MIG-01: delegates to the events-backed read adapter (byte-identical shape).
    */
   async getDetailedAnalytics(entityId: string, entityType: string) {
-    const query = this.whatsappClickRepository
-      .createQueryBuilder('click')
-      .where('click.entityId = :entityId', { entityId })
-      .andWhere('click.entityType = :entityType', { entityType });
-
-    const clicks = await query.getMany();
-    const total = clicks.length;
-
-    // Total clicks
-    const uniqueClicks = clicks.filter(c => !c.isRepeatClick).length;
-    const repeatClicks = clicks.filter(c => c.isRepeatClick).length;
-
-    // Device breakdown
-    const deviceTypes = clicks.reduce(
-      (acc, click) => {
-        const type = click.deviceType || 'unknown';
-        acc[type] = (acc[type] || 0) + 1;
-        return acc;
-      },
-      {} as Record<string, number>,
-    );
-
-    // Browser breakdown
-    const browsers = clicks.reduce(
-      (acc, click) => {
-        const browser = click.browserName || 'Unknown';
-        acc[browser] = (acc[browser] || 0) + 1;
-        return acc;
-      },
-      {} as Record<string, number>,
-    );
-
-    // OS breakdown
-    const operatingSystems = clicks.reduce(
-      (acc, click) => {
-        const os = click.osName || 'Unknown';
-        acc[os] = (acc[os] || 0) + 1;
-        return acc;
-      },
-      {} as Record<string, number>,
-    );
-
-    // Page type breakdown
-    const pageTypes = clicks.reduce(
-      (acc, click) => {
-        const pageType = click.pageType || 'Unknown';
-        acc[pageType] = (acc[pageType] || 0) + 1;
-        return acc;
-      },
-      {} as Record<string, number>,
-    );
-
-    // Location breakdown
-    const locations = clicks.reduce(
-      (acc, click) => {
-        if (click.city && click.country) {
-          const location = `${click.city}, ${click.country}`;
-          acc[location] = (acc[location] || 0) + 1;
-        } else if (click.country) {
-          acc[click.country] = (acc[click.country] || 0) + 1;
-        }
-        return acc;
-      },
-      {} as Record<string, number>,
-    );
-
-    // Clicks by date (last 30 days)
-    const last30Days = new Date();
-    last30Days.setDate(last30Days.getDate() - 30);
-
-    const clicksByDate = clicks
-      .filter(c => c.clickedAt >= last30Days)
-      .reduce(
-        (acc, click) => {
-          const date = click.clickedAt.toISOString().split('T')[0];
-          acc[date] = (acc[date] || 0) + 1;
-          return acc;
-        },
-        {} as Record<string, number>,
-      );
-
-    // Clicks by hour (0-23)
-    const clicksByHour = clicks.reduce(
-      (acc, click) => {
-        const hour = click.clickedAt.getHours();
-        acc[hour] = (acc[hour] || 0) + 1;
-        return acc;
-      },
-      {} as Record<number, number>,
-    );
-
-    // Average time on page
-    const timesOnPage = clicks.map(c => c.timeOnPage).filter(Boolean) as number[];
-    const avgTimeOnPage = timesOnPage.length > 0 ? timesOnPage.reduce((a, b) => a + b, 0) / timesOnPage.length : 0;
-
-    // Top phone numbers clicked
-    const topPhoneNumbers = clicks.reduce(
-      (acc, click) => {
-        acc[click.phoneNumber] = (acc[click.phoneNumber] || 0) + 1;
-        return acc;
-      },
-      {} as Record<string, number>,
-    );
-
-    return {
-      summary: {
-        total,
-        uniqueClicks,
-        repeatClicks,
-        repeatRate: total > 0 ? (repeatClicks / total) * 100 : 0,
-        uniqueSessions: new Set(clicks.map(c => c.sessionId).filter(Boolean)).size,
-        avgTimeOnPage: Math.round(avgTimeOnPage),
-      },
-      breakdown: {
-        deviceTypes,
-        browsers,
-        operatingSystems,
-        pageTypes,
-        locations: Object.entries(locations)
-          .sort(([, a], [, b]) => b - a)
-          .slice(0, 10)
-          .reduce((acc, [key, value]) => ({ ...acc, [key]: value }), {}),
-        topPhoneNumbers: Object.entries(topPhoneNumbers)
-          .sort(([, a], [, b]) => b - a)
-          .slice(0, 5)
-          .reduce((acc, [key, value]) => ({ ...acc, [key]: value }), {}),
-      },
-      timeSeries: {
-        clicksByDate: Object.entries(clicksByDate)
-          .sort(([a], [b]) => a.localeCompare(b))
-          .reduce((acc, [key, value]) => ({ ...acc, [key]: value }), {}),
-        clicksByHour,
-      },
-    };
+    return this.readAdapter.getDetailedAnalytics(entityId, entityType);
   }
 
   /**
-   * Get dashboard stats - clicks by day grouped by entity type
+   * Get dashboard stats - clicks by day grouped by entity type.
+   * MIG-01: delegates to the events-backed read adapter (byte-identical shape).
    */
   async getDashboardStats(days: number = 7, townId?: string) {
-    const startDate = new Date();
-    startDate.setDate(startDate.getDate() - days);
-    startDate.setHours(0, 0, 0, 0);
-
-    // Build query with optional town filter
-    // When townId is provided, we need to filter clicks by entities belonging to that town
-    let query: string;
-    let params: any[];
-
-    if (townId) {
-      // Filter clicks by entities that belong to the specified town
-      query = `
-        SELECT
-          DATE(wc.clicked_at) as date,
-          wc.entity_type,
-          COUNT(*) as total_clicks,
-          COUNT(*) FILTER (WHERE wc.is_repeat_click = false) as unique_clicks
-        FROM whatsapp_click wc
-        WHERE wc.clicked_at >= $1
-          AND (
-            (wc.entity_type = 'restaurant' AND EXISTS (SELECT 1 FROM restaurant r WHERE r.id = wc.entity_id::uuid AND r.town_id = $2))
-            OR (wc.entity_type = 'lodging' AND EXISTS (SELECT 1 FROM lodging l WHERE l.id = wc.entity_id::uuid AND l.town_id = $2))
-            OR (wc.entity_type = 'place' AND EXISTS (SELECT 1 FROM place p WHERE p.id = wc.entity_id::uuid AND p.town_id = $2))
-            OR (wc.entity_type = 'commerce' AND EXISTS (SELECT 1 FROM commerce c WHERE c.id = wc.entity_id::uuid AND c.town_id = $2))
-            OR (wc.entity_type = 'transport' AND EXISTS (SELECT 1 FROM transport t WHERE t.id = wc.entity_id::uuid AND t.town_id = $2))
-            OR (wc.entity_type = 'guide' AND EXISTS (SELECT 1 FROM guide_town gt WHERE gt.guide_id = wc.entity_id::uuid AND gt.town_id = $2))
-          )
-        GROUP BY DATE(wc.clicked_at), wc.entity_type
-        ORDER BY date ASC, wc.entity_type
-      `;
-      params = [startDate, townId];
-    } else {
-      // No town filter - return all clicks
-      query = `
-        SELECT
-          DATE(wc.clicked_at) as date,
-          wc.entity_type,
-          COUNT(*) as total_clicks,
-          COUNT(*) FILTER (WHERE wc.is_repeat_click = false) as unique_clicks
-        FROM whatsapp_click wc
-        WHERE wc.clicked_at >= $1
-        GROUP BY DATE(wc.clicked_at), wc.entity_type
-        ORDER BY date ASC, wc.entity_type
-      `;
-      params = [startDate];
-    }
-
-    const results = await this.whatsappClickRepository.query(query, params);
-
-    // Entity type labels in Spanish
-    const entityLabels: Record<string, string> = {
-      restaurant: 'Restaurantes',
-      lodging: 'Alojamientos',
-      guide: 'Guías',
-      commerce: 'Comercios',
-      transport: 'Transporte',
-      place: 'Lugares',
-    };
-
-    // Generate all dates in range
-    const dates: string[] = [];
-    const current = new Date(startDate);
-    const today = new Date();
-    today.setHours(23, 59, 59, 999);
-
-    while (current <= today) {
-      dates.push(current.toISOString().split('T')[0]);
-      current.setDate(current.getDate() + 1);
-    }
-
-    // Initialize data structure
-    const entityTypes = ['restaurant', 'lodging', 'guide', 'commerce', 'transport', 'place'];
-    const dataByEntityType: Record<string, { date: string; clicks: number; uniqueClicks: number }[]> = {};
-
-    entityTypes.forEach(type => {
-      dataByEntityType[type] = dates.map(date => ({
-        date,
-        clicks: 0,
-        uniqueClicks: 0,
-      }));
-    });
-
-    // Fill in the actual data
-    results.forEach((row: any) => {
-      const dateStr = row.date.toISOString().split('T')[0];
-      const entityType = row.entity_type;
-
-      if (dataByEntityType[entityType]) {
-        const dayData = dataByEntityType[entityType].find(d => d.date === dateStr);
-        if (dayData) {
-          dayData.clicks = parseInt(row.total_clicks, 10);
-          dayData.uniqueClicks = parseInt(row.unique_clicks, 10);
-        }
-      }
-    });
-
-    // Calculate totals by entity type
-    const totalsByEntityType: Record<string, { total: number; unique: number }> = {};
-    entityTypes.forEach(type => {
-      totalsByEntityType[type] = {
-        total: dataByEntityType[type].reduce((sum, d) => sum + d.clicks, 0),
-        unique: dataByEntityType[type].reduce((sum, d) => sum + d.uniqueClicks, 0),
-      };
-    });
-
-    // Format for chart
-    const chartData = dates.map(date => {
-      const dayData: Record<string, any> = { date };
-      entityTypes.forEach(type => {
-        const found = dataByEntityType[type].find(d => d.date === date);
-        dayData[type] = found?.clicks || 0;
-      });
-      return dayData;
-    });
-
-    return {
-      dates,
-      entityTypes: entityTypes.map(type => ({
-        key: type,
-        label: entityLabels[type] || type,
-      })),
-      chartData,
-      totalsByEntityType,
-      dataByEntityType,
-    };
+    return this.readAdapter.getDashboardStats(days, townId);
   }
 }

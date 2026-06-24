@@ -5,13 +5,18 @@ import { CreateWhatsappClickDto } from './dto';
 import { TENANT_ID_KEY } from '../tenant/tenant.interceptor';
 import { Request } from 'express';
 
+/**
+ * DEPRECATED (MIG-03): superseded by /api/events. Reads are served from the events table
+ * via WhatsappClicksReadAdapter (MIG-01). Endpoints + the whatsapp_click table are retained
+ * for the user's prod cutover and are NOT removed in this phase.
+ */
 @ApiTags('WhatsApp Clicks')
 @Controller('whatsapp-clicks')
 export class WhatsappClicksController {
   constructor(private readonly whatsappClicksService: WhatsappClicksService) {}
 
   @Post()
-  @ApiOperation({ summary: 'Track a WhatsApp click' })
+  @ApiOperation({ summary: 'Track a WhatsApp click', deprecated: true })
   @ApiResponse({ status: 201, description: 'Click tracked successfully' })
   @ApiResponse({ status: 400, description: 'Bad request' })
   async trackClick(@Body() createDto: CreateWhatsappClickDto, @Ip() ipAddress: string) {
@@ -19,7 +24,7 @@ export class WhatsappClicksController {
   }
 
   @Get('analytics')
-  @ApiOperation({ summary: 'Get WhatsApp click analytics' })
+  @ApiOperation({ summary: 'Get WhatsApp click analytics', deprecated: true })
   @ApiQuery({ name: 'entityId', required: false, description: 'Filter by entity ID' })
   @ApiQuery({ name: 'entityType', required: false, description: 'Filter by entity type' })
   @ApiResponse({ status: 200, description: 'Analytics retrieved successfully' })
@@ -28,7 +33,7 @@ export class WhatsappClicksController {
   }
 
   @Get('analytics/detailed')
-  @ApiOperation({ summary: 'Get detailed WhatsApp click analytics for entity dashboard' })
+  @ApiOperation({ summary: 'Get detailed WhatsApp click analytics for entity dashboard', deprecated: true })
   @ApiQuery({ name: 'entityId', required: true, description: 'Entity ID' })
   @ApiQuery({ name: 'entityType', required: true, description: 'Entity type' })
   @ApiResponse({ status: 200, description: 'Detailed analytics retrieved successfully' })
@@ -37,7 +42,7 @@ export class WhatsappClicksController {
   }
 
   @Get('admin/aggregated')
-  @ApiOperation({ summary: 'Get aggregated WhatsApp analytics for all entities (Admin panel)' })
+  @ApiOperation({ summary: 'Get aggregated WhatsApp analytics for all entities (Admin panel)', deprecated: true })
   @ApiQuery({ name: 'startDate', required: false, description: 'Start date filter (YYYY-MM-DD)' })
   @ApiQuery({ name: 'endDate', required: false, description: 'End date filter (YYYY-MM-DD)' })
   @ApiQuery({ name: 'entityType', required: false, description: 'Filter by entity type' })
@@ -61,7 +66,7 @@ export class WhatsappClicksController {
   }
 
   @Get('admin/dashboard-stats')
-  @ApiOperation({ summary: 'Get WhatsApp clicks by day and entity type for dashboard' })
+  @ApiOperation({ summary: 'Get WhatsApp clicks by day and entity type for dashboard', deprecated: true })
   @ApiQuery({ name: 'days', required: false, description: 'Number of days to fetch (default 7)' })
   @ApiResponse({ status: 200, description: 'Dashboard stats retrieved successfully' })
   async getDashboardStats(@Query('days') days?: string, @Req() request?: Request) {
