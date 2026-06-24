@@ -215,6 +215,46 @@ describe('EntityAnalyticsService (BIZ-01..05 — math)', () => {
     expect(res.byOs[0]).toEqual({ os: 'Android', visitors: 2 });
   });
 
+  it('returns per-channel daily clicks (channelTrend) from the same trend query', async () => {
+    stub({
+      current: { views: '9', unique_visitors: '4', whatsapp_contacts: '2', converted_sessions: '2' },
+      trend: [{ date: new Date('2026-06-20T00:00:00Z'), views: '9', contacts: '2', phone: '3', web: '1', map: '0', share: '4' }],
+    });
+    const res = await service.getEntityAnalytics({
+      entityType: 'lodging',
+      entityId: 'l-1',
+      from: '2026-06-20',
+      to: '2026-06-20',
+      townId: 'town-1',
+    });
+    expect(res.channelTrend.length).toBe(1);
+    expect(res.channelTrend[0]).toEqual({
+      date: '2026-06-20',
+      whatsapp: 2, // contacts column = whatsapp_click
+      phone: 3,
+      web: 1,
+      map: 0,
+      share: 4,
+    });
+  });
+
+  it('zero-fills channelTrend across every day in the range', async () => {
+    stub({
+      current: { views: '1', unique_visitors: '1', whatsapp_contacts: '1', converted_sessions: '0' },
+      trend: [{ date: new Date('2026-06-22T00:00:00Z'), views: '1', contacts: '1', phone: '0', web: '0', map: '0', share: '0' }],
+    });
+    const res = await service.getEntityAnalytics({
+      entityType: 'lodging',
+      entityId: 'l-1',
+      from: '2026-06-20',
+      to: '2026-06-22',
+      townId: 'town-1',
+    });
+    expect(res.channelTrend.map((p) => p.date)).toEqual(['2026-06-20', '2026-06-21', '2026-06-22']);
+    expect(res.channelTrend[0]).toEqual({ date: '2026-06-20', whatsapp: 0, phone: 0, web: 0, map: 0, share: 0 });
+    expect(res.channelTrend[2].whatsapp).toBe(1);
+  });
+
   it('empty range -> geo + tech breakdowns are empty arrays', async () => {
     stub({ current: { views: '0', unique_visitors: '0', whatsapp_contacts: '0', converted_sessions: '0' } });
     const res = await service.getEntityAnalytics({ entityType: 'lodging', entityId: 'l-1', townId: 'town-1' });

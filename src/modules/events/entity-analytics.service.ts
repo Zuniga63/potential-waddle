@@ -40,6 +40,16 @@ export interface EntityAnalyticsCity {
   visitors: number;
 }
 
+// Per-channel interaction clicks per day (zero-filled), for the clicks-over-time chart.
+export interface EntityChannelTrendPoint {
+  date: string; // YYYY-MM-DD
+  whatsapp: number;
+  phone: number;
+  web: number;
+  map: number;
+  share: number;
+}
+
 // Geo + tech breakdowns (quick 260624-n9q). Same `visitors = distinct page_view sessions`
 // metric as byCity, same bot/internal exclusion. Null labels keep Spanish gender:
 // country -> 'Desconocido', department/city -> 'Desconocida', device/browser/os -> 'Desconocido'.
@@ -80,6 +90,7 @@ export interface EntityAnalyticsResponse {
   summary: EntityAnalyticsSummary;
   deltas: EntityAnalyticsDeltas;
   trend: EntityAnalyticsTrendPoint[];
+  channelTrend: EntityChannelTrendPoint[];
   byCity: EntityAnalyticsCity[];
   byCountry: EntityAnalyticsCountry[];
   byDepartment: EntityAnalyticsDepartment[];
@@ -142,11 +153,24 @@ export class EntityAnalyticsService {
       prevTo,
     ])) as AggregateRow[];
 
-    // 3) Daily trend (views + contacts per day), zero-filled across [from, to]
-    const trendRows: { date: Date; views: string; contacts: string }[] = await this.dataSource.query(
+    // 3) Daily trend, zero-filled across [from, to]. Same grouped-by-day query powers BOTH the
+    //    views/contacts trend AND the per-channel clicks-over-time chart (no extra round-trip).
+    const trendRows: {
+      date: Date;
+      views: string;
+      contacts: string;
+      phone: string;
+      web: string;
+      map: string;
+      share: string;
+    }[] = await this.dataSource.query(
       `SELECT DATE(created_at) AS date,
               COUNT(*) FILTER (WHERE event_type = 'page_view')      AS views,
-              COUNT(*) FILTER (WHERE event_type = 'whatsapp_click') AS contacts
+              COUNT(*) FILTER (WHERE event_type = 'whatsapp_click') AS contacts,
+              COUNT(*) FILTER (WHERE event_type = 'phone_click')    AS phone,
+              COUNT(*) FILTER (WHERE event_type = 'web_click')      AS web,
+              COUNT(*) FILTER (WHERE event_type = 'map_click')      AS map,
+              COUNT(*) FILTER (WHERE event_type = 'share')          AS share
          FROM events
         WHERE ${BASE_WHERE}
         GROUP BY DATE(created_at)
@@ -201,6 +225,7 @@ export class EntityAnalyticsService {
         conversionRatePct: signedDelta(summary.conversionRate, prevSummary.conversionRate),
       },
       trend: zeroFillTrend(trendRows, from, to),
+      channelTrend: zeroFillChannelTrend(trendRows, from, to),
       byCity: cityRows.map((r) => ({ city: r.city ?? 'Desconocida', visitors: toInt(r.visitors) })),
       byCountry: (countryRows ?? []).map((r) => ({ country: r.key ?? 'Desconocido', visitors: toInt(r.visitors) })),
       byDepartment: (departmentRows ?? []).map((r) => ({
@@ -348,6 +373,43 @@ function zeroFillTrend(
     const key = ymd(cursor);
     const hit = byDate.get(key);
     out.push({ date: key, views: hit?.views ?? 0, contacts: hit?.contacts ?? 0 });
+    cursor.setDate(cursor.getDate() + 1);
+  }
+  return out;
+}
+
+/** Zero-fill the per-channel daily clicks across [from, to]. `contacts` column = whatsapp_click. */
+function zeroFillChannelTrend(
+  rows: { date: Date | string; contacts: string; phone?: string; web?: string; map?: string; share?: string }[],
+  from: Date,
+  to: Date,
+): EntityChannelTrendPoint[] {
+  const byDate = new Map<string, Omit<EntityChannelTrendPoint, 'date'>>();
+  for (const r of rows) {
+    const key = r.date instanceof Date ? ymd(r.date) : ymd(new Date(r.date));
+    byDate.set(key, {
+      whatsapp: toInt(r.contacts),
+      phone: toInt(r.phone),
+      web: toInt(r.web),
+      map: toInt(r.map),
+      share: toInt(r.share),
+    });
+  }
+
+  const out: EntityChannelTrendPoint[] = [];
+  const cursor = startOfDay(ymd(from));
+  const last = startOfDay(ymd(to));
+  while (cursor <= last) {
+    const key = ymd(cursor);
+    const hit = byDate.get(key);
+    out.push({
+      date: key,
+      whatsapp: hit?.whatsapp ?? 0,
+      phone: hit?.phone ?? 0,
+      web: hit?.web ?? 0,
+      map: hit?.map ?? 0,
+      share: hit?.share ?? 0,
+    });
     cursor.setDate(cursor.getDate() + 1);
   }
   return out;
