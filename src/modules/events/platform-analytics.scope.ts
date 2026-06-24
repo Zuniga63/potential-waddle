@@ -26,6 +26,10 @@ export interface PlatformScope {
   // null = ALL towns (super-admin, no filter). A non-null array scopes the query to those town ids
   // (or, for a super-admin's single requested slug/id, the raw requestedTown the service resolves).
   townIds: string[] | null;
+  // true ONLY when a super-admin passed a single `town` value that may be a slug needing slug->id
+  // resolution. For forced town-admin scopes this is false (their towns are already concrete ids),
+  // so the service never misinterprets a forced town id as a slug.
+  resolveSlug: boolean;
 }
 
 export function resolvePlatformScope(user: PlatformScopeUser, requestedTown?: string): PlatformScope {
@@ -33,9 +37,9 @@ export function resolvePlatformScope(user: PlatformScopeUser, requestedTown?: st
   if (user?.isSuperUser === true) {
     if (requestedTown) {
       // Keep the raw value; the service resolves slug -> id before querying. Bound param only.
-      return { townIds: [requestedTown] };
+      return { townIds: [requestedTown], resolveSlug: true };
     }
-    return { townIds: null }; // ALL towns — no town predicate.
+    return { townIds: null, resolveSlug: false }; // ALL towns — no town predicate.
   }
 
   // Town-admin: FORCE their own towns; IGNORE requestedTown entirely (never read it — IDOR gate).
@@ -46,5 +50,5 @@ export function resolvePlatformScope(user: PlatformScopeUser, requestedTown?: st
     throw new ForbiddenException('No tienes acceso a las analíticas de plataforma');
   }
 
-  return { townIds: ownTownIds };
+  return { townIds: ownTownIds, resolveSlug: false };
 }
