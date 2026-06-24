@@ -9,6 +9,7 @@ import { GeoipRefreshCron } from './geoip-refresh.cron';
 import { EventsCanaryCron } from './events-canary.cron';
 import { EntityAnalyticsService } from './entity-analytics.service';
 import { EntityOwnershipResolver } from './entity-ownership.resolver';
+import { PlatformAnalyticsService } from './platform-analytics.service';
 import { Event } from './entities';
 import { User } from '../users/entities';
 
@@ -26,6 +27,7 @@ import { User } from '../users/entities';
     EventsCanaryCron,
     EntityAnalyticsService,
     EntityOwnershipResolver,
+    PlatformAnalyticsService,
   ],
   exports: [EventsService],
 })

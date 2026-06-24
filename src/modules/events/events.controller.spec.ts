@@ -20,7 +20,7 @@ describe('EventsController.getEntityAnalytics (BIZ-08 — IDOR gate)', () => {
   beforeEach(() => {
     ownership = { assertCanRead: jest.fn() };
     analytics = { getEntityAnalytics: jest.fn().mockResolvedValue(SHAPE) };
-    controller = new EventsController({} as any, ownership as any, analytics as any);
+    controller = new EventsController({} as any, ownership as any, analytics as any, {} as any);
   });
 
   it('owner -> 200 with summary/deltas/trend/byCity/byChannel keys', async () => {
@@ -48,5 +48,47 @@ describe('EventsController.getEntityAnalytics (BIZ-08 — IDOR gate)', () => {
     });
     await controller.getEntityAnalytics(QUERY, OWNER);
     expect(order).toEqual(['assertCanRead', 'getEntityAnalytics']);
+  });
+});
+
+// ------------------------------------------------------------------------------------------------
+// PLAT-04 controller wiring: resolvePlatformScope (the IDOR gate) runs BEFORE the query.
+//   - town-admin with town='other' -> service called with townIds forced to OWN town (not other)
+//   - super-admin, no town -> service called with townIds null (all towns)
+//   - non-super with no towns -> ForbiddenException; the service is NEVER called
+// ------------------------------------------------------------------------------------------------
+describe('EventsController.getPlatformAnalytics (PLAT-04 — IDOR gate)', () => {
+  let controller: EventsController;
+  let platform: { getPlatformAnalytics: jest.Mock };
+
+  const SHAPE = { range: {}, topSearches: [], zeroResultSearches: [], traffic: [], topEntities: [], funnel: [] };
+
+  beforeEach(() => {
+    platform = { getPlatformAnalytics: jest.fn().mockResolvedValue(SHAPE) };
+    // positional ctor: (events, ownership, entityAnalytics, platformAnalytics)
+    controller = new EventsController({} as any, {} as any, {} as any, platform as any);
+  });
+
+  it('town-admin passing town=town-2 -> service receives townIds [town-1] (forced own town, IDOR)', async () => {
+    const TOWN_ADMIN = { id: 'u-ta', isSuperUser: false, towns: [{ id: 'town-1' }] } as any;
+    await controller.getPlatformAnalytics({ town: 'town-2' } as any, TOWN_ADMIN);
+    expect(platform.getPlatformAnalytics).toHaveBeenCalledWith(
+      expect.objectContaining({ townIds: ['town-1'], resolveSlug: false }),
+    );
+    // the other town's id must never reach the service.
+    const arg = platform.getPlatformAnalytics.mock.calls[0][0];
+    expect(arg.townIds).not.toContain('town-2');
+  });
+
+  it('super-admin with no town -> service receives townIds null (all towns)', async () => {
+    const SUPER = { id: 'u-super', isSuperUser: true, towns: [] } as any;
+    await controller.getPlatformAnalytics({} as any, SUPER);
+    expect(platform.getPlatformAnalytics).toHaveBeenCalledWith(expect.objectContaining({ townIds: null }));
+  });
+
+  it('non-super with no towns -> ForbiddenException; the service is NEVER called', async () => {
+    const NO_TOWNS = { id: 'u-x', isSuperUser: false, towns: [] } as any;
+    await expect(controller.getPlatformAnalytics({} as any, NO_TOWNS)).rejects.toBeInstanceOf(ForbiddenException);
+    expect(platform.getPlatformAnalytics).not.toHaveBeenCalled();
   });
 });

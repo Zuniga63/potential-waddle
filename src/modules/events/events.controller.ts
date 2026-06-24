@@ -5,10 +5,12 @@ import { Auth, OptionalAuth } from '../auth/decorators';
 import { GetUser } from '../common/decorators';
 import { TenantId } from '../tenant/tenant.decorator';
 import { User } from '../users/entities';
-import { CreateEventDto, EntityAnalyticsQueryDto } from './dto';
+import { CreateEventDto, EntityAnalyticsQueryDto, PlatformAnalyticsQueryDto } from './dto';
 import { EventsService } from './events.service';
 import { EntityOwnershipResolver } from './entity-ownership.resolver';
 import { EntityAnalyticsService, EntityAnalyticsResponse } from './entity-analytics.service';
+import { PlatformAnalyticsService, PlatformAnalyticsResponse } from './platform-analytics.service';
+import { resolvePlatformScope } from './platform-analytics.scope';
 
 @ApiTags('Events')
 @Controller('events') // real path is /api/events due to the global 'api' prefix (Pitfall 6)
@@ -17,6 +19,7 @@ export class EventsController {
     private readonly events: EventsService,
     private readonly ownership: EntityOwnershipResolver,
     private readonly entityAnalytics: EntityAnalyticsService,
+    private readonly platformAnalytics: PlatformAnalyticsService,
   ) {}
 
   @Post()
@@ -51,5 +54,25 @@ export class EventsController {
   ): Promise<EntityAnalyticsResponse> {
     const { townId } = await this.ownership.assertCanRead(query.entityType, query.entityId, user);
     return this.entityAnalytics.getEntityAnalytics({ ...query, townId });
+  }
+
+  // PLAT-01..04: platform analytics read. @Auth() => 401 without a valid Bearer (never public).
+  // The IDOR gate (resolvePlatformScope) runs BEFORE any data query: a town-admin is FORCED to
+  // their own towns and can never read another town; a non-super user with no towns gets 403
+  // (T-18-01/02). super-admin sees all towns or filters by `town`.
+  @Get('analytics/platform') // real path /api/events/analytics/platform (global 'api' prefix)
+  @Auth()
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Platform analytics for the /admin/analytics dashboard (auth + admin-scoped)' })
+  @ApiResponse({ status: 200, description: 'Platform aggregates scoped to the caller' })
+  @ApiForbiddenResponse({ description: 'Non-super caller with no towns has no platform access' })
+  async getPlatformAnalytics(
+    @Query() query: PlatformAnalyticsQueryDto,
+    @GetUser() user: User,
+  ): Promise<PlatformAnalyticsResponse> {
+    // Gate runs BEFORE the query (mirrors assertCanRead ordering). A town-admin's `query.town` is
+    // ignored here — scope is forced to their own towns. Throws ForbiddenException for no-town non-super.
+    const { townIds, resolveSlug } = resolvePlatformScope(user, query.town);
+    return this.platformAnalytics.getPlatformAnalytics({ from: query.from, to: query.to, townIds, resolveSlug });
   }
 }
