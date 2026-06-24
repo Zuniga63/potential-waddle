@@ -46,11 +46,13 @@ function fail(msg, err) {
 function download(url, auth, dest, redirects = 0) {
   return new Promise((resolve, reject) => {
     if (redirects > 5) return reject(new Error('too many redirects'));
-    const req = https.get(url, { headers: { Authorization: `Basic ${auth}` } }, (res) => {
-      // MaxMind serves the file via a redirect to a signed URL.
+    const req = https.get(url, { headers: auth ? { Authorization: `Basic ${auth}` } : {} }, (res) => {
+      // MaxMind serves the file via a redirect to a signed (S3) URL that carries its own auth
+      // in the query string — re-sending our Basic header to it makes S3 reject with 401.
+      // Drop the auth on redirect (mirrors curl's cross-host behaviour).
       if (res.statusCode && res.statusCode >= 300 && res.statusCode < 400 && res.headers.location) {
         res.resume();
-        return resolve(download(res.headers.location, auth, dest, redirects + 1));
+        return resolve(download(res.headers.location, null, dest, redirects + 1));
       }
       if (res.statusCode !== 200) {
         res.resume();
