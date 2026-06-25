@@ -1,0 +1,162 @@
+import { Injectable, Logger } from '@nestjs/common';
+import { HttpService } from '@nestjs/axios';
+import { ConfigService } from '@nestjs/config';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
+import { lastValueFrom } from 'rxjs';
+import { Lodging } from 'src/modules/lodgings/entities/lodging.entity';
+import { Restaurant } from 'src/modules/restaurants/entities/restaurant.entity';
+import { Commerce } from 'src/modules/commerce/entities/commerce.entity';
+import { EnvironmentVariables } from 'src/config/app-config';
+
+type ResolvableEntity = Lodging | Restaurant | Commerce;
+
+/**
+ * Returns a Google Maps URL from a place_id.
+ * // NEEDS-VERIFICATION against Apify actor — verify that
+ * // `https://www.google.com/maps/place/?q=place_id:{id}` is accepted as a
+ * // startUrl by the compass~Google-Maps-Reviews-Scraper actor before using
+ * // this helper in production sync flows.
+ */
+export function placeIdToMapsUrl(placeId: string): string {
+  return `https://www.google.com/maps/place/?q=place_id:${placeId}`;
+}
+
+@Injectable()
+export class PlaceIdResolverService {
+  private readonly logger = new Logger(PlaceIdResolverService.name);
+  private readonly placesApiKey: string | undefined;
+  private readonly placesSearchUrl = 'https://places.googleapis.com/v1/places:searchText';
+
+  constructor(
+    private readonly httpService: HttpService,
+    configService: ConfigService<EnvironmentVariables>,
+    @InjectRepository(Lodging)
+    private readonly lodgingRepository: Repository<Lodging>,
+    @InjectRepository(Restaurant)
+    private readonly restaurantRepository: Repository<Restaurant>,
+    @InjectRepository(Commerce)
+    private readonly commerceRepository: Repository<Commerce>,
+  ) {
+    this.placesApiKey = configService.get('googlePlaces.apiKey', { infer: true });
+  }
+
+  /**
+   * Resolves a Google place_id for the given entity using a three-step strategy:
+   *  1. Return cached googleMapsId if already set (no API call).
+   *  2. Extract place_id from the entity's googleMapsUrl via Places text search.
+   *  3. Build a multi-tenant text query: "{name}, {town}, {department}, Colombia".
+   * Throws 'place_id_not_resolvable' when none of the above succeeds.
+   *
+   * @param entity   The business entity to resolve.
+   * @param entityType  Discriminates the repository used for persisting the resolved id.
+   */
+  async resolve(entity: ResolvableEntity, entityType: 'lodging' | 'restaurant' | 'commerce' = 'lodging'): Promise<string> {
+    // Step 1: Cache hit — return the stored place_id immediately
+    if (entity.googleMapsId) {
+      return entity.googleMapsId;
+    }
+
+    // Step 2: Extract from URL
+    if (entity.googleMapsUrl) {
+      const placeId = await this.extractFromUrl(entity.googleMapsUrl);
+      if (placeId) {
+        await this.persistPlaceId(entity, placeId, entityType);
+        return placeId;
+      }
+    }
+
+    // Step 3: Multi-tenant text search using real town + department
+    const town = (entity as ResolvableEntity & { town?: { name?: string; department?: { name?: string } } }).town;
+    if (town?.name && town?.department?.name) {
+      const textQuery = `${entity.name}, ${town.name}, ${town.department.name}, Colombia`;
+      const placeId = await this.searchByText(textQuery);
+      if (placeId) {
+        await this.persistPlaceId(entity, placeId, entityType);
+        return placeId;
+      }
+    }
+
+    throw new Error('place_id_not_resolvable');
+  }
+
+  // ---------------------------------------------------------------------------
+  // Private helpers
+  // ---------------------------------------------------------------------------
+
+  private async extractFromUrl(googleMapsUrl: string): Promise<string | null> {
+    try {
+      const response = await lastValueFrom(
+        this.httpService.post(
+          this.placesSearchUrl,
+          { textQuery: googleMapsUrl },
+          {
+            headers: {
+              'Content-Type': 'application/json',
+              'X-Goog-Api-Key': this.placesApiKey,
+              'X-Goog-FieldMask': 'places.id',
+            },
+          },
+        ),
+      );
+
+      if (response.data.places && response.data.places.length > 0) {
+        this.logger.log(`Place ID extracted from URL: ${response.data.places[0].id}`);
+        return response.data.places[0].id as string;
+      }
+
+      this.logger.warn(`No place_id found for URL: ${googleMapsUrl}`);
+      return null;
+    } catch (error) {
+      this.logger.error(`Error extracting place_id from URL: ${error.message}`);
+      return null;
+    }
+  }
+
+  private async searchByText(textQuery: string): Promise<string | null> {
+    try {
+      const response = await lastValueFrom(
+        this.httpService.post(
+          this.placesSearchUrl,
+          { textQuery },
+          {
+            headers: {
+              'Content-Type': 'application/json',
+              'X-Goog-Api-Key': this.placesApiKey,
+              'X-Goog-FieldMask': 'places.id',
+            },
+          },
+        ),
+      );
+
+      if (response.data.places && response.data.places.length > 0) {
+        this.logger.log(`Place ID found by text search: ${response.data.places[0].id}`);
+        return response.data.places[0].id as string;
+      }
+
+      this.logger.warn(`No place_id found for text query: ${textQuery}`);
+      return null;
+    } catch (error) {
+      this.logger.error(`Error searching place_id by text: ${error.message}`);
+      return null;
+    }
+  }
+
+  private async persistPlaceId(
+    entity: ResolvableEntity,
+    placeId: string,
+    entityType: 'lodging' | 'restaurant' | 'commerce',
+  ): Promise<void> {
+    entity.googleMapsId = placeId;
+
+    if (entityType === 'lodging') {
+      await this.lodgingRepository.save(entity as Lodging);
+    } else if (entityType === 'restaurant') {
+      await this.restaurantRepository.save(entity as Restaurant);
+    } else if (entityType === 'commerce') {
+      await this.commerceRepository.save(entity as Commerce);
+    }
+
+    this.logger.log(`Cached place_id ${placeId} for entity ${entity.id}`);
+  }
+}
