@@ -54,6 +54,7 @@ export class TransportDto {
   categories?: CategoryDto[];
   paymentMethods?: string[];
   isPublic?: boolean;
+  forcedPublic?: boolean;
   userReview?: string;
 
   /**
@@ -111,6 +112,7 @@ export class TransportDto {
     this.categories = data.categories?.map(category => new CategoryDto(category));
     this.paymentMethods = data.paymentMethods || [];
     this.isPublic = data.isPublic;
+    this.forcedPublic = data.forcedPublic;
     this.rating = data.rating ?? 0;
     this.reviewCount = data.reviewCount ?? 0;
     this.showBinntuReviews = data.showBinntuReviews ?? undefined;

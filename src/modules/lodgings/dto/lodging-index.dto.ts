@@ -161,6 +161,8 @@ export class LodgingIndexDto {
   })
   isPublic: boolean;
 
+  forcedPublic: boolean;
+
   @ApiProperty({
     example: true,
     description:
@@ -309,6 +311,7 @@ export class LodgingIndexDto {
     this.openingHours = lodging.openingHours || undefined;
     this.urbanCenterDistance = lodging.urbanCenterDistance || 0;
     this.isPublic = lodging.isPublic;
+    this.forcedPublic = lodging.forcedPublic;
     this.longitude = lodging.location?.coordinates[0] || 0;
     this.latitude = lodging.location?.coordinates[1] || 0;
     this.whatsappNumbers = lodging.whatsappNumbers || [];

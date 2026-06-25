@@ -191,6 +191,7 @@ export class GuideDto {
   categories?: CategoryDto[];
   experiences?: GuideExperienceDto[];
   isPublic?: boolean;
+  forcedPublic?: boolean;
   userReview?: string;
 
   /**
@@ -274,6 +275,7 @@ export class GuideDto {
     this.towns = data.towns?.map(town => new TownDto(town));
     this.experiences = data.experiences?.map(experience => new GuideExperienceDto({ data: experience })) || [];
     this.isPublic = data.isPublic;
+    this.forcedPublic = data.forcedPublic;
     this.rating = data.rating ?? 0;
     this.reviewCount = data.reviewCount ?? 0;
     this.showBinntuReviews = data.showBinntuReviews ?? undefined;

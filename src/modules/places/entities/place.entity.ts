@@ -151,6 +151,11 @@ export class Place {
   @Column('boolean', { default: true, name: 'is_public' })
   isPublic: boolean;
 
+  // forced_public: cuando true, el super admin fuerza la visibilidad pública,
+  // saltándose isPublic (se aplica con OR en la query pública).
+  @Column('boolean', { name: 'forced_public', default: false })
+  forcedPublic: boolean;
+
   @CreateDateColumn({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP', name: 'created_at' })
   createdAt: Date;
 

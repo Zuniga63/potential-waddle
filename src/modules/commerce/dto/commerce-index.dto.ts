@@ -180,6 +180,8 @@ export class CommerceIndexDto {
   })
   isPublic: boolean;
 
+  forcedPublic: boolean;
+
   @ApiProperty({
     example: true,
     description:
@@ -290,6 +292,7 @@ export class CommerceIndexDto {
     this.googleMapsUrl = commerce.googleMapsUrl;
     this.userId = commerce.user?.id || '';
     this.isPublic = commerce.isPublic;
+    this.forcedPublic = commerce.forcedPublic;
     this.longitude = commerce.location?.coordinates[0] || 0;
     this.latitude = commerce.location?.coordinates[1] || 0;
     this.googleMapsRating = commerce.googleMapsRating || undefined;

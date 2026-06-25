@@ -75,6 +75,8 @@ export class ExperienceIndexDto {
 
   isPublic: boolean;
 
+  forcedPublic: boolean;
+
   hasPromotions?: boolean;
 
   latestPromotionValue?: number;
@@ -133,6 +135,7 @@ export class ExperienceIndexDto {
 
     this.town = new TownDto(data.town);
     this.isPublic = data.isPublic;
+    this.forcedPublic = data.forcedPublic;
     this.paymentMethods = data.paymentMethods || [];
     this.showBinntuReviews = data.showBinntuReviews ?? undefined;
     this.userReview = userReview;

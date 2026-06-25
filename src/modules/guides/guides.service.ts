@@ -204,9 +204,7 @@ export class GuidesService {
     const { where, order } = generateGuideQueryFilters(filters);
 
     const subscribedIds = await this.subscriptionsService.getActiveSubscribedEntityIds('guide');
-    if (subscribedIds.length === 0) {
-      return { currentPage: page, pages: 0, count: 0, data: [] };
-    }
+    // Sin early-return: aunque no haya suscripciones, los forced_public deben mostrarse.
 
     const relations: FindOptionsRelations<Guide> = {
       categories: { icon: true },
@@ -222,12 +220,13 @@ export class GuidesService {
         take: limit,
         relations,
         order,
-        where: {
-          ...where,
-          isPublic: true,
-          status: 'published',
-          id: In(subscribedIds),
-        },
+        where:
+          subscribedIds.length > 0
+            ? [
+                { ...where, isPublic: true, status: 'published', id: In(subscribedIds) },
+                { ...where, forcedPublic: true },
+              ]
+            : [{ ...where, forcedPublic: true }],
       }),
       user
         ? this.entityReviewsService.getUserReviews({

@@ -162,10 +162,10 @@ export class PlacesService {
       this.placeRepo.find({
         relations,
         order,
-        where: {
-          ...where,
-          isPublic: true,
-        },
+        where: [
+          { ...where, isPublic: true },
+          { ...where, forcedPublic: true },
+        ],
       }),
       user ? this.placeReviewService.getUserReviews({ userId: user.id }) : Promise.resolve<Review[]>([]),
     ]);

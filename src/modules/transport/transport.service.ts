@@ -264,9 +264,7 @@ export class TransportService {
     const { where, order } = generateTransportQueryFiltersAndSort(filters);
 
     const subscribedIds = await this.subscriptionsService.getActiveSubscribedEntityIds('transport');
-    if (subscribedIds.length === 0) {
-      return new TransportListDto({ currentPage: page, pages: 0, count: 0 }, []);
-    }
+    // Sin early-return: aunque no haya suscripciones, los forced_public deben mostrarse.
 
     // Obtener transports y reviews del usuario en paralelo
     const [result, userReviews] = await Promise.all([
@@ -275,12 +273,13 @@ export class TransportService {
         take: limit,
         relations: { categories: { icon: true }, town: { department: true }, user: true },
         order,
-        where: {
-          ...where,
-          isPublic: true,
-          status: 'published',
-          id: In(subscribedIds),
-        },
+        where:
+          subscribedIds.length > 0
+            ? [
+                { ...where, isPublic: true, status: 'published', id: In(subscribedIds) },
+                { ...where, forcedPublic: true },
+              ]
+            : [{ ...where, forcedPublic: true }],
       }),
       user
         ? this.entityReviewsService.getUserReviews({

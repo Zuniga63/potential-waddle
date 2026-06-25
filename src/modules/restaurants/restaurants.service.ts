@@ -177,19 +177,20 @@ export class RestaurantsService {
     const { where, order } = generateRestaurantQueryFiltersAndSort(filters);
 
     const subscribedIds = await this.subscriptionsService.getActiveSubscribedEntityIds('restaurant');
-    if (subscribedIds.length === 0) return [];
+    // Sin early-return: aunque no haya suscripciones, los forced_public deben mostrarse.
 
     // Obtener restaurants y reviews del usuario en paralelo
     const [restaurants, userReviews] = await Promise.all([
       this.restaurantRepository.find({
         relations: { town: { department: true }, categories: { icon: true }, images: { imageResource: true } },
         order,
-        where: {
-          ...where,
-          isPublic: true,
-          status: 'published',
-          id: In(subscribedIds),
-        },
+        where:
+          subscribedIds.length > 0
+            ? [
+                { ...where, isPublic: true, status: 'published', id: In(subscribedIds) },
+                { ...where, forcedPublic: true },
+              ]
+            : [{ ...where, forcedPublic: true }],
       }),
       user
         ? this.entityReviewsService.getUserReviews({

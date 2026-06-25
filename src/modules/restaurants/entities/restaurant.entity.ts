@@ -142,6 +142,9 @@ export class Restaurant {
   @Column('text', { name: 'how_to_get_there', nullable: true })
   howToGetThere: string | null;
 
+  @Column('text', { name: 'arrival_reference', nullable: true })
+  arrivalReference: string | null;
+
   @Column('text', { name: 'town_zone', nullable: true })
   townZone: string | null;
 
@@ -153,6 +156,11 @@ export class Restaurant {
 
   @Column('boolean', { default: true, name: 'is_public' })
   isPublic: boolean;
+
+  // forced_public: cuando true, el super admin fuerza la visibilidad pública,
+  // saltándose status / suscripción (se aplica con OR en la query pública).
+  @Column('boolean', { name: 'forced_public', default: false })
+  forcedPublic: boolean;
 
   @Column('float', { name: 'google_maps_rating', nullable: true })
   googleMapsRating: number | null;

@@ -80,6 +80,8 @@ export class RestaurantDto {
 
   howToGetThere?: string;
 
+  arrivalReference?: string;
+
   townZone?: string;
 
   town?: TownDto;
@@ -186,6 +188,7 @@ export class RestaurantDto {
     this.urbanCenterDistance = data.urbanCenterDistance ?? 0;
     this.googleMapsUrl = data.googleMapsUrl ?? undefined;
     this.howToGetThere = data.howToGetThere ?? undefined;
+    this.arrivalReference = data.arrivalReference ?? undefined;
     this.townZone = data.townZone ?? undefined;
     this.town = data.town ? new TownDto(data.town) : undefined;
     this.place = data.place ? new PlaceDto(data.place) : undefined;

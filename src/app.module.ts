@@ -40,6 +40,7 @@ import { SubscriptionsModule } from './modules/subscriptions/subscriptions.modul
 import { AnalyticsModule } from './modules/analytics/analytics.module';
 import { TermsModule } from './modules/terms/terms.module';
 import { NotificationsModule } from './modules/notifications/notifications.module';
+import { ForcedPublicModule } from './modules/forced-public/forced-public.module';
 
 @Module({
   imports: [
@@ -91,6 +92,7 @@ import { NotificationsModule } from './modules/notifications/notifications.modul
     AnalyticsModule,
     TermsModule,
     NotificationsModule,
+    ForcedPublicModule,
   ],
   controllers: [],
   providers: [

@@ -121,6 +121,11 @@ export class Guide {
   @Column('boolean', { name: 'is_public', nullable: false, default: true })
   isPublic: boolean;
 
+  // forced_public: cuando true, el super admin fuerza la visibilidad pública,
+  // saltándose status / suscripción (se aplica con OR en la query pública).
+  @Column('boolean', { name: 'forced_public', default: false })
+  forcedPublic: boolean;
+
   @Column('boolean', { name: 'show_binntu_reviews', default: true })
   showBinntuReviews: boolean;
 

@@ -186,7 +186,7 @@ export class ExperiencesService {
 
     // Gating inherits from guide: see findAll for the full reasoning.
     const subscribedGuideIds = await this.subscriptionsService.getActiveSubscribedEntityIds('guide');
-    if (subscribedGuideIds.length === 0) return [];
+    // Sin early-return: aunque no haya suscripciones, los forced_public deben mostrarse.
 
     // Fetch experiences and user reviews in parallel
     const [experiences, userReviews] = await Promise.all([
@@ -198,12 +198,18 @@ export class ExperiencesService {
           guide: true,
         },
         order,
-        where: {
-          ...where,
-          isPublic: true,
-          status: 'published',
-          guide: { id: In(subscribedGuideIds), status: 'published', isPublic: true },
-        },
+        where:
+          subscribedGuideIds.length > 0
+            ? [
+                {
+                  ...where,
+                  isPublic: true,
+                  status: 'published',
+                  guide: { id: In(subscribedGuideIds), status: 'published', isPublic: true },
+                },
+                { ...where, forcedPublic: true },
+              ]
+            : [{ ...where, forcedPublic: true }],
       }),
       user
         ? this.entityReviewsService.getUserReviews({

@@ -204,9 +204,9 @@ export class LodgingsService {
     const shouldRandomize = filters?.sortBy === 'random';
     const { where, order } = generateLodgingQueryFilters(filters);
 
-    // Active-subscription gate.
+    // Active-subscription gate. forced_public (super admin) la salta.
     const subscribedIds = await this.subscriptionsService.getActiveSubscribedEntityIds('lodging');
-    if (subscribedIds.length === 0) return [];
+    // Sin early-return: aunque no haya suscripciones, los forced_public deben mostrarse.
 
     // Obtener lodgings y reviews del usuario en paralelo
     const [lodgings, userReviews] = await Promise.all([
@@ -217,12 +217,13 @@ export class LodgingsService {
           images: { imageResource: true },
         },
         order,
-        where: {
-          ...where,
-          status: 'published' as const,
-          isPublic: true,
-          id: In(subscribedIds),
-        },
+        where:
+          subscribedIds.length > 0
+            ? [
+                { ...where, status: 'published' as const, isPublic: true, id: In(subscribedIds) },
+                { ...where, forcedPublic: true },
+              ]
+            : [{ ...where, forcedPublic: true }],
       }),
       user
         ? this.entityReviewsService.getUserReviews({

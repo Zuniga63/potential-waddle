@@ -177,7 +177,7 @@ export class CommerceService {
     const { where, order } = generateCommerceQueryFiltersAndSort(filters);
 
     const subscribedIds = await this.subscriptionsService.getActiveSubscribedEntityIds('commerce');
-    if (subscribedIds.length === 0) return [];
+    // Sin early-return: aunque no haya suscripciones, los forced_public deben mostrarse.
 
     // Obtener commerces y reviews del usuario en paralelo
     const [commerces, userReviews] = await Promise.all([
@@ -188,12 +188,13 @@ export class CommerceService {
           images: { imageResource: true },
           user: true,
         },
-        where: {
-          ...where,
-          isPublic: true,
-          status: 'published',
-          id: In(subscribedIds),
-        },
+        where:
+          subscribedIds.length > 0
+            ? [
+                { ...where, isPublic: true, status: 'published', id: In(subscribedIds) },
+                { ...where, forcedPublic: true },
+              ]
+            : [{ ...where, forcedPublic: true }],
         order,
       }),
       user

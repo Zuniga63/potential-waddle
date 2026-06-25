@@ -68,6 +68,8 @@ export class RestaurantIndexDto {
 
   isPublic: boolean;
 
+  forcedPublic: boolean;
+
   userId?: string;
 
   /**
@@ -140,6 +142,7 @@ export class RestaurantIndexDto {
     this.categories = data.categories ? data.categories.map(c => new CategoryDto(c)) : [];
     this.facilities = data.facilities ? data.facilities.map(f => new FacilityDto(f)) : [];
     this.isPublic = data.isPublic;
+    this.forcedPublic = data.forcedPublic;
     this.userId = data.user?.id ?? undefined;
     this.paymentMethods = data.paymentMethods ?? [];
     this.googleMapsRating = data.googleMapsRating ?? undefined;

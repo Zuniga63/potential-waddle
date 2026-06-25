@@ -217,6 +217,16 @@ export class CreateRestaurantDto {
   howToGetThere?: string;
 
   @ApiProperty({
+    description: 'Short reference point near the restaurant ("Punto de referencia")',
+    example: 'Frente al parque principal',
+    required: false,
+  })
+  @IsString()
+  @IsOptional()
+  @MaxLength(1000)
+  arrivalReference?: string;
+
+  @ApiProperty({
     description: 'Zone within the town',
     example: 'Beachfront',
     required: false,
