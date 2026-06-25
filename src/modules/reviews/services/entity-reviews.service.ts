@@ -92,10 +92,11 @@ export class EntityReviewsService {
   ) {
     // Initialize Gemini
     const geminiApiKey = configService.get<string>('GEMINI_API_KEY');
+    const geminiModelName = configService.get<string>('GEMINI_MODEL') ?? 'gemini-2.5-flash-lite';
     if (geminiApiKey) {
       const genAI = new GoogleGenerativeAI(geminiApiKey);
       this.geminiModel = genAI.getGenerativeModel({
-        model: 'gemini-2.0-flash',
+        model: geminiModelName,
         generationConfig: {
           temperature: 0.7,
           maxOutputTokens: 8000,
@@ -716,7 +717,7 @@ export class EntityReviewsService {
     const prompt = `${reviewAnalysisPrompt}\n\n## RESEÑAS A ANALIZAR (${reviews.length} total):\n${contextMessage}`;
 
     // Send to Gemini
-    this.logger.log(`🤖 Sending request to GEMINI 2.0 Flash...`);
+    this.logger.log(`🤖 Sending request to Gemini...`);
     const result = await this.geminiModel.generateContent(prompt);
     const responseText = result.response.text();
     this.logger.log(`✅ GEMINI response received (${responseText.length} chars)`);

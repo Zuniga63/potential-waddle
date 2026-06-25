@@ -53,10 +53,11 @@ export class GooglePlacesService {
 
     // Initialize Gemini AI
     const geminiApiKey = configService.get<string>('gemini.apiKey', { infer: true });
+    const geminiModelName = configService.get<string>('gemini.model', { infer: true }) ?? 'gemini-2.5-flash-lite';
     if (geminiApiKey) {
       const genAI = new GoogleGenerativeAI(geminiApiKey);
       this.geminiModel = genAI.getGenerativeModel({
-        model: 'gemini-2.0-flash',
+        model: geminiModelName,
         generationConfig: {
           temperature: 0.7,
           maxOutputTokens: 8000,

@@ -13,6 +13,7 @@ export class LlmService {
   private readonly logger = new Logger(LlmService.name);
   private readonly genAI: GoogleGenerativeAI;
   private readonly model: GenerativeModel;
+  private readonly geminiModelName: string;
 
   constructor(private readonly configService: ConfigService) {
     const apiKey = this.configService.get<string>('GEMINI_API_KEY');
@@ -20,9 +21,10 @@ export class LlmService {
       throw new Error('GEMINI_API_KEY is not configured');
     }
 
+    this.geminiModelName = this.configService.get<string>('GEMINI_MODEL') ?? 'gemini-2.5-flash-lite';
     this.genAI = new GoogleGenerativeAI(apiKey);
     this.model = this.genAI.getGenerativeModel({
-      model: 'gemini-2.0-flash',
+      model: this.geminiModelName,
       generationConfig: {
         temperature: 0.1,
         responseMimeType: 'application/json',
@@ -77,7 +79,7 @@ export class LlmService {
 
     try {
       const chatModel = this.genAI.getGenerativeModel({
-        model: 'gemini-2.0-flash',
+        model: this.geminiModelName,
         generationConfig: {
           temperature: 0.7,
           maxOutputTokens: 1024,
@@ -245,7 +247,7 @@ Respond naturally in Spanish. Do NOT include JSON or technical information.`;
   ): Promise<string> {
     try {
       const chatModel = this.genAI.getGenerativeModel({
-        model: 'gemini-2.0-flash',
+        model: this.geminiModelName,
         generationConfig: {
           temperature: 0.7,
           maxOutputTokens: 1024,
