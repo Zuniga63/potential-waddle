@@ -492,7 +492,10 @@ export class RestaurantsService {
 
     // Published guard — draft/pending/rejected restaurants must not leak to public pages.
     let restaurant = await this.restaurantRepository.findOne({
-      where: { slug, status: 'published' },
+      where: [
+        { slug, status: 'published' },
+        { slug, forcedPublic: true },
+      ],
       relations,
       order: { images: { order: 'ASC' } },
     });

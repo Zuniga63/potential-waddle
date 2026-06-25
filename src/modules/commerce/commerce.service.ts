@@ -452,7 +452,10 @@ export class CommerceService {
 
     // Published guard — draft / pending_review / rejected commerces must not leak to public pages.
     let commerce = await this.commerceRepository.findOne({
-      where: { slug, status: 'published' },
+      where: [
+        { slug, status: 'published' },
+        { slug, forcedPublic: true },
+      ],
       relations,
       order: {
         images: { order: 'ASC' },

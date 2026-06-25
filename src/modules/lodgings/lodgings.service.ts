@@ -412,7 +412,10 @@ export class LodgingsService {
     };
 
     let lodging = await this.lodgingRespository.findOne({
-      where: { slug, status: 'published' },
+      where: [
+        { slug, status: 'published' },
+        { slug, forcedPublic: true },
+      ],
       relations,
       order: {
         images: { order: 'ASC' },
