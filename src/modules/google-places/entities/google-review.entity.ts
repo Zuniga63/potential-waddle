@@ -2,6 +2,7 @@ import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, Index } from 
 
 @Entity()
 @Index(['entityType', 'entityId'])
+@Index('UQ_google_review_review_id', ['reviewId'], { unique: true, where: '"review_id" IS NOT NULL' })
 export class GoogleReview {
   @PrimaryGeneratedColumn()
   id: number;
@@ -32,9 +33,6 @@ export class GoogleReview {
 
   @CreateDateColumn({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP', name: 'created_at' })
   createdAt: Date;
-
-  @Column({ name: 'pinecone_id', nullable: true })
-  pineconeId: string;
 
   @CreateDateColumn({ name: 'updated_at', default: () => 'CURRENT_TIMESTAMP', onUpdate: 'CURRENT_TIMESTAMP' })
   updatedAt: Date;

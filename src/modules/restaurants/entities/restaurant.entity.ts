@@ -180,6 +180,9 @@ export class Restaurant {
   @Column('text', { name: 'google_maps_name', nullable: true })
   googleMapsName: string | null;
 
+  @Column({ name: 'last_google_sync_at', type: 'timestamptz', nullable: true })
+  lastGoogleSyncAt: Date | null;
+
   @CreateDateColumn({ name: 'updated_at', default: () => 'CURRENT_TIMESTAMP', onUpdate: 'CURRENT_TIMESTAMP' })
   updatedAt: Date;
 

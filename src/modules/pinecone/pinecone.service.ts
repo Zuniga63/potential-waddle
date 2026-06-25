@@ -54,8 +54,7 @@ export class PineconeService {
     const vectors = documents.map((doc, i) => {
       const vectorId = `${doc.metadata.id}-${Date.now()}-${i}`;
 
-      // Actualizar el pineconeId en la base de datos
-      this.googleReviewRepository.update({ reviewId: doc.metadata.id }, { pineconeId: vectorId });
+      // Note: pinecone_id column removed from google_review (Plan 20-02 D-05).
 
       return {
         id: vectorId,
@@ -102,8 +101,8 @@ export class PineconeService {
       return;
     }
 
-    // Filtrar solo los pineconeIds que no sean null
-    const pineconeIds = reviews.filter(review => review.pineconeId).map(review => review.pineconeId);
+    // Note: pinecone_id removed from google_review (Plan 20-02 D-05). No pineconeIds to filter.
+    const pineconeIds: string[] = [];
 
     console.log(`🎯 PineconeIDs a eliminar: ${pineconeIds.length}`);
 
