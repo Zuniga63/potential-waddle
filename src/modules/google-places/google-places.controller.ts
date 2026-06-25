@@ -100,7 +100,6 @@ export class GooglePlacesController {
       body.message,
       body.entityId,
       body.entityType as 'lodging' | 'restaurant' | 'commerce',
-      body.type as 'general' | 'specific',
     );
   }
 

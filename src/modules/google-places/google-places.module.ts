@@ -9,18 +9,25 @@ import { GooglePlacesService } from './google-places.service';
 import { GooglePlacesController } from './google-places.controller';
 import { HttpModule } from '@nestjs/axios';
 import { GoogleReview } from './entities/google-review.entity';
-import { PineconeModule } from '../pinecone/pinecone.module';
 import { GoogleReviewSummary } from './entities/google-review-summary.entity';
+import { GoogleReviewSyncLog } from './entities/google-review-sync-log.entity';
+import { ApifyReviewsService } from './services/apify-reviews.service';
+import { PlaceIdResolverService } from './services/place-id-resolver.service';
+import { GOOGLE_REVIEWS_SOURCE } from './interfaces/google-reviews-source.interface';
 
 @Module({
   controllers: [GooglePlacesController],
-  providers: [GooglePlacesService],
+  providers: [
+    GooglePlacesService,
+    PlaceIdResolverService,
+    ApifyReviewsService,
+    { provide: GOOGLE_REVIEWS_SOURCE, useClass: ApifyReviewsService },
+  ],
   imports: [
-    TypeOrmModule.forFeature([Lodging, Restaurant, Commerce, GoogleReview, GoogleReviewSummary]),
+    TypeOrmModule.forFeature([Lodging, Restaurant, Commerce, GoogleReview, GoogleReviewSummary, GoogleReviewSyncLog]),
     HttpModule,
     ConfigModule,
-    PineconeModule,
   ],
-  exports: [GooglePlacesService],
+  exports: [GooglePlacesService, PlaceIdResolverService],
 })
 export class GooglePlacesModule {}

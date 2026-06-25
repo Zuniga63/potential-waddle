@@ -13,11 +13,10 @@ import { GoogleReview } from './entities/google-review.entity';
 import { GoogleReviewsFindAllParams } from './interfaces/google-reviews-find-all-params.interface';
 import { generateReviewsQueryFilters } from './utils/generate-google-reviews-query-filters';
 import { GoogleReviewsListDto } from './dto/google-reviews-list.dto';
-import { PineconeService } from '../pinecone/pinecone.service';
 import { GoogleReviewInterface } from './interfaces/google-review.interface';
 import { GoogleGenerativeAI, GenerativeModel } from '@google/generative-ai';
 import { GoogleReviewSummary } from './entities/google-review-summary.entity';
-import { reviewAnalysisPrompt, specificQuestionPrompt } from '../ai/lib/gemini/review-analysis-prompts';
+import { reviewAnalysisPrompt } from '../ai/lib/gemini/review-analysis-prompts';
 @Injectable()
 export class GooglePlacesService {
   private readonly logger = new Logger(GooglePlacesService.name);
@@ -42,7 +41,6 @@ export class GooglePlacesService {
 
     @InjectRepository(GoogleReview)
     private googleReviewRepository: Repository<GoogleReview>,
-    private readonly pineconeService: PineconeService,
 
     @InjectRepository(GoogleReviewSummary)
     private googleReviewSummaryRepository: Repository<GoogleReviewSummary>,
@@ -579,12 +577,6 @@ export class GooglePlacesService {
         }
       }
 
-      /*    try {
-        console.log('🔍 Creando vector en Pinecone');
-        await this.pineconeService.createReviewVector(reviewsToSave as GoogleReviewInterface[]);
-      } catch (err) {
-        console.error('❌ Error al crear vector en Pinecone:', err.message);
-      } */
       return reviews;
     } catch (err) {
       console.error('❌ Error al obtener datos del dataset:', err.message);
@@ -617,38 +609,21 @@ export class GooglePlacesService {
   async deleteAllReviewsforEntity(entityId: string, entityType: string) {
     console.log('🔍 Eliminando todas las reseñas para la entidad:', entityId, entityType);
     if (entityType === 'lodging') {
-      await this.pineconeService.deleteAllVectorsByEntityId(entityId, entityType);
       await this.googleReviewRepository.delete({ entityId, entityType: 'lodging' });
       await this.googleReviewSummaryRepository.delete({ entityId, entityType: 'lodging' });
     } else if (entityType === 'restaurant') {
-      await this.pineconeService.deleteAllVectorsByEntityId(entityId, entityType);
       await this.googleReviewRepository.delete({ entityId, entityType: 'restaurant' });
       await this.googleReviewSummaryRepository.delete({ entityId, entityType: 'restaurant' });
     } else if (entityType === 'commerce') {
-      await this.pineconeService.deleteAllVectorsByEntityId(entityId, entityType);
       await this.googleReviewRepository.delete({ entityId, entityType: 'commerce' });
       await this.googleReviewSummaryRepository.delete({ entityId, entityType: 'commerce' });
     }
-  }
-
-  private formatSearchResults(docs: any[]): string {
-    // Implement your formatting logic here
-    if (!docs || docs.length === 0) {
-      return 'No se encontraron resultados.';
-    }
-
-    return docs
-      .map(doc => {
-        return `---\n${doc.pageContent}\n`;
-      })
-      .join('\n');
   }
 
   async reviewSummary(
     message: string,
     entityId: string,
     entityType: 'lodging' | 'restaurant' | 'commerce',
-    type: 'general' | 'specific',
   ) {
     try {
       if (!this.geminiModel) {
@@ -656,33 +631,23 @@ export class GooglePlacesService {
       }
 
       const userQuestion = message;
-      let contextMessage = '';
-      let prompt = '';
 
-      if (type === 'specific') {
-        // Search for relevant documents in Pinecone for specific questions
-        const relevantDocs = await this.pineconeService.searchDocuments(userQuestion, entityId, entityType);
-        const formattedResults = this.formatSearchResults(relevantDocs);
-        contextMessage = formattedResults;
-        prompt = `${specificQuestionPrompt}\n\n## RESEÑAS:\n${contextMessage}\n\n## PREGUNTA DEL USUARIO:\n${userQuestion}`;
-      } else {
-        // Get all reviews for general analysis
-        const reviews = await this.googleReviewRepository.find({
-          where: { entityType, entityId },
-          order: { reviewDate: 'DESC' },
-        });
+      // Get all reviews for general analysis
+      const reviews = await this.googleReviewRepository.find({
+        where: { entityType, entityId },
+        order: { reviewDate: 'DESC' },
+      });
 
-        const reviewsData = reviews.map(review => ({
-          autor: review.authorName,
-          rating: review.rating,
-          comentario: review.text,
-          fecha: review.reviewDate,
-        }));
+      const reviewsData = reviews.map(review => ({
+        autor: review.authorName,
+        rating: review.rating,
+        comentario: review.text,
+        fecha: review.reviewDate,
+      }));
 
-        this.logger.log(`Analyzing ${reviews.length} reviews for ${entityType} ${entityId}`);
-        contextMessage = JSON.stringify(reviewsData, null, 2);
-        prompt = `${reviewAnalysisPrompt}\n\n## RESEÑAS A ANALIZAR (${reviews.length} total):\n${contextMessage}`;
-      }
+      this.logger.log(`Analyzing ${reviews.length} reviews for ${entityType} ${entityId}`);
+      const contextMessage = JSON.stringify(reviewsData, null, 2);
+      const prompt = `${reviewAnalysisPrompt}\n\n## RESEÑAS A ANALIZAR (${reviews.length} total):\n${contextMessage}`;
 
       // Send to Gemini
       this.logger.log(`🤖 Sending request to GEMINI 2.0 Flash...`);
