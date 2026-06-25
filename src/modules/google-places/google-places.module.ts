@@ -13,6 +13,7 @@ import { GoogleReviewSummary } from './entities/google-review-summary.entity';
 import { GoogleReviewSyncLog } from './entities/google-review-sync-log.entity';
 import { ApifyReviewsService } from './services/apify-reviews.service';
 import { PlaceIdResolverService } from './services/place-id-resolver.service';
+import { GoogleSyncService } from './services/google-sync.service';
 import { GOOGLE_REVIEWS_SOURCE } from './interfaces/google-reviews-source.interface';
 
 @Module({
@@ -21,6 +22,7 @@ import { GOOGLE_REVIEWS_SOURCE } from './interfaces/google-reviews-source.interf
     GooglePlacesService,
     PlaceIdResolverService,
     ApifyReviewsService,
+    GoogleSyncService,
     { provide: GOOGLE_REVIEWS_SOURCE, useClass: ApifyReviewsService },
   ],
   imports: [
@@ -28,6 +30,6 @@ import { GOOGLE_REVIEWS_SOURCE } from './interfaces/google-reviews-source.interf
     HttpModule,
     ConfigModule,
   ],
-  exports: [GooglePlacesService, PlaceIdResolverService],
+  exports: [GooglePlacesService, PlaceIdResolverService, GoogleSyncService],
 })
 export class GooglePlacesModule {}
