@@ -14,7 +14,10 @@ import { GoogleReviewSyncLog } from './entities/google-review-sync-log.entity';
 import { ApifyReviewsService } from './services/apify-reviews.service';
 import { PlaceIdResolverService } from './services/place-id-resolver.service';
 import { GoogleSyncService } from './services/google-sync.service';
+import { GoogleSyncCronService } from './services/google-sync-cron.service';
 import { GOOGLE_REVIEWS_SOURCE } from './interfaces/google-reviews-source.interface';
+import { CommonModule } from '../common/common.module';
+import { SubscriptionsModule } from '../subscriptions/subscriptions.module';
 
 @Module({
   controllers: [GooglePlacesController],
@@ -23,12 +26,15 @@ import { GOOGLE_REVIEWS_SOURCE } from './interfaces/google-reviews-source.interf
     PlaceIdResolverService,
     ApifyReviewsService,
     GoogleSyncService,
+    GoogleSyncCronService,
     { provide: GOOGLE_REVIEWS_SOURCE, useClass: ApifyReviewsService },
   ],
   imports: [
     TypeOrmModule.forFeature([Lodging, Restaurant, Commerce, GoogleReview, GoogleReviewSummary, GoogleReviewSyncLog]),
     HttpModule,
     ConfigModule,
+    CommonModule,
+    SubscriptionsModule,
   ],
   exports: [GooglePlacesService, PlaceIdResolverService, GoogleSyncService],
 })
