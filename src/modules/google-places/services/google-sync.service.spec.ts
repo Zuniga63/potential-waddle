@@ -554,7 +554,9 @@ describe('GoogleSyncService.reconcileEntity', () => {
     const log = successSave![0];
     expect(log.reviewsNew).toBe(0);
     expect(log.reviewsTotal).toBe(2); // afterCount
-    expect(log.message).toMatch(/reviews purged/);
+    // errorMessage is reused as the persisted context field on the success path
+    // (no dedicated `message` column on the entity; plan prohibits adding a migration)
+    expect(log.errorMessage).toMatch(/reviews purged/);
   });
 
   // -------------------------------------------------------------------------

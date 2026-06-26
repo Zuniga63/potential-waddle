@@ -433,9 +433,12 @@ export class GoogleSyncService {
       await qr.commitTransaction();
 
       // ---------------------------------------------------------------------
-      // Step 11: Close sync-log with honest reconciliation semantics
+      // Step 11: Close sync-log with honest reconciliation semantics.
+      // errorMessage is reused as a general context field on the success path
+      // (the entity has no dedicated `message` column and the plan prohibits
+      // adding a migration). On the error path it carries the actual error string.
       // ---------------------------------------------------------------------
-      const message =
+      const reconcileMsg =
         fetchedReviewIds.length === 0
           ? 'reconciliation — 0 reviews purged (zero-result fetch, purge aborted)'
           : `reconciliation — ${purged} reviews purged`;
@@ -444,7 +447,7 @@ export class GoogleSyncService {
       syncLog.endedAt = new Date();
       syncLog.reviewsNew = 0; // reconciliation creates no "new" reviews in owner-facing sense
       syncLog.reviewsTotal = afterCount!; // surviving row count
-      (syncLog as any).message = message;
+      syncLog.errorMessage = reconcileMsg; // persists purge context via the existing nullable column
       await this.syncLogRepository.save(syncLog);
 
       this.logger.log(
