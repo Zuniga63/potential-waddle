@@ -16,6 +16,7 @@ import { PlaceIdResolverService } from './services/place-id-resolver.service';
 import { GoogleSyncService } from './services/google-sync.service';
 import { GoogleSyncCronService } from './services/google-sync-cron.service';
 import { GoogleSyncManualService } from './services/google-sync-manual.service';
+import { GoogleReconciliationCronService } from './services/google-reconciliation-cron.service';
 import { GOOGLE_REVIEWS_SOURCE } from './interfaces/google-reviews-source.interface';
 import { CommonModule } from '../common/common.module';
 import { SubscriptionsModule } from '../subscriptions/subscriptions.module';
@@ -29,6 +30,7 @@ import { SubscriptionsModule } from '../subscriptions/subscriptions.module';
     GoogleSyncService,
     GoogleSyncCronService,
     GoogleSyncManualService,
+    GoogleReconciliationCronService,
     { provide: GOOGLE_REVIEWS_SOURCE, useClass: ApifyReviewsService },
   ],
   imports: [
