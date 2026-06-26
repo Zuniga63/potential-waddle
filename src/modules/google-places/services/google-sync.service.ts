@@ -267,6 +267,208 @@ export class GoogleSyncService {
     }
   }
 
+  /**
+   * Monthly reconciliation pass for a single entity.
+   *
+   * Performs a FULL fetch (since=null) from Apify, UPSERTs all fetched reviews,
+   * then purges google_review rows whose review_id is absent from the fetched set
+   * (prevents ghost counts from reviews deleted in Google).
+   *
+   * Zero-result guard (T-21-14): if Apify returns 0 reviews, the purge is ABORTED
+   * to avoid accidentally wiping a business's entire review history on a transient
+   * Apify error. Denorm is still recomputed against surviving rows.
+   *
+   * Sync-log semantics (honest reconciliation):
+   *  - reviewsNew = 0  (reconciliation creates no "new" reviews in the owner-facing sense)
+   *  - reviewsTotal = afterCount  (surviving rows after purge)
+   *  - message = "reconciliation — {purged} reviews purged"
+   *
+   * @param entityId   UUID of the entity to reconcile.
+   * @param entityType 'lodging' | 'restaurant' | 'commerce'.
+   * @returns          The closed GoogleReviewSyncLog row.
+   */
+  async reconcileEntity(entityId: string, entityType: EntityType): Promise<GoogleReviewSyncLog> {
+    // -----------------------------------------------------------------------
+    // Step 1: Open sync-log OUTSIDE the QueryRunner (always visible)
+    // -----------------------------------------------------------------------
+    const syncLog = await this.syncLogRepository.save(
+      this.syncLogRepository.create({
+        entityId,
+        entityType,
+        trigger: 'cron' as const,
+        status: 'running',
+        startedAt: new Date(),
+      }),
+    );
+
+    // -----------------------------------------------------------------------
+    // Step 2: QueryRunner setup
+    // -----------------------------------------------------------------------
+    const qr = this.dataSource.createQueryRunner();
+    await qr.connect();
+    await qr.startTransaction();
+
+    try {
+      // ---------------------------------------------------------------------
+      // Step 3: Load entity
+      // ---------------------------------------------------------------------
+      const entity = await this.loadEntity(entityId, entityType, qr);
+      if (!entity) {
+        throw new Error(`Entity not found: ${entityType}/${entityId}`);
+      }
+
+      // ---------------------------------------------------------------------
+      // Step 4: URL gate — mirror syncEntity Step 3a
+      // ---------------------------------------------------------------------
+      if (!isPlacesGeneratedUrl(entity.googleMapsUrl)) {
+        await qr.rollbackTransaction();
+        this.logger.warn(
+          `(reconcile) Skipping ${entityType}/${entityId} — missing or invalid Places URL: ${entity.googleMapsUrl ?? '(none)'}`,
+        );
+        syncLog.status = 'skipped';
+        syncLog.endedAt = new Date();
+        syncLog.errorMessage = 'skipped: missing or invalid googleMapsUrl';
+        await this.syncLogRepository.save(syncLog);
+        return syncLog;
+      }
+
+      // ---------------------------------------------------------------------
+      // Step 5: Best-effort place_id resolve (non-blocking)
+      // ---------------------------------------------------------------------
+      try {
+        await this.placeIdResolver.resolve(entity, entityType);
+      } catch (resolveError) {
+        this.logger.warn(
+          `(reconcile) place_id not resolved for ${entityType}/${entityId} (non-blocking): ${resolveError?.message ?? resolveError}`,
+        );
+      }
+
+      // ---------------------------------------------------------------------
+      // Step 6: FULL fetch — since = null forces full fetch regardless of
+      //         lastGoogleSyncAt (reconciliation sweeps everything).
+      // ---------------------------------------------------------------------
+      const mapsUrl = entity.googleMapsUrl ?? '';
+      const reviews = await this.source.fetchReviews(mapsUrl, null);
+
+      const fetchedReviewIds = reviews.map((r) => r.reviewId).filter(Boolean) as string[];
+
+      // ---------------------------------------------------------------------
+      // Step 7: Zero-result abort guard (T-21-14 / Pitfall 5)
+      // If Apify transiently returns 0 reviews, SKIP the purge to avoid
+      // wiping the business's entire review history on a bad fetch.
+      // Denorm is still recomputed so surviving rows are reflected correctly.
+      // ---------------------------------------------------------------------
+      let purged = 0;
+      let afterCount: number;
+
+      if (fetchedReviewIds.length === 0) {
+        this.logger.warn(
+          `(reconcile) ${entityType}/${entityId} — full fetch returned 0 reviews, ABORTING purge to avoid wipe`,
+        );
+        // No UPSERT, no purge. Count surviving rows for the sync-log.
+        afterCount = await qr.manager.count(GoogleReview, { where: { entityId, entityType } });
+      } else {
+        // -------------------------------------------------------------------
+        // Step 8a: UPSERT all fetched reviews by review_id
+        // -------------------------------------------------------------------
+        for (const r of reviews) {
+          await qr.manager
+            .createQueryBuilder()
+            .insert()
+            .into(GoogleReview)
+            .values({
+              entityId,
+              entityType,
+              authorName: r.authorName,
+              rating: r.rating,
+              text: r.text,
+              reviewUrl: r.reviewUrl,
+              reviewDate: r.reviewDate instanceof Date ? r.reviewDate : new Date(r.reviewDate as string),
+              reviewId: r.reviewId,
+            })
+            .orUpdate(
+              ['author_name', 'rating', 'text', 'review_url', 'review_date', 'updated_at'],
+              ['review_id'],
+            )
+            .execute();
+        }
+
+        // -------------------------------------------------------------------
+        // Step 8b: Purge — DELETE google_review WHERE entity + review_id NOT IN
+        //          the fetched set. Capture the purge delta for the sync-log.
+        // -------------------------------------------------------------------
+        const beforeCount = await qr.manager.count(GoogleReview, { where: { entityId, entityType } });
+
+        await qr.manager
+          .createQueryBuilder()
+          .delete()
+          .from(GoogleReview)
+          .where(
+            'entity_id = :entityId AND entity_type = :entityType AND review_id NOT IN (:...ids)',
+            { entityId, entityType, ids: fetchedReviewIds },
+          )
+          .execute();
+
+        afterCount = await qr.manager.count(GoogleReview, { where: { entityId, entityType } });
+        purged = beforeCount - afterCount;
+      }
+
+      // ---------------------------------------------------------------------
+      // Step 9: Recompute denorm transactionally (T-21-15 mitigate)
+      // ---------------------------------------------------------------------
+      const denormRow = await this.computeDenorm(entityId, entityType, qr);
+      const googleMapsRating = denormRow.avg != null ? parseFloat(denormRow.avg) || null : null;
+      const googleMapsReviewsCount = parseInt(denormRow.count, 10) || 0;
+
+      const EntityClass = entityClass(entityType);
+      await qr.manager.update(
+        EntityClass,
+        { id: entityId },
+        { googleMapsRating, googleMapsReviewsCount, lastGoogleSyncAt: new Date() },
+      );
+
+      // ---------------------------------------------------------------------
+      // Step 10: Commit
+      // ---------------------------------------------------------------------
+      await qr.commitTransaction();
+
+      // ---------------------------------------------------------------------
+      // Step 11: Close sync-log with honest reconciliation semantics
+      // ---------------------------------------------------------------------
+      const message =
+        fetchedReviewIds.length === 0
+          ? 'reconciliation — 0 reviews purged (zero-result fetch, purge aborted)'
+          : `reconciliation — ${purged} reviews purged`;
+
+      syncLog.status = 'success';
+      syncLog.endedAt = new Date();
+      syncLog.reviewsNew = 0; // reconciliation creates no "new" reviews in owner-facing sense
+      syncLog.reviewsTotal = afterCount!; // surviving row count
+      (syncLog as any).message = message;
+      await this.syncLogRepository.save(syncLog);
+
+      this.logger.log(
+        `(reconcile) Completed ${entityType}/${entityId}: ${purged} purged, ${afterCount!} surviving, rating=${googleMapsRating}`,
+      );
+
+      return syncLog;
+    } catch (error) {
+      await qr.rollbackTransaction();
+
+      const errorMessage = `reconcile_error: ${(error as Error)?.message ?? 'unknown error'}`;
+      this.logger.error(`(reconcile) Failed for ${entityType}/${entityId}: ${errorMessage}`);
+
+      syncLog.status = 'error';
+      syncLog.endedAt = new Date();
+      syncLog.errorMessage = errorMessage;
+      await this.syncLogRepository.save(syncLog);
+
+      return syncLog;
+    } finally {
+      await qr.release();
+    }
+  }
+
   // -------------------------------------------------------------------------
   // Private helpers
   // -------------------------------------------------------------------------

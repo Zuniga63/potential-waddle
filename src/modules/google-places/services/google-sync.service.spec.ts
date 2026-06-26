@@ -295,3 +295,298 @@ describe('GoogleSyncService', () => {
     expect(result).toMatchObject({ status: 'error' });
   });
 });
+
+// ---------------------------------------------------------------------------
+// reconcileEntity tests
+// ---------------------------------------------------------------------------
+
+describe('GoogleSyncService.reconcileEntity', () => {
+  let service: GoogleSyncService;
+  let syncLogRepo: { save: jest.Mock; create: jest.Mock };
+  let placeIdResolver: { resolve: jest.Mock };
+  let source: { fetchReviews: jest.Mock };
+  let dataSource: { createQueryRunner: jest.Mock };
+
+  /**
+   * Builds a QR mock for reconcileEntity tests.
+   *
+   * createQueryBuilder returns a smart dispatcher stub: the first method called
+   * on the returned object routes to the appropriate tracked sub-stub:
+   *   - .insert()  → insertQb  (UPSERT loop — multiple calls, one per review)
+   *   - .delete()  → deleteQb  (purge — exactly one call)
+   *   - .select()  → selectQb  (computeDenorm — exactly one call)
+   *
+   * `beforeCount` and `afterCount` control the count() calls (purge delta).
+   */
+  function makeReconcileQrMock(opts: {
+    entity?: Partial<Lodging>;
+    beforeCount?: number;
+    afterCount?: number;
+  } = {}) {
+    const { beforeCount = 3, afterCount = 2 } = opts;
+
+    // Insert QueryBuilder stub (UPSERT loop per review)
+    const insertQb: Record<string, jest.Mock> = {
+      insert: jest.fn().mockReturnThis(),
+      into: jest.fn().mockReturnThis(),
+      values: jest.fn().mockReturnThis(),
+      orUpdate: jest.fn().mockReturnThis(),
+      execute: jest.fn().mockResolvedValue({ generatedMaps: [] }),
+    };
+
+    // Delete QueryBuilder stub — the purge operation we assert on
+    const deleteQb: Record<string, jest.Mock> = {
+      delete: jest.fn().mockReturnThis(),
+      from: jest.fn().mockReturnThis(),
+      where: jest.fn().mockReturnThis(),
+      execute: jest.fn().mockResolvedValue({ affected: beforeCount - afterCount }),
+    };
+
+    // Select QueryBuilder stub (computeDenorm AVG/COUNT)
+    const selectQb: Record<string, jest.Mock> = {
+      select: jest.fn().mockReturnThis(),
+      addSelect: jest.fn().mockReturnThis(),
+      from: jest.fn().mockReturnThis(),
+      where: jest.fn().mockReturnThis(),
+      getRawOne: jest.fn().mockResolvedValue({ avg: '4.2', count: String(afterCount) }),
+    };
+
+    /**
+     * Dispatcher stub: proxied so that the first method call routes to the
+     * correct specialized stub and all subsequent calls on that chain remain
+     * on the same stub. This mirrors how a real TypeORM QB works.
+     */
+    function makeDispatcherQb() {
+      const dispatcher: Record<string, jest.Mock> = {
+        insert: jest.fn().mockImplementation((...args: any[]) => {
+          insertQb.insert(...args);
+          return insertQb;
+        }),
+        delete: jest.fn().mockImplementation((...args: any[]) => {
+          deleteQb.delete(...args);
+          return deleteQb;
+        }),
+        select: jest.fn().mockImplementation((...args: any[]) => {
+          selectQb.select(...args);
+          return selectQb;
+        }),
+      };
+      return dispatcher;
+    }
+
+    // count() mock: returns beforeCount first time, afterCount second time
+    let countCallIndex = 0;
+    const count = jest.fn().mockImplementation(() => {
+      countCallIndex++;
+      return Promise.resolve(countCallIndex === 1 ? beforeCount : afterCount);
+    });
+
+    const entity = makeLodging({
+      lastGoogleSyncAt: new Date('2025-06-01'),
+      ...opts.entity,
+    });
+
+    const manager = {
+      delete: jest.fn().mockResolvedValue({ affected: 1 }),
+      update: jest.fn().mockResolvedValue({ affected: 1 }),
+      count,
+      createQueryBuilder: jest.fn().mockImplementation(() => makeDispatcherQb()),
+      getRepository: jest.fn().mockImplementation(() => ({
+        findOne: jest.fn().mockResolvedValue(entity),
+      })),
+    };
+
+    return {
+      connect: jest.fn().mockResolvedValue(undefined),
+      startTransaction: jest.fn().mockResolvedValue(undefined),
+      commitTransaction: jest.fn().mockResolvedValue(undefined),
+      rollbackTransaction: jest.fn().mockResolvedValue(undefined),
+      release: jest.fn().mockResolvedValue(undefined),
+      manager,
+      _insertQb: insertQb,
+      _deleteQb: deleteQb,
+      _selectQb: selectQb,
+    };
+  }
+
+  async function buildReconcileModule(qrMock: ReturnType<typeof makeReconcileQrMock>) {
+    syncLogRepo = {
+      save: jest.fn().mockImplementation((entity: any) =>
+        Promise.resolve({ id: 'log-uuid-reconcile', status: 'running', ...entity }),
+      ),
+      create: jest.fn().mockImplementation((dto: any) => ({ id: 'log-uuid-reconcile', ...dto })),
+    };
+
+    placeIdResolver = {
+      resolve: jest.fn().mockResolvedValue('ChIJresolved'),
+    };
+
+    source = {
+      fetchReviews: jest.fn().mockResolvedValue([
+        { reviewId: 'r1', authorName: 'Alice', rating: 5, text: 'Great!', reviewUrl: 'https://g.co/r1', reviewDate: new Date('2025-01-01') },
+        { reviewId: 'r3', authorName: 'Charlie', rating: 4, text: 'OK', reviewUrl: 'https://g.co/r3', reviewDate: new Date('2025-01-03') },
+      ]),
+    };
+
+    dataSource = { createQueryRunner: jest.fn().mockReturnValue(qrMock) };
+
+    const module: TestingModule = await Test.createTestingModule({
+      providers: [
+        GoogleSyncService,
+        { provide: DataSource, useValue: dataSource },
+        { provide: getRepositoryToken(GoogleReviewSyncLog), useValue: syncLogRepo },
+        { provide: getRepositoryToken(Lodging), useValue: { findOne: jest.fn() } },
+        { provide: getRepositoryToken(Restaurant), useValue: { findOne: jest.fn() } },
+        { provide: getRepositoryToken(Commerce), useValue: { findOne: jest.fn() } },
+        { provide: PlaceIdResolverService, useValue: placeIdResolver },
+        { provide: GOOGLE_REVIEWS_SOURCE, useValue: source },
+      ],
+    }).compile();
+
+    service = module.get<GoogleSyncService>(GoogleSyncService);
+  }
+
+  // -------------------------------------------------------------------------
+  // Test: full fetch — fetchReviews called with since = null
+  // -------------------------------------------------------------------------
+  it('(full fetch) reconcileEntity calls fetchReviews with since = null regardless of lastGoogleSyncAt', async () => {
+    const qrMock = makeReconcileQrMock({
+      entity: { lastGoogleSyncAt: new Date('2025-06-01') },
+    });
+    await buildReconcileModule(qrMock);
+
+    await service.reconcileEntity('entity-001', 'lodging');
+
+    expect(source.fetchReviews).toHaveBeenCalledWith(
+      expect.any(String),
+      null,
+    );
+  });
+
+  // -------------------------------------------------------------------------
+  // Test: purge — DELETE NOT IN fetched review IDs
+  // -------------------------------------------------------------------------
+  it('(purge) issues a NOT IN delete for reviews absent from the full fetch', async () => {
+    const qrMock = makeReconcileQrMock({ beforeCount: 3, afterCount: 2 });
+    await buildReconcileModule(qrMock);
+
+    // source returns r1 and r3 (r2 is absent — should be purged)
+    await service.reconcileEntity('entity-001', 'lodging');
+
+    // delete().from().where() must have been called
+    expect(qrMock._deleteQb.delete).toHaveBeenCalled();
+    expect(qrMock._deleteQb.from).toHaveBeenCalledWith(GoogleReview);
+    // The where clause must reference NOT IN and the fetched IDs
+    const whereCall = qrMock._deleteQb.where.mock.calls[0];
+    expect(whereCall[0]).toMatch(/NOT IN/);
+    // IDs parameter must contain r1 and r3 (the fetched reviewIds)
+    expect(whereCall[1]).toMatchObject({ ids: expect.arrayContaining(['r1', 'r3']) });
+  });
+
+  // -------------------------------------------------------------------------
+  // Test: zero-result abort — no purge delete when fetch returns empty
+  // -------------------------------------------------------------------------
+  it('(zero-result abort) when fetchReviews returns [], the purge DELETE is NOT issued', async () => {
+    const qrMock = makeReconcileQrMock({ beforeCount: 5, afterCount: 5 });
+    await buildReconcileModule(qrMock);
+
+    // Override source to return empty array
+    source.fetchReviews.mockResolvedValue([]);
+
+    await service.reconcileEntity('entity-001', 'lodging');
+
+    // The delete() method on the delete QB must NOT have been called
+    expect(qrMock._deleteQb.delete).not.toHaveBeenCalled();
+    // manager.delete (unconditional) must also NOT have been called
+    expect(qrMock.manager.delete).not.toHaveBeenCalled();
+  });
+
+  // -------------------------------------------------------------------------
+  // Test: denorm — computeDenorm invoked and entity updated
+  // -------------------------------------------------------------------------
+  it('(denorm) computeDenorm is invoked and entity is updated with googleMapsRating/Count/lastGoogleSyncAt', async () => {
+    const qrMock = makeReconcileQrMock({ afterCount: 2 });
+    await buildReconcileModule(qrMock);
+
+    await service.reconcileEntity('entity-001', 'lodging');
+
+    // entity update must have been called with denorm fields and lastGoogleSyncAt
+    expect(qrMock.manager.update).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({ id: 'entity-001' }),
+      expect.objectContaining({
+        googleMapsRating: expect.any(Number),
+        googleMapsReviewsCount: expect.any(Number),
+        lastGoogleSyncAt: expect.any(Date),
+      }),
+    );
+  });
+
+  // -------------------------------------------------------------------------
+  // Test: sync-log — trigger='cron', opened running, closed success
+  // -------------------------------------------------------------------------
+  it('(sync-log) opens with trigger=cron+status=running and closes with status=success on happy path', async () => {
+    const qrMock = makeReconcileQrMock();
+    await buildReconcileModule(qrMock);
+
+    await service.reconcileEntity('entity-001', 'lodging');
+
+    // Opening create must have trigger:'cron', status:'running'
+    const createCall = syncLogRepo.create.mock.calls[0][0];
+    expect(createCall).toMatchObject({ trigger: 'cron', status: 'running' });
+
+    // Closing save must have status:'success'
+    const successSave = syncLogRepo.save.mock.calls.find((c: any[]) => c[0]?.status === 'success');
+    expect(successSave).toBeDefined();
+  });
+
+  // -------------------------------------------------------------------------
+  // Test: sync-log purge semantics — reviewsNew=0, reviewsTotal=afterCount, message contains 'reviews purged'
+  // -------------------------------------------------------------------------
+  it('(sync-log purge semantics) closed log has reviewsNew=0, reviewsTotal=afterCount, message with reviews purged', async () => {
+    const qrMock = makeReconcileQrMock({ beforeCount: 3, afterCount: 2 });
+    await buildReconcileModule(qrMock);
+
+    await service.reconcileEntity('entity-001', 'lodging');
+
+    const successSave = syncLogRepo.save.mock.calls.find((c: any[]) => c[0]?.status === 'success');
+    expect(successSave).toBeDefined();
+    const log = successSave![0];
+    expect(log.reviewsNew).toBe(0);
+    expect(log.reviewsTotal).toBe(2); // afterCount
+    expect(log.message).toMatch(/reviews purged/);
+  });
+
+  // -------------------------------------------------------------------------
+  // Test: sync-log error path — fetch throws → rollback + error log
+  // -------------------------------------------------------------------------
+  it('(error path) fetchReviews failure rolls back and saves error log', async () => {
+    const qrMock = makeReconcileQrMock();
+    await buildReconcileModule(qrMock);
+
+    source.fetchReviews.mockRejectedValue(new Error('apify network timeout'));
+
+    const result = await service.reconcileEntity('entity-001', 'lodging');
+
+    expect(qrMock.rollbackTransaction).toHaveBeenCalled();
+    const errorSave = syncLogRepo.save.mock.calls.find((c: any[]) => c[0]?.status === 'error');
+    expect(errorSave).toBeDefined();
+    expect(result).toMatchObject({ status: 'error' });
+  });
+
+  // -------------------------------------------------------------------------
+  // Test: URL gate — entity with invalid URL → status='skipped', no fetch, no purge
+  // -------------------------------------------------------------------------
+  it('(URL gate) entity with invalid googleMapsUrl → status=skipped, no fetch, no purge', async () => {
+    const qrMock = makeReconcileQrMock({
+      entity: { googleMapsUrl: 'https://booking.com/hotel-xyz' as any },
+    });
+    await buildReconcileModule(qrMock);
+
+    const result = await service.reconcileEntity('entity-001', 'lodging');
+
+    expect(source.fetchReviews).not.toHaveBeenCalled();
+    expect(qrMock._deleteQb.delete).not.toHaveBeenCalled();
+    expect(result).toMatchObject({ status: 'skipped' });
+  });
+});
