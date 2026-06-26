@@ -2,7 +2,7 @@ import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, Index } from 
 
 @Entity()
 @Index(['entityType', 'entityId'])
-@Index('UQ_google_review_review_id', ['reviewId'], { unique: true, where: '"review_id" IS NOT NULL' })
+@Index('UQ_google_review_review_id', ['reviewId'], { unique: true })
 export class GoogleReview {
   @PrimaryGeneratedColumn()
   id: number;

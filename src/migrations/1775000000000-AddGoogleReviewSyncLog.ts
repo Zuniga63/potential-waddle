@@ -41,11 +41,15 @@ export class AddGoogleReviewSyncLog1775000000000 implements MigrationInterface {
     // 3. Purge NULL review_id rows (D-04) — IRREVERSIBLE
     await queryRunner.query(`DELETE FROM "google_review" WHERE "review_id" IS NULL`);
 
-    // 4. Partial unique index to enable ON CONFLICT (review_id) UPSERT
+    // 4. Non-partial unique index to enable ON CONFLICT (review_id) UPSERT.
+    //    Must NOT be partial: Postgres only accepts a partial index as an
+    //    ON CONFLICT arbiter when the statement repeats the predicate, which
+    //    TypeORM's orUpdate(['review_id']) does not emit. NULL review_id rows
+    //    were purged in step 3 (D-04) and the source always supplies a reviewId;
+    //    Postgres treats NULLs as distinct, so a plain unique index is safe.
     await queryRunner.query(`
       CREATE UNIQUE INDEX "UQ_google_review_review_id"
       ON "google_review" ("review_id")
-      WHERE "review_id" IS NOT NULL
     `);
 
     // 5. Drop pinecone_id column (D-05) — IRREVERSIBLE (all prod values are NULL)
