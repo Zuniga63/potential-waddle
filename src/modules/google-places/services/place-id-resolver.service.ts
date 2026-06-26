@@ -22,6 +22,40 @@ export function placeIdToMapsUrl(placeId: string): string {
   return `https://www.google.com/maps/place/?q=place_id:${placeId}`;
 }
 
+/**
+ * Validates that a URL is a Google Maps place link of the shape the onboarding
+ * Places picker generates — NOT just any non-empty string. The picker stores
+ * either Google's `googleMapsUri` (`https://maps.google.com/?cid=<digits>`) or
+ * the `https://www.google.com/maps/place/?q=place_id:ChIJ...` fallback.
+ *
+ * Accepts a Google Maps host that carries a place identifier (numeric `cid`,
+ * a `place_id:` token, or a `/maps/place` path). Rejects arbitrary URLs, non-
+ * Google hosts, and Google URLs with no place reference. This is a FORMAT gate
+ * (blocks junk input); it cannot verify the link points to the correct business.
+ */
+export function isPlacesGeneratedUrl(url?: string | null): boolean {
+  if (!url) return false;
+  let u: URL;
+  try {
+    u = new URL(url.trim());
+  } catch {
+    return false;
+  }
+  if (u.protocol !== 'https:') return false;
+
+  const host = u.hostname.toLowerCase();
+  const isMapsHost =
+    host === 'maps.google.com' ||
+    ((host === 'www.google.com' || host === 'google.com') && u.pathname.startsWith('/maps'));
+  if (!isMapsHost) return false;
+
+  const cid = u.searchParams.get('cid');
+  const hasCid = !!cid && /^\d+$/.test(cid);
+  const hasPlaceId = url.includes('place_id:') || u.searchParams.has('place_id');
+  const hasPlacePath = u.pathname.includes('/maps/place');
+  return hasCid || hasPlaceId || hasPlacePath;
+}
+
 @Injectable()
 export class PlaceIdResolverService {
   private readonly logger = new Logger(PlaceIdResolverService.name);

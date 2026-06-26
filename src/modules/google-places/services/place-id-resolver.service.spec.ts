@@ -3,7 +3,7 @@ import { getRepositoryToken } from '@nestjs/typeorm';
 import { HttpService } from '@nestjs/axios';
 import { ConfigService } from '@nestjs/config';
 import { of } from 'rxjs';
-import { PlaceIdResolverService } from './place-id-resolver.service';
+import { PlaceIdResolverService, isPlacesGeneratedUrl } from './place-id-resolver.service';
 import { Lodging } from 'src/modules/lodgings/entities/lodging.entity';
 import { Restaurant } from 'src/modules/restaurants/entities/restaurant.entity';
 import { Commerce } from 'src/modules/commerce/entities/commerce.entity';
@@ -105,5 +105,37 @@ describe('PlaceIdResolverService', () => {
 
     await expect(service.resolve(entity)).rejects.toThrow('place_id_not_resolvable');
     expect(httpService.post).not.toHaveBeenCalled();
+  });
+});
+
+describe('isPlacesGeneratedUrl', () => {
+  it('accepts the cid format Google returns (the onboarding default)', () => {
+    expect(
+      isPlacesGeneratedUrl('https://maps.google.com/?cid=10903639648050278547&g_mp=Cidn'),
+    ).toBe(true);
+  });
+
+  it('accepts the place_id: fallback the picker builds', () => {
+    expect(
+      isPlacesGeneratedUrl('https://www.google.com/maps/place/?q=place_id:ChIJn2pn7csGRI4Rk_DmbH2CUZc'),
+    ).toBe(true);
+  });
+
+  it('accepts a /maps/place path', () => {
+    expect(isPlacesGeneratedUrl('https://www.google.com/maps/place/Hotel/@6.2,-75.0,17z')).toBe(true);
+  });
+
+  it.each([
+    ['null', null],
+    ['undefined', undefined],
+    ['empty', ''],
+    ['not a url', 'pegué cualquier cosa'],
+    ['non-google host', 'https://booking.com/hotel-xyz'],
+    ['google but not maps', 'https://www.google.com/search?q=hotel'],
+    ['maps host without place identifier', 'https://maps.google.com/?foo=bar'],
+    ['non-numeric cid', 'https://maps.google.com/?cid=abc'],
+    ['http (not https)', 'http://maps.google.com/?cid=123'],
+  ])('rejects %s', (_label, url) => {
+    expect(isPlacesGeneratedUrl(url as any)).toBe(false);
   });
 });

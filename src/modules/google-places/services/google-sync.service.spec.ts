@@ -228,9 +228,10 @@ describe('GoogleSyncService', () => {
   });
 
   // -------------------------------------------------------------------------
-  // Test: place_id resolve failure → error log, no entity rating mutation
+  // Test: place_id resolve failure is NON-BLOCKING — sync still succeeds
+  //       because the fetch uses the validated googleMapsUrl directly.
   // -------------------------------------------------------------------------
-  it('(resolve failure) rolls back and saves error log; does NOT call manager.update for rating', async () => {
+  it('(resolver non-blocking) resolver rejection does NOT fail the sync; still fetches and succeeds', async () => {
     const qr = await buildModule();
 
     // Override resolver to reject after module is built
@@ -238,19 +239,59 @@ describe('GoogleSyncService', () => {
 
     const result = await service.syncEntity('entity-001', 'lodging', 'manual');
 
-    // transaction rolled back
+    // fetch still happened (uses entity.googleMapsUrl)
+    expect(source.fetchReviews).toHaveBeenCalled();
+    // committed, not rolled back
+    expect(qr.commitTransaction).toHaveBeenCalled();
+    expect(qr.rollbackTransaction).not.toHaveBeenCalled();
+    expect(result).toMatchObject({ status: 'success' });
+  });
+
+  // -------------------------------------------------------------------------
+  // Test: URL gate — entity without a valid Places URL is SKIPPED (discarded).
+  // -------------------------------------------------------------------------
+  it('(skip) entity with missing/invalid googleMapsUrl → status=skipped, no fetch, no rating mutation', async () => {
+    const entity = makeLodging({ googleMapsUrl: 'https://booking.com/hotel-xyz' as any });
+    const qr = await buildModule(entity);
+
+    const result = await service.syncEntity('entity-001', 'lodging', 'manual');
+
+    // discarded: Apify never called, rating/count never updated
+    expect(source.fetchReviews).not.toHaveBeenCalled();
+    expect(qr.manager.update).not.toHaveBeenCalled();
     expect(qr.rollbackTransaction).toHaveBeenCalled();
 
-    // sync-log saved with status='error'
-    const saves = syncLogRepo.save.mock.calls;
-    const errorSave = saves.find((call: any[]) => call[0]?.status === 'error');
+    // sync-log saved with status='skipped'
+    const skippedSave = syncLogRepo.save.mock.calls.find((c: any[]) => c[0]?.status === 'skipped');
+    expect(skippedSave).toBeDefined();
+    expect(result).toMatchObject({ status: 'skipped' });
+  });
+
+  it('(skip) entity with null googleMapsUrl is also skipped', async () => {
+    const entity = makeLodging({ googleMapsUrl: null as any });
+    await buildModule(entity);
+
+    const result = await service.syncEntity('entity-001', 'lodging', 'manual');
+
+    expect(source.fetchReviews).not.toHaveBeenCalled();
+    expect(result).toMatchObject({ status: 'skipped' });
+  });
+
+  // -------------------------------------------------------------------------
+  // Test: error path (fetch throws) → rollback + error log, no rating mutation.
+  // -------------------------------------------------------------------------
+  it('(error path) fetchReviews failure rolls back and saves error log; no rating mutation', async () => {
+    const qr = await buildModule();
+
+    source.fetchReviews.mockRejectedValue(new Error('apify timeout'));
+
+    const result = await service.syncEntity('entity-001', 'lodging', 'manual');
+
+    expect(qr.rollbackTransaction).toHaveBeenCalled();
+    const errorSave = syncLogRepo.save.mock.calls.find((c: any[]) => c[0]?.status === 'error');
     expect(errorSave).toBeDefined();
-    expect(errorSave![0].errorMessage).toMatch(/^place_id_not_resolvable/);
-
-    // entity rating/count update must NOT have been called
+    expect(errorSave![0].errorMessage).toMatch(/sync_error/);
     expect(qr.manager.update).not.toHaveBeenCalled();
-
-    // result is the error log row
     expect(result).toMatchObject({ status: 'error' });
   });
 });

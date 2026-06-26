@@ -16,7 +16,7 @@ export class GoogleReviewSyncLog {
   trigger: 'cron' | 'manual';
 
   @Column({ name: 'status', type: 'varchar', length: 20, default: 'running' })
-  status: 'running' | 'success' | 'error';
+  status: 'running' | 'success' | 'error' | 'skipped';
 
   @Column({ name: 'started_at', type: 'timestamptz', default: () => 'NOW()' })
   startedAt: Date;

@@ -6,7 +6,7 @@ import { Restaurant } from 'src/modules/restaurants/entities/restaurant.entity';
 import { Commerce } from 'src/modules/commerce/entities/commerce.entity';
 import { GoogleReview } from '../entities/google-review.entity';
 import { GoogleReviewSyncLog } from '../entities/google-review-sync-log.entity';
-import { PlaceIdResolverService, placeIdToMapsUrl } from './place-id-resolver.service';
+import { PlaceIdResolverService, placeIdToMapsUrl, isPlacesGeneratedUrl } from './place-id-resolver.service';
 import {
   GOOGLE_REVIEWS_SOURCE,
   GoogleReviewsSourceService,
@@ -119,9 +119,36 @@ export class GoogleSyncService {
       }
 
       // ---------------------------------------------------------------------
-      // Step 4: Resolve place_id (throws 'place_id_not_resolvable' on failure)
+      // Step 3a: URL gate — only sync entities that carry a valid
+      //          Places-generated Google Maps URL. Anything else (missing, or
+      //          arbitrary "junk" URL) is DISCARDED: no Apify call, no review
+      //          mutation, and a status='skipped' log row for auditability.
       // ---------------------------------------------------------------------
-      const placeId = await this.placeIdResolver.resolve(entity, entityType);
+      if (!isPlacesGeneratedUrl(entity.googleMapsUrl)) {
+        await qr.rollbackTransaction();
+        this.logger.warn(
+          `Skipping ${entityType}/${entityId} — missing or invalid Places URL: ${entity.googleMapsUrl ?? '(none)'}`,
+        );
+        syncLog.status = 'skipped';
+        syncLog.endedAt = new Date();
+        syncLog.errorMessage = 'skipped: missing or invalid googleMapsUrl';
+        await this.syncLogRepository.save(syncLog);
+        return syncLog;
+      }
+
+      // ---------------------------------------------------------------------
+      // Step 4: Resolve place_id — BEST-EFFORT. The fetch uses the validated
+      //         googleMapsUrl directly (Step 6), so resolution only backfills
+      //         googleMapsId when possible and must NEVER block the sync.
+      // ---------------------------------------------------------------------
+      let placeId: string | null = null;
+      try {
+        placeId = await this.placeIdResolver.resolve(entity, entityType);
+      } catch (resolveError) {
+        this.logger.warn(
+          `place_id not resolved for ${entityType}/${entityId} (non-blocking): ${resolveError?.message ?? resolveError}`,
+        );
+      }
 
       // ---------------------------------------------------------------------
       // Step 5: First-sync wipe (D-03) or incremental cursor
@@ -134,11 +161,12 @@ export class GoogleSyncService {
       }
 
       // ---------------------------------------------------------------------
-      // Step 6: Fetch reviews from the source seam
-      //         Uses entity.googleMapsUrl when available; falls back to
-      //         computed maps URL from the resolved place_id.
+      // Step 6: Fetch reviews from the source seam.
+      //         The URL gate (Step 3a) guarantees a valid googleMapsUrl, so the
+      //         fetch always uses it. placeIdToMapsUrl(placeId) is only a
+      //         defensive fallback for the (now unreachable) null-URL case.
       // ---------------------------------------------------------------------
-      const mapsUrl = entity.googleMapsUrl ?? placeIdToMapsUrl(placeId);
+      const mapsUrl = entity.googleMapsUrl ?? (placeId ? placeIdToMapsUrl(placeId) : '');
       const since = isFirstSync ? null : entity.lastGoogleSyncAt;
       const reviews = await this.source.fetchReviews(mapsUrl, since);
 
