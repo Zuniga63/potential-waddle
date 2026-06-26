@@ -1,4 +1,4 @@
-import { Body, Controller, Delete, Get, Param, Patch, Post } from '@nestjs/common';
+import { Body, Controller, Delete, Get, HttpCode, HttpStatus, Param, Patch, Post, Query } from '@nestjs/common';
 import { ApiOkResponse, ApiTags } from '@nestjs/swagger';
 import { GooglePlacesService } from './google-places.service';
 import { SwaggerTags } from 'src/config';
@@ -7,51 +7,42 @@ import { GoogleReviewsListQueryDocsGroup } from './decorators/google-reviews-lis
 import { GoogleReviewsFilters } from './decorators/google-reviews-filters.decorator';
 import { GoogleReviewsFiltersDto } from './dto/google-reviews-filters.dto';
 import { GoogleReviewSummaryRequestDto } from './dto/google-review-summary-request.dto';
+import { Auth } from 'src/modules/auth/decorators/auth.decorator';
+import { GetUser } from 'src/modules/common/decorators/get-user.decorator';
+import { User } from 'src/modules/users/entities';
+import { GoogleSyncManualService } from './services/google-sync-manual.service';
 
 @Controller('google-places')
 @ApiTags(SwaggerTags.GooglePlaces)
 export class GooglePlacesController {
-  constructor(private readonly googlePlacesService: GooglePlacesService) {}
+  constructor(
+    private readonly googlePlacesService: GooglePlacesService,
+    private readonly googleSyncManualService: GoogleSyncManualService,
+  ) {}
 
-  @Post('update-all-lodgings')
-  @ApiOkResponse({
-    description: 'Todos los lugares actualizados correctamente',
-    schema: {
-      type: 'object',
-      properties: {
-        success: { type: 'boolean', example: true },
-        message: { type: 'string', example: 'Todos los lugares actualizados correctamente' },
-      },
-    },
-  })
-  updateAllPlaces() {
-    return this.googlePlacesService.updateAllLodgings();
+  // * ----------------------------------------------------------------------------------------------------------------
+  // * MANUAL SYNC — owner-triggered (202 async fire-and-forget)
+  // * ----------------------------------------------------------------------------------------------------------------
+  @Post('sync/:type/:id')
+  @Auth()
+  @HttpCode(HttpStatus.ACCEPTED)
+  triggerSync(@Param('type') type: string, @Param('id') id: string, @GetUser() currentUser: User) {
+    return this.googleSyncManualService.triggerSync(id, type as any, currentUser);
   }
 
-  @Post('update-all-commerces')
-  @ApiOkResponse({
-    description: 'Todos los lugares actualizados correctamente',
-    schema: {
-      type: 'object',
-      properties: {
-        success: { type: 'boolean', example: true },
-        message: { type: 'string', example: 'Todos los lugares actualizados correctamente' },
-      },
-    },
-  })
-  updateAllCommerces() {
-    return this.googlePlacesService.updateAllCommerces();
-  }
-
-  @Post('update-all-restaurants')
-  @ApiOkResponse({
-    description: 'Todos los lugares actualizados correctamente',
-    schema: {
-      type: 'object',
-    },
-  })
-  updateAllRestaurants() {
-    return this.googlePlacesService.updateAllRestaurants();
+  // * ----------------------------------------------------------------------------------------------------------------
+  // * SYNC HISTORY — paginated, owner-scoped
+  // * ----------------------------------------------------------------------------------------------------------------
+  @Get('sync-history/:type/:id')
+  @Auth()
+  getSyncHistory(
+    @Param('type') type: string,
+    @Param('id') id: string,
+    @Query('page') page = 1,
+    @Query('limit') limit = 20,
+    @GetUser() currentUser: User,
+  ) {
+    return this.googleSyncManualService.getSyncHistory(id, type as any, currentUser, +page, +limit);
   }
 
   @Patch('remove-google-place-id')
