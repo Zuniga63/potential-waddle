@@ -719,4 +719,17 @@ export class GooglePlacesService {
       distribution,
     };
   }
+
+  /**
+   * Combined analytics: star distribution + monthly rating trend.
+   * Returns: { distribution: [{name, value}], trend: [{month, rating, count}] }
+   * Delegates to existing aggregation methods — no new SQL.
+   */
+  async getAnalytics(entityId: string, entityType: 'lodging' | 'restaurant' | 'commerce') {
+    const [distribution, trend] = await Promise.all([
+      this.getReviewsCountByRating(entityId, entityType),
+      this.getReviewsRatingTrend(entityId, entityType),
+    ]);
+    return { distribution, trend };
+  }
 }
