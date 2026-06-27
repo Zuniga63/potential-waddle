@@ -153,4 +153,10 @@ export class GooglePlacesController {
   getReviewsMetrics(@Param('entityId') entityId: string, @Param('entityType') entityType: string) {
     return this.googlePlacesService.getReviewsMetrics(entityId, entityType as 'lodging' | 'restaurant' | 'commerce');
   }
+
+  @Get('analytics/:type/:id')
+  @ApiOkResponse({ description: 'Star distribution + monthly rating trend for the reviews charts' })
+  getAnalytics(@Param('type') type: string, @Param('id') id: string) {
+    return this.googlePlacesService.getAnalytics(id, type as 'lodging' | 'restaurant' | 'commerce');
+  }
 }
