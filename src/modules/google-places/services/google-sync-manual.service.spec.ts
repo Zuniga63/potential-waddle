@@ -188,6 +188,44 @@ describe('GoogleSyncManualService', () => {
       expect((body as any).remainingMinutes).toBeGreaterThan(0);
     });
 
+    it('should BYPASS the 1h cooldown when the place URL changed (urlChanged)', async () => {
+      // Owner re-pointed the business to a different Google place: the corrective
+      // full resync must not be blocked by the cooldown, even with a recent sync.
+      const entity = makeLodging({
+        googleMapsUrl: 'https://maps.google.com/?cid=999', // new place
+        lastSyncedMapsUrl: 'https://maps.google.com/?cid=1234567890', // previously synced
+      });
+      const lodgingFindOne = jest.fn().mockResolvedValue(entity);
+      // Recent sync-log 30 min ago — would normally trigger 429
+      const recentLog = { startedAt: new Date(Date.now() - 30 * 60 * 1000), entityId: 'entity-001', entityType: 'lodging' };
+      const syncLogFindOne = jest.fn().mockResolvedValue(recentLog);
+      const syncEntityMock = jest.fn().mockResolvedValue(undefined);
+      const service = await buildModule(lodgingFindOne, syncLogFindOne, jest.fn(), syncEntityMock);
+      const owner = makeUser({ id: 'user-001' });
+
+      const result = await service.triggerSync('entity-001', 'lodging', owner);
+
+      // No 429 — sync fired and returned queued
+      expect(syncEntityMock).toHaveBeenCalledWith('entity-001', 'lodging', 'manual');
+      expect(result).toMatchObject({ status: 'queued' });
+    });
+
+    it('should STILL enforce the cooldown when the place URL is unchanged', async () => {
+      const entity = makeLodging({
+        googleMapsUrl: 'https://maps.google.com/?cid=1234567890',
+        lastSyncedMapsUrl: 'https://maps.google.com/?cid=1234567890', // same place
+      });
+      const lodgingFindOne = jest.fn().mockResolvedValue(entity);
+      const recentLog = { startedAt: new Date(Date.now() - 30 * 60 * 1000), entityId: 'entity-001', entityType: 'lodging' };
+      const syncLogFindOne = jest.fn().mockResolvedValue(recentLog);
+      const service = await buildModule(lodgingFindOne, syncLogFindOne, jest.fn(), jest.fn());
+      const owner = makeUser({ id: 'user-001' });
+
+      const error = await service.triggerSync('entity-001', 'lodging', owner).catch(e => e);
+      expect(error).toBeInstanceOf(HttpException);
+      expect(error.getStatus()).toBe(HttpStatus.TOO_MANY_REQUESTS);
+    });
+
     it('should return 202-queued response immediately without awaiting syncEntity (happy path)', async () => {
       const entity = makeLodging(); // valid URL, owner matches user-001
       const lodgingFindOne = jest.fn().mockResolvedValue(entity);

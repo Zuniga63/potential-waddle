@@ -30,6 +30,7 @@ const VALID_TYPES = ['lodging', 'restaurant', 'commerce'] as const;
 type EntityWithUserAndUrl = {
   id: string;
   googleMapsUrl?: string | null;
+  lastSyncedMapsUrl?: string | null;
   user?: { id: string } | null;
 };
 
@@ -86,19 +87,19 @@ export class GoogleSyncManualService {
       entity = await this.lodgingRepository.findOne({
         where: { id },
         relations: ['user'],
-        select: { id: true, googleMapsUrl: true, user: { id: true } },
+        select: { id: true, googleMapsUrl: true, lastSyncedMapsUrl: true, user: { id: true } },
       });
     } else if (type === 'restaurant') {
       entity = await this.restaurantRepository.findOne({
         where: { id },
         relations: ['user'],
-        select: { id: true, googleMapsUrl: true, user: { id: true } },
+        select: { id: true, googleMapsUrl: true, lastSyncedMapsUrl: true, user: { id: true } },
       });
     } else {
       entity = await this.commerceRepository.findOne({
         where: { id },
         relations: ['user'],
-        select: { id: true, googleMapsUrl: true, user: { id: true } },
+        select: { id: true, googleMapsUrl: true, lastSyncedMapsUrl: true, user: { id: true } },
       });
     }
 
@@ -157,21 +158,28 @@ export class GoogleSyncManualService {
       );
     }
 
-    // 4. Server-side 1h cooldown — based on sync-log startedAt (catches in-flight 'running' rows)
-    const recent = await this.syncLogRepository.findOne({
-      where: { entityId: id, entityType: type },
-      order: { startedAt: 'DESC' },
-    });
-    const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000);
-    if (recent && recent.startedAt > oneHourAgo) {
-      const remainingMinutes = Math.ceil((recent.startedAt.getTime() + 3_600_000 - Date.now()) / 60_000);
-      throw new HttpException(
-        {
-          message: `Sincronización reciente. Intenta de nuevo en ${remainingMinutes} minuto(s).`,
-          remainingMinutes,
-        },
-        HttpStatus.TOO_MANY_REQUESTS,
-      );
+    // 4. Server-side 1h cooldown — based on sync-log startedAt (catches in-flight 'running' rows).
+    //    Bypassed when the owner re-pointed the business to a different Google place
+    //    (urlChanged): that corrective sync triggers a clean full resync and must not be
+    //    blocked by the cooldown window, or the wrong place's reviews would linger up to 1h.
+    const urlChanged =
+      entity.lastSyncedMapsUrl != null && entity.lastSyncedMapsUrl !== entity.googleMapsUrl;
+    if (!urlChanged) {
+      const recent = await this.syncLogRepository.findOne({
+        where: { entityId: id, entityType: type },
+        order: { startedAt: 'DESC' },
+      });
+      const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000);
+      if (recent && recent.startedAt > oneHourAgo) {
+        const remainingMinutes = Math.ceil((recent.startedAt.getTime() + 3_600_000 - Date.now()) / 60_000);
+        throw new HttpException(
+          {
+            message: `Sincronización reciente. Intenta de nuevo en ${remainingMinutes} minuto(s).`,
+            remainingMinutes,
+          },
+          HttpStatus.TOO_MANY_REQUESTS,
+        );
+      }
     }
 
     // 5. Fire-and-forget — do NOT await (Pitfall 6: attach .catch for observability)

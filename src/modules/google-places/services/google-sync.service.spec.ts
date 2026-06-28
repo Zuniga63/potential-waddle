@@ -184,6 +184,65 @@ describe('GoogleSyncService', () => {
   });
 
   // -------------------------------------------------------------------------
+  // Test: place URL changed — force full resync (wipe + since=null) even though
+  //       lastGoogleSyncAt is set (the owner re-pointed to a different place).
+  // -------------------------------------------------------------------------
+  it('(url changed) wipes reviews AND fetches with since=null when googleMapsUrl differs from lastSyncedMapsUrl', async () => {
+    const entity = makeLodging({
+      lastGoogleSyncAt: new Date('2025-06-01T00:00:00Z'),
+      googleMapsUrl: 'https://maps.google.com/?cid=999', // new place
+      lastSyncedMapsUrl: 'https://maps.google.com/?cid=123', // previously synced place
+    });
+    const qr = await buildModule(entity);
+
+    await service.syncEntity('entity-001', 'lodging', 'manual');
+
+    // wipe must happen despite lastGoogleSyncAt being set
+    expect(qr.manager.delete).toHaveBeenCalledWith(
+      GoogleReview,
+      expect.objectContaining({ entityId: 'entity-001', entityType: 'lodging' }),
+    );
+    // full (non-incremental) pull from the new place
+    expect(source.fetchReviews).toHaveBeenCalledWith(expect.any(String), null);
+  });
+
+  // -------------------------------------------------------------------------
+  // Test: same URL → stays incremental (no wipe) — guards against over-wiping
+  //       when the place has not changed.
+  // -------------------------------------------------------------------------
+  it('(url unchanged) does NOT wipe when lastSyncedMapsUrl equals current googleMapsUrl', async () => {
+    const lastSync = new Date('2025-06-01T00:00:00Z');
+    const entity = makeLodging({
+      lastGoogleSyncAt: lastSync,
+      googleMapsUrl: 'https://maps.google.com/?cid=123',
+      lastSyncedMapsUrl: 'https://maps.google.com/?cid=123',
+    });
+    const qr = await buildModule(entity);
+
+    await service.syncEntity('entity-001', 'lodging', 'cron');
+
+    expect(qr.manager.delete).not.toHaveBeenCalled();
+    expect(source.fetchReviews).toHaveBeenCalledWith(expect.any(String), lastSync);
+  });
+
+  // -------------------------------------------------------------------------
+  // Test: success update records lastSyncedMapsUrl so the NEXT sync can detect
+  //       a future place swap.
+  // -------------------------------------------------------------------------
+  it('(records source url) entity update sets lastSyncedMapsUrl to the synced googleMapsUrl', async () => {
+    const entity = makeLodging({ googleMapsUrl: 'https://maps.google.com/?cid=123' });
+    const qr = await buildModule(entity);
+
+    await service.syncEntity('entity-001', 'lodging', 'manual');
+
+    expect(qr.manager.update).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({ id: 'entity-001' }),
+      expect.objectContaining({ lastSyncedMapsUrl: 'https://maps.google.com/?cid=123' }),
+    );
+  });
+
+  // -------------------------------------------------------------------------
   // Test: success log — trigger echoed, reviewsTotal, last_google_sync_at
   // -------------------------------------------------------------------------
   it('(success log) saves sync-log with status=success and sets last_google_sync_at on entity', async () => {

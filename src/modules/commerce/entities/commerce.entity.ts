@@ -152,6 +152,9 @@ export class Commerce {
   @Column({ name: 'last_google_sync_at', type: 'timestamptz', nullable: true })
   lastGoogleSyncAt: Date | null;
 
+  @Column('text', { name: 'last_synced_maps_url', nullable: true })
+  lastSyncedMapsUrl: string | null;
+
   // * ----------------------------------------------------------------------------------------------------------------
   // * STATUS WORKFLOW
   // * ----------------------------------------------------------------------------------------------------------------

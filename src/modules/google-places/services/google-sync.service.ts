@@ -151,12 +151,26 @@ export class GoogleSyncService {
       }
 
       // ---------------------------------------------------------------------
-      // Step 5: First-sync wipe (D-03) or incremental cursor
+      // Step 5: Full-resync wipe or incremental cursor
+      //         A full resync (wipe + non-incremental pull) is forced when:
+      //         - isFirstSync: no prior sync cursor exists, OR
+      //         - urlChanged: the owner re-pointed the business to a different
+      //           Google place since the last sync. Without the wipe, the
+      //           previous place's reviews would linger mixed with the new
+      //           place's (UPSERT-by-review_id never deletes stale rows), and
+      //           the incremental cursor would skip the new place's older
+      //           reviews. Comparing lastSyncedMapsUrl vs the current
+      //           googleMapsUrl catches the swap at sync time.
       // ---------------------------------------------------------------------
       const isFirstSync = entity.lastGoogleSyncAt == null;
+      const urlChanged =
+        entity.lastSyncedMapsUrl != null && entity.lastSyncedMapsUrl !== entity.googleMapsUrl;
+      const forceFull = isFirstSync || urlChanged;
 
-      if (isFirstSync) {
-        this.logger.log(`First sync — wiping existing reviews for ${entityType}/${entityId}`);
+      if (forceFull) {
+        this.logger.log(
+          `${isFirstSync ? 'First sync' : 'Place URL changed'} — wiping existing reviews for ${entityType}/${entityId}`,
+        );
         await qr.manager.delete(GoogleReview, { entityId, entityType });
       }
 
@@ -167,10 +181,12 @@ export class GoogleSyncService {
       //         defensive fallback for the (now unreachable) null-URL case.
       // ---------------------------------------------------------------------
       const mapsUrl = entity.googleMapsUrl ?? (placeId ? placeIdToMapsUrl(placeId) : '');
-      const since = isFirstSync ? null : entity.lastGoogleSyncAt;
+      const since = forceFull ? null : entity.lastGoogleSyncAt;
       const reviews = await this.source.fetchReviews(mapsUrl, since);
 
-      this.logger.log(`Fetched ${reviews.length} reviews for ${entityType}/${entityId} (isFirstSync=${isFirstSync})`);
+      this.logger.log(
+        `Fetched ${reviews.length} reviews for ${entityType}/${entityId} (isFirstSync=${isFirstSync}, urlChanged=${urlChanged})`,
+      );
 
       // ---------------------------------------------------------------------
       // Step 7: UPSERT each review by review_id
@@ -222,6 +238,9 @@ export class GoogleSyncService {
           googleMapsRating,
           googleMapsReviewsCount,
           lastGoogleSyncAt: new Date(),
+          // Record the URL this sync pulled from so the next sync can detect a
+          // place swap (urlChanged) and force a clean full resync.
+          lastSyncedMapsUrl: entity.googleMapsUrl ?? null,
         },
       );
 
@@ -424,7 +443,12 @@ export class GoogleSyncService {
       await qr.manager.update(
         EntityClass,
         { id: entityId },
-        { googleMapsRating, googleMapsReviewsCount, lastGoogleSyncAt: new Date() },
+        {
+          googleMapsRating,
+          googleMapsReviewsCount,
+          lastGoogleSyncAt: new Date(),
+          lastSyncedMapsUrl: entity.googleMapsUrl ?? null,
+        },
       );
 
       // ---------------------------------------------------------------------
