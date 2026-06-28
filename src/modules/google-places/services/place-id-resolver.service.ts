@@ -56,6 +56,31 @@ export function isPlacesGeneratedUrl(url?: string | null): boolean {
   return hasCid || hasPlaceId || hasPlacePath;
 }
 
+/**
+ * Extracts a STABLE place identifier from a Google Maps URL so two URLs that
+ * point at the same place compare equal regardless of tracking/query noise.
+ * Google appends volatile params (e.g. `&g_mp=...`) and the host/casing can
+ * vary, so a raw string comparison is unreliable for "did the place change?".
+ *
+ * Resolution order: `place_id:<token>` / `place_id=<token>` → `cid=<digits>`.
+ * Returns null when no place identifier can be extracted — callers MUST treat a
+ * null key as "not comparable" and never trigger a destructive wipe on a guess.
+ */
+export function placeKeyFromMapsUrl(url?: string | null): string | null {
+  if (!url) return null;
+  // place_id can appear as a `q=place_id:ChIJ...` token or a `place_id=` param
+  const tokenMatch = url.match(/place_id[:=]([A-Za-z0-9_-]+)/);
+  if (tokenMatch) return `place_id:${tokenMatch[1]}`;
+  try {
+    const u = new URL(url.trim());
+    const cid = u.searchParams.get('cid');
+    if (cid && /^\d+$/.test(cid)) return `cid:${cid}`;
+  } catch {
+    // unparseable URL → not comparable
+  }
+  return null;
+}
+
 @Injectable()
 export class PlaceIdResolverService {
   private readonly logger = new Logger(PlaceIdResolverService.name);

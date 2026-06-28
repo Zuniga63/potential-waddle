@@ -226,6 +226,25 @@ describe('GoogleSyncService', () => {
   });
 
   // -------------------------------------------------------------------------
+  // Test: same place, noisy URL — the volatile &g_mp param must NOT trigger a
+  //       wipe (compare by stable place key, not raw string).
+  // -------------------------------------------------------------------------
+  it('(url noise) same cid with different g_mp param does NOT wipe', async () => {
+    const lastSync = new Date('2025-06-01T00:00:00Z');
+    const entity = makeLodging({
+      lastGoogleSyncAt: lastSync,
+      googleMapsUrl: 'https://maps.google.com/?cid=123&g_mp=NEWNOISE',
+      lastSyncedMapsUrl: 'https://maps.google.com/?cid=123&g_mp=OLDNOISE',
+    });
+    const qr = await buildModule(entity);
+
+    await service.syncEntity('entity-001', 'lodging', 'cron');
+
+    expect(qr.manager.delete).not.toHaveBeenCalled();
+    expect(source.fetchReviews).toHaveBeenCalledWith(expect.any(String), lastSync);
+  });
+
+  // -------------------------------------------------------------------------
   // Test: success update records lastSyncedMapsUrl so the NEXT sync can detect
   //       a future place swap.
   // -------------------------------------------------------------------------

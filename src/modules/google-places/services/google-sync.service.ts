@@ -6,7 +6,12 @@ import { Restaurant } from 'src/modules/restaurants/entities/restaurant.entity';
 import { Commerce } from 'src/modules/commerce/entities/commerce.entity';
 import { GoogleReview } from '../entities/google-review.entity';
 import { GoogleReviewSyncLog } from '../entities/google-review-sync-log.entity';
-import { PlaceIdResolverService, placeIdToMapsUrl, isPlacesGeneratedUrl } from './place-id-resolver.service';
+import {
+  PlaceIdResolverService,
+  placeIdToMapsUrl,
+  isPlacesGeneratedUrl,
+  placeKeyFromMapsUrl,
+} from './place-id-resolver.service';
 import {
   GOOGLE_REVIEWS_SOURCE,
   GoogleReviewsSourceService,
@@ -163,8 +168,12 @@ export class GoogleSyncService {
       //           googleMapsUrl catches the swap at sync time.
       // ---------------------------------------------------------------------
       const isFirstSync = entity.lastGoogleSyncAt == null;
-      const urlChanged =
-        entity.lastSyncedMapsUrl != null && entity.lastSyncedMapsUrl !== entity.googleMapsUrl;
+      // Compare by STABLE place key (cid / place_id), not the raw URL string, so
+      // Google's volatile tracking params (e.g. &g_mp=...) don't cause a false
+      // change. A null key on either side means "not comparable" → never wipe.
+      const lastKey = placeKeyFromMapsUrl(entity.lastSyncedMapsUrl);
+      const currentKey = placeKeyFromMapsUrl(entity.googleMapsUrl);
+      const urlChanged = lastKey != null && currentKey != null && lastKey !== currentKey;
       const forceFull = isFirstSync || urlChanged;
 
       if (forceFull) {

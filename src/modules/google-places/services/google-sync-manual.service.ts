@@ -15,7 +15,7 @@ import { Restaurant } from 'src/modules/restaurants/entities/restaurant.entity';
 import { Commerce } from 'src/modules/commerce/entities/commerce.entity';
 import { GoogleReviewSyncLog } from '../entities/google-review-sync-log.entity';
 import { GoogleSyncService } from './google-sync.service';
-import { isPlacesGeneratedUrl } from './place-id-resolver.service';
+import { isPlacesGeneratedUrl, placeKeyFromMapsUrl } from './place-id-resolver.service';
 import { User } from 'src/modules/users/entities/user.entity';
 import { SyncHistoryItemDto, SyncHistoryResponseDto } from '../dto/sync-history.dto';
 
@@ -162,8 +162,9 @@ export class GoogleSyncManualService {
     //    Bypassed when the owner re-pointed the business to a different Google place
     //    (urlChanged): that corrective sync triggers a clean full resync and must not be
     //    blocked by the cooldown window, or the wrong place's reviews would linger up to 1h.
-    const urlChanged =
-      entity.lastSyncedMapsUrl != null && entity.lastSyncedMapsUrl !== entity.googleMapsUrl;
+    const lastKey = placeKeyFromMapsUrl(entity.lastSyncedMapsUrl);
+    const currentKey = placeKeyFromMapsUrl(entity.googleMapsUrl);
+    const urlChanged = lastKey != null && currentKey != null && lastKey !== currentKey;
     if (!urlChanged) {
       const recent = await this.syncLogRepository.findOne({
         where: { entityId: id, entityType: type },

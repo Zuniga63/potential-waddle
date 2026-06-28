@@ -3,7 +3,7 @@ import { getRepositoryToken } from '@nestjs/typeorm';
 import { HttpService } from '@nestjs/axios';
 import { ConfigService } from '@nestjs/config';
 import { of } from 'rxjs';
-import { PlaceIdResolverService, isPlacesGeneratedUrl } from './place-id-resolver.service';
+import { PlaceIdResolverService, isPlacesGeneratedUrl, placeKeyFromMapsUrl } from './place-id-resolver.service';
 import { Lodging } from 'src/modules/lodgings/entities/lodging.entity';
 import { Restaurant } from 'src/modules/restaurants/entities/restaurant.entity';
 import { Commerce } from 'src/modules/commerce/entities/commerce.entity';
@@ -137,5 +137,38 @@ describe('isPlacesGeneratedUrl', () => {
     ['http (not https)', 'http://maps.google.com/?cid=123'],
   ])('rejects %s', (_label, url) => {
     expect(isPlacesGeneratedUrl(url as any)).toBe(false);
+  });
+});
+
+describe('placeKeyFromMapsUrl', () => {
+  it('extracts the cid as a stable key, ignoring the volatile g_mp param', () => {
+    const a = placeKeyFromMapsUrl('https://maps.google.com/?cid=11157536531558590571&g_mp=AAAAAA');
+    const b = placeKeyFromMapsUrl('https://maps.google.com/?cid=11157536531558590571&g_mp=ZZZZZZ');
+    expect(a).toBe('cid:11157536531558590571');
+    // Same place, different tracking noise → same key (no false "changed")
+    expect(a).toBe(b);
+  });
+
+  it('extracts the place_id token', () => {
+    expect(placeKeyFromMapsUrl('https://www.google.com/maps/place/?q=place_id:ChIJabc-123')).toBe(
+      'place_id:ChIJabc-123',
+    );
+  });
+
+  it('returns different keys for different places (real change is detected)', () => {
+    expect(placeKeyFromMapsUrl('https://maps.google.com/?cid=111')).not.toBe(
+      placeKeyFromMapsUrl('https://maps.google.com/?cid=222'),
+    );
+  });
+
+  it.each([
+    ['null', null],
+    ['undefined', undefined],
+    ['empty', ''],
+    ['no place identifier', 'https://maps.google.com/?foo=bar'],
+    ['non-numeric cid', 'https://maps.google.com/?cid=abc'],
+    ['unparseable', 'pegué cualquier cosa'],
+  ])('returns null for %s (not comparable → never wipes)', (_label, url) => {
+    expect(placeKeyFromMapsUrl(url as any)).toBeNull();
   });
 });
