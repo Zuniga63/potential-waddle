@@ -542,7 +542,9 @@ export class GooglePlacesService {
     };
     const counts: Record<string, number> = {};
     for (const review of reviews) {
-      if (review.rating == null) continue;
+      // Exclude unrated reviews (NULL or 0 star) so the distribution matches the
+      // summary count and the list — Apify sometimes returns a review with no star.
+      if (review.rating == null || review.rating < 1) continue;
       const key = numberToText[review.rating] || review.rating.toString();
       counts[key] = (counts[key] || 0) + 1;
     }
@@ -562,7 +564,7 @@ export class GooglePlacesService {
     // Agrupar por año
     const counts: Record<string, number> = {};
     for (const review of reviews) {
-      if (!review.reviewDate) continue;
+      if (!review.reviewDate || review.rating == null || review.rating < 1) continue;
       const year = new Date(review.reviewDate).getFullYear().toString();
       counts[year] = (counts[year] || 0) + 1;
     }
@@ -589,7 +591,7 @@ export class GooglePlacesService {
     const counts: number[] = new Array(12).fill(0);
 
     for (const review of reviews) {
-      if (!review.reviewDate) continue;
+      if (!review.reviewDate || review.rating == null || review.rating < 1) continue;
       const date = new Date(review.reviewDate);
       if (date.getFullYear() === currentYear) {
         counts[date.getMonth()]++;
@@ -616,7 +618,7 @@ export class GooglePlacesService {
     const monthlyData: Record<string, { sum: number; count: number }> = {};
 
     for (const review of reviews) {
-      if (!review.reviewDate || review.rating == null) continue;
+      if (!review.reviewDate || review.rating == null || review.rating < 1) continue;
       const date = new Date(review.reviewDate);
       const key = `${monthNames[date.getMonth()]} ${date.getFullYear()}`;
 
@@ -663,10 +665,14 @@ export class GooglePlacesService {
       };
     }
 
-    // Calculate average rating
-    const validRatings = reviews.filter(r => r.rating != null);
+    // Calculate average rating over RATED reviews only (exclude NULL/0 stars —
+    // Apify sometimes returns a review without a star; counting it would skew
+    // the totals below the way it inflates the count vs Google).
+    const validRatings = reviews.filter(r => r.rating != null && r.rating >= 1);
     const totalRating = validRatings.reduce((sum, r) => sum + r.rating, 0);
-    const averageRating = Number((totalRating / validRatings.length).toFixed(2));
+    const averageRating = validRatings.length
+      ? Number((totalRating / validRatings.length).toFixed(2))
+      : 0;
 
     // Calculate distribution
     const distribution: Record<number, number> = { 5: 0, 4: 0, 3: 0, 2: 0, 1: 0 };
@@ -676,9 +682,11 @@ export class GooglePlacesService {
       }
     }
 
-    // Five star percentage
+    // Five star percentage — over rated reviews only (same denominator as the count)
     const fiveStarCount = distribution[5];
-    const fiveStarPercentage = Number(((fiveStarCount / reviews.length) * 100).toFixed(1));
+    const fiveStarPercentage = validRatings.length
+      ? Number(((fiveStarCount / validRatings.length) * 100).toFixed(1))
+      : 0;
 
     // Monthly change calculation
     const now = new Date();
@@ -691,7 +699,7 @@ export class GooglePlacesService {
     let lastMonthCount = 0;
 
     for (const review of reviews) {
-      if (!review.reviewDate) continue;
+      if (!review.reviewDate || review.rating == null || review.rating < 1) continue;
       const date = new Date(review.reviewDate);
       if (date.getMonth() === thisMonth && date.getFullYear() === thisYear) {
         thisMonthCount++;
@@ -710,7 +718,7 @@ export class GooglePlacesService {
 
     return {
       averageRating,
-      totalReviews: reviews.length,
+      totalReviews: validRatings.length,
       fiveStarCount,
       fiveStarPercentage,
       thisMonthCount,

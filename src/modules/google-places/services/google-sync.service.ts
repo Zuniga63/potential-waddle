@@ -530,9 +530,16 @@ export class GoogleSyncService {
   }
 
   /**
-   * Computes AVG(rating) and COUNT(*) for the entity's google_review rows
+   * Computes AVG(rating) and COUNT for the entity's RATED google_review rows
    * inside the current QueryRunner (same transaction as the UPSERT).
-   * Returns { avg: null, count: '0' } when no rows exist (e.g. after a wipe
+   *
+   * Only rows with a real star (rating >= 1) are counted/averaged. Some scraped
+   * reviews arrive with a NULL star (Apify did not capture it); these are kept
+   * for their text but must not inflate `googleMapsReviewsCount`, so the count
+   * stays consistent with the distribution chart and the reviews list (all of
+   * which exclude unrated rows). AVG already ignored NULLs; the COUNT did not.
+   *
+   * Returns { avg: null, count: '0' } when no rated rows exist (e.g. after a wipe
    * with zero reviews fetched).
    */
   private async computeDenorm(
@@ -546,6 +553,7 @@ export class GoogleSyncService {
       .addSelect('COUNT(*)', 'count')
       .from(GoogleReview, 'gr')
       .where('gr.entity_id = :entityId AND gr.entity_type = :entityType', { entityId, entityType })
+      .andWhere('gr.rating >= 1')
       .getRawOne<{ avg: string | null; count: string }>();
     return row ?? { avg: null, count: '0' };
   }

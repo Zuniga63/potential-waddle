@@ -34,7 +34,7 @@ function makeQbStub() {
   const stub: Record<string, jest.Mock> = {};
   const methods = [
     'insert', 'into', 'values', 'orUpdate', 'execute',
-    'select', 'addSelect', 'from', 'where', 'setParameter',
+    'select', 'addSelect', 'from', 'where', 'andWhere', 'setParameter',
   ];
   for (const m of methods) {
     stub[m] = jest.fn().mockReturnThis();
@@ -303,6 +303,10 @@ describe('GoogleSyncService', () => {
         googleMapsReviewsCount: 10,
       }),
     );
+
+    // denorm count/avg must exclude unrated reviews (rating >= 1) so the stored
+    // count matches Google + the distribution chart + the reviews list
+    expect(qr._qb.andWhere).toHaveBeenCalledWith('gr.rating >= 1');
   });
 
   // -------------------------------------------------------------------------
@@ -426,6 +430,7 @@ describe('GoogleSyncService.reconcileEntity', () => {
       addSelect: jest.fn().mockReturnThis(),
       from: jest.fn().mockReturnThis(),
       where: jest.fn().mockReturnThis(),
+      andWhere: jest.fn().mockReturnThis(),
       getRawOne: jest.fn().mockResolvedValue({ avg: '4.2', count: String(afterCount) }),
     };
 

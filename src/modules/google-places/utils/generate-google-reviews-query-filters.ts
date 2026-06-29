@@ -1,11 +1,15 @@
-import { type FindOptionsOrder, type FindOptionsWhere } from 'typeorm';
+import { MoreThanOrEqual, type FindOptionsOrder, type FindOptionsWhere } from 'typeorm';
 
 import { GoogleReview } from '../entities/google-review.entity';
 import { GoogleReviewSortByEnum } from '../constants';
 import { GoogleReviewsFiltersDto } from '../dto/google-reviews-filters.dto';
 
 export function generateReviewsQueryFilters(filters?: GoogleReviewsFiltersDto, entityId?: string, entityType?: string) {
-  const where: FindOptionsWhere<GoogleReview> = {};
+  // Only rated reviews (rating >= 1) are listed/counted. Some scraped reviews
+  // arrive without a star (Apify did not capture it); they are excluded here so
+  // the list count matches the summary card and the distribution chart, and so
+  // Binntu never reports more reviews than Google shows.
+  const where: FindOptionsWhere<GoogleReview> = { rating: MoreThanOrEqual(1) };
   const order: FindOptionsOrder<GoogleReview> = {};
 
   if (!filters) return { where, order };
