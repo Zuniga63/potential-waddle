@@ -14,6 +14,7 @@ import { CloudinaryPresets, ResourceProvider } from 'src/config';
 import { GoogleGenerativeAI, GenerativeModel } from '@google/generative-ai';
 import { reviewAnalysisPrompt } from 'src/modules/ai/lib/gemini/review-analysis-prompts';
 import { structuredReviewAnalysisSchema } from 'src/modules/ai/lib/gemini/structured-review-analysis.schema';
+import { generateStructuredAnalysis } from 'src/modules/ai/lib/gemini/generate-structured-with-fallback';
 
 // Entities
 import { Lodging } from 'src/modules/lodgings/entities';
@@ -725,21 +726,14 @@ export class EntityReviewsService {
     const contextMessage = JSON.stringify(reviewsData, null, 2);
     const prompt = `${reviewAnalysisPrompt}\n\n## RESEÑAS A ANALIZAR (${reviews.length} total):\n${contextMessage}`;
 
-    // Build a per-call structured model using responseMimeType + responseSchema.
-    // GenerativeModel.apiKey and .model are public SDK fields.
-    this.logger.log(`🤖 Sending request to Gemini (structured JSON)...`);
-    const structuredModel = new GoogleGenerativeAI(this.geminiModel.apiKey).getGenerativeModel({
-      model: this.geminiModel.model,
-      generationConfig: {
-        temperature: 0.7,
-        maxOutputTokens: 8000,
-        responseMimeType: 'application/json',
-        responseSchema: structuredReviewAnalysisSchema,
-      },
+    // Resilient model-fallback chain: configured (cheap) model first, escalating to
+    // stronger models on transient 503/429. GenerativeModel.apiKey/.model are public SDK fields.
+    const responseText = await generateStructuredAnalysis({
+      apiKey: this.geminiModel.apiKey,
+      primaryModel: this.geminiModel.model,
+      prompt,
+      responseSchema: structuredReviewAnalysisSchema,
     });
-    const result = await structuredModel.generateContent(prompt);
-    const responseText = result.response.text();
-    this.logger.log(`✅ Gemini structured response received (${responseText.length} chars)`);
 
     // Persist the summary row (D-10: timestamp + count-at-generation for delta display)
     const summaryRow = this.binntuReviewSummaryRepository.create({
