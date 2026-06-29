@@ -498,7 +498,6 @@ export class GooglePlacesService {
       // and .model are public SDK fields.
       const responseText = await generateStructuredAnalysis({
         apiKey: this.geminiModel.apiKey,
-        primaryModel: this.geminiModel.model,
         prompt,
         responseSchema: structuredReviewAnalysisSchema,
       });

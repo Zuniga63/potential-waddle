@@ -4,14 +4,19 @@ import { GoogleGenerativeAI, Schema } from '@google/generative-ai';
 const logger = new Logger('GeminiStructuredFallback');
 
 /**
- * Model escalation chain.
+ * Primary model for review-analysis generation.
  *
- * We start with whatever cheap model is configured (typically gemini-2.5-flash-lite)
- * and, when it is overloaded (503) or rate-limited (429), escalate to progressively
- * more powerful models. Review-summary generation is a low-frequency, high-value action,
- * so paying for a stronger model on the rare retry is acceptable.
+ * Review summaries are a low-frequency, high-value action, so we always use the most
+ * powerful model for best quality. This is intentionally DECOUPLED from the GEMINI_MODEL
+ * env var (which drives the high-frequency Rafa chatbot, kept on a cheaper model).
  */
-const FALLBACK_MODELS = ['gemini-2.5-flash', 'gemini-2.5-pro'];
+export const REVIEW_ANALYSIS_PRIMARY_MODEL = 'gemini-2.5-pro';
+
+/**
+ * Graceful-degradation chain. If the primary model is overloaded (503) or rate-limited
+ * (429), fall back to a still-capable model so the user gets a result instead of an error.
+ */
+const FALLBACK_MODELS = ['gemini-2.5-flash', 'gemini-2.5-flash-lite'];
 
 /** HTTP status codes that warrant a retry / model escalation. */
 const TRANSIENT_STATUS = [429, 500, 502, 503, 504];
@@ -33,8 +38,8 @@ function isTransientError(error: unknown): boolean {
 
 interface GenerateStructuredParams {
   apiKey: string;
-  /** Configured primary model (e.g. gemini-2.5-flash-lite). Tried first. */
-  primaryModel: string;
+  /** Model tried first. Defaults to REVIEW_ANALYSIS_PRIMARY_MODEL (gemini-2.5-pro). */
+  primaryModel?: string;
   prompt: string;
   responseSchema: Schema;
   temperature?: number;
@@ -51,7 +56,7 @@ interface GenerateStructuredParams {
  */
 export async function generateStructuredAnalysis({
   apiKey,
-  primaryModel,
+  primaryModel = REVIEW_ANALYSIS_PRIMARY_MODEL,
   prompt,
   responseSchema,
   temperature = 0.7,

@@ -730,7 +730,6 @@ export class EntityReviewsService {
     // stronger models on transient 503/429. GenerativeModel.apiKey/.model are public SDK fields.
     const responseText = await generateStructuredAnalysis({
       apiKey: this.geminiModel.apiKey,
-      primaryModel: this.geminiModel.model,
       prompt,
       responseSchema: structuredReviewAnalysisSchema,
     });
