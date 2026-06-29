@@ -30,6 +30,7 @@ export interface PlatformTopEntity {
   entityType: string;
   entityId: string;
   entitySlug: string | null;
+  entityName: string | null;
   views: number;
   contacts: number;
 }
@@ -132,12 +133,22 @@ export class PlatformAnalyticsService {
       entity_type: string;
       entity_id: string;
       entity_slug: string | null;
+      entity_name: string | null;
       views: string;
       contacts: string;
     }[] = await this.dataSource.query(
       `SELECT entity_type, entity_id, entity_slug,
               COUNT(*) FILTER (WHERE event_type = 'page_view')      AS views,
-              COUNT(*) FILTER (WHERE event_type = 'whatsapp_click') AS contacts
+              COUNT(*) FILTER (WHERE event_type = 'whatsapp_click') AS contacts,
+              CASE
+                WHEN entity_type = 'restaurant' THEN (SELECT name FROM restaurant WHERE id = entity_id::uuid LIMIT 1)
+                WHEN entity_type = 'lodging' THEN (SELECT name FROM lodging WHERE id = entity_id::uuid LIMIT 1)
+                WHEN entity_type = 'experience' THEN (SELECT title FROM experience WHERE id = entity_id::uuid LIMIT 1)
+                WHEN entity_type = 'guide' THEN (SELECT CONCAT(first_name, ' ', last_name) FROM guide WHERE id = entity_id::uuid LIMIT 1)
+                WHEN entity_type = 'commerce' THEN (SELECT name FROM commerce WHERE id = entity_id::uuid LIMIT 1)
+                WHEN entity_type = 'transport' THEN (SELECT CONCAT(first_name, ' ', last_name) FROM transport WHERE id = entity_id::uuid LIMIT 1)
+                WHEN entity_type = 'place' THEN (SELECT name FROM place WHERE id = entity_id::uuid LIMIT 1)
+              END AS entity_name
          FROM events
         WHERE entity_id IS NOT NULL AND entity_type IS NOT NULL AND ${base}${townClause}
         GROUP BY entity_type, entity_id, entity_slug
@@ -174,6 +185,7 @@ export class PlatformAnalyticsService {
         entityType: r.entity_type,
         entityId: r.entity_id,
         entitySlug: r.entity_slug ?? null,
+        entityName: r.entity_name ?? null,
         views: toInt(r.views),
         contacts: toInt(r.contacts),
       })),
