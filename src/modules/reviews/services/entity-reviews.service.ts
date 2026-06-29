@@ -13,6 +13,7 @@ import { CLOUDINARY_FOLDERS } from 'src/config/cloudinary-folders';
 import { CloudinaryPresets, ResourceProvider } from 'src/config';
 import { GoogleGenerativeAI, GenerativeModel } from '@google/generative-ai';
 import { reviewAnalysisPrompt } from 'src/modules/ai/lib/gemini/review-analysis-prompts';
+import { structuredReviewAnalysisSchema } from 'src/modules/ai/lib/gemini/structured-review-analysis.schema';
 
 // Entities
 import { Lodging } from 'src/modules/lodgings/entities';
@@ -21,6 +22,7 @@ import { Commerce } from 'src/modules/commerce/entities';
 import { Experience } from 'src/modules/experiences/entities';
 import { Transport } from 'src/modules/transport/entities';
 import { Guide } from 'src/modules/guides/entities';
+import { BinntuReviewSummary } from '../entities';
 
 // Entidades auto-aprobadas (puntos inmediatos)
 const AUTO_APPROVED_ENTITIES = [
@@ -84,6 +86,9 @@ export class EntityReviewsService {
 
     @InjectRepository(UserPoint)
     private readonly userPointRepository: Repository<UserPoint>,
+
+    @InjectRepository(BinntuReviewSummary)
+    private readonly binntuReviewSummaryRepository: Repository<BinntuReviewSummary>,
 
     private readonly dataSource: DataSource,
     private readonly tinifyService: TinifyService,
@@ -713,21 +718,54 @@ export class EntityReviewsService {
       usuario: review.user?.username || 'Anónimo',
     }));
 
-    this.logger.log(`🤖 Analyzing ${reviews.length} Binntu reviews with Gemini...`);
+    // D-13: count only rated (>= 1) approved reviews — mirrors Google's rated-only filter
+    const ratedCount = reviews.filter(r => r.rating != null && r.rating >= 1).length;
+
+    this.logger.log(`🤖 Analyzing ${reviews.length} Binntu reviews with Gemini (structured JSON)...`);
     const contextMessage = JSON.stringify(reviewsData, null, 2);
     const prompt = `${reviewAnalysisPrompt}\n\n## RESEÑAS A ANALIZAR (${reviews.length} total):\n${contextMessage}`;
 
-    // Send to Gemini
-    this.logger.log(`🤖 Sending request to Gemini...`);
-    const result = await this.geminiModel.generateContent(prompt);
+    // Build a per-call structured model using responseMimeType + responseSchema.
+    // GenerativeModel.apiKey and .model are public SDK fields.
+    this.logger.log(`🤖 Sending request to Gemini (structured JSON)...`);
+    const structuredModel = new GoogleGenerativeAI(this.geminiModel.apiKey).getGenerativeModel({
+      model: this.geminiModel.model,
+      generationConfig: {
+        temperature: 0.7,
+        maxOutputTokens: 8000,
+        responseMimeType: 'application/json',
+        responseSchema: structuredReviewAnalysisSchema,
+      },
+    });
+    const result = await structuredModel.generateContent(prompt);
     const responseText = result.response.text();
-    this.logger.log(`✅ GEMINI response received (${responseText.length} chars)`);
+    this.logger.log(`✅ Gemini structured response received (${responseText.length} chars)`);
+
+    // Persist the summary row (D-10: timestamp + count-at-generation for delta display)
+    const summaryRow = this.binntuReviewSummaryRepository.create({
+      entityType,
+      entityId,
+      content: responseText,
+      reviewCountAtGeneration: ratedCount,
+    });
+    const savedRow = await this.binntuReviewSummaryRepository.save(summaryRow);
 
     return {
       response: responseText,
-      reviewCount: reviews.length,
-      generatedAt: new Date(),
+      reviewCount: ratedCount,
+      generatedAt: savedRow.generatedAt,
     };
+  }
+
+  /**
+   * Returns the most recently generated Binntu review summary for an entity, or null.
+   * Powers the D-10 "N nuevas desde el último análisis" indicator (GET last-summary).
+   */
+  async getLastReviewSummary(entityType: ReviewDomainsEnum, entityId: string): Promise<BinntuReviewSummary | null> {
+    return this.binntuReviewSummaryRepository.findOne({
+      where: { entityType, entityId },
+      order: { generatedAt: 'DESC' },
+    });
   }
 
   // * ----------------------------------------------------------------------------------------------------------------

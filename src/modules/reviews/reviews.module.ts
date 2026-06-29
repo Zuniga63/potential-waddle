@@ -5,7 +5,7 @@ import { ReviewsController } from './reviews.controller';
 import { PlaceReviewsService, ReviewsService, EntityReviewsService } from './services';
 
 import { Place } from '../places/entities';
-import { Review, ReviewImage, ReviewStatusHistory } from './entities';
+import { Review, ReviewImage, ReviewStatusHistory, BinntuReviewSummary } from './entities';
 import { User, UserPoint } from '../users/entities';
 import { TinifyService } from '../tinify/tinify.service';
 import { CloudinaryService } from '../cloudinary/cloudinary.service';
@@ -51,6 +51,7 @@ import {
       UserPoint,
       ImageResource,
       ReviewImage,
+      BinntuReviewSummary,
       // Entidades para reviews universales
       Lodging,
       Restaurant,

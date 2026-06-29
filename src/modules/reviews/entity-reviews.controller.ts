@@ -181,6 +181,12 @@ export class LodgingReviewsController {
   generateReviewSummary(@Param('id', ParseUUIDPipe) entityId: string) {
     return this.entityReviewsService.generateReviewSummary(ReviewDomainsEnum.LODGINGS, entityId);
   }
+
+  @Get(':id/reviews/analytics/last-summary')
+  @ApiOkResponse({ description: 'Get the last stored Binntu review summary' })
+  getLastReviewSummary(@Param('id', ParseUUIDPipe) entityId: string) {
+    return this.entityReviewsService.getLastReviewSummary(ReviewDomainsEnum.LODGINGS, entityId);
+  }
 }
 
 // * ----------------------------------------------------------------------------------------------------------------
@@ -342,6 +348,12 @@ export class RestaurantReviewsController {
   @ApiOkResponse({ description: 'Generate AI analysis of reviews' })
   generateReviewSummary(@Param('id', ParseUUIDPipe) entityId: string) {
     return this.entityReviewsService.generateReviewSummary(ReviewDomainsEnum.RESTAURANTS, entityId);
+  }
+
+  @Get(':id/reviews/analytics/last-summary')
+  @ApiOkResponse({ description: 'Get the last stored Binntu review summary' })
+  getLastReviewSummary(@Param('id', ParseUUIDPipe) entityId: string) {
+    return this.entityReviewsService.getLastReviewSummary(ReviewDomainsEnum.RESTAURANTS, entityId);
   }
 }
 
@@ -505,6 +517,12 @@ export class CommerceReviewsController {
   generateReviewSummary(@Param('id', ParseUUIDPipe) entityId: string) {
     return this.entityReviewsService.generateReviewSummary(ReviewDomainsEnum.COMMERCE, entityId);
   }
+
+  @Get(':id/reviews/analytics/last-summary')
+  @ApiOkResponse({ description: 'Get the last stored Binntu review summary' })
+  getLastReviewSummary(@Param('id', ParseUUIDPipe) entityId: string) {
+    return this.entityReviewsService.getLastReviewSummary(ReviewDomainsEnum.COMMERCE, entityId);
+  }
 }
 
 // * ----------------------------------------------------------------------------------------------------------------
@@ -666,6 +684,12 @@ export class ExperienceReviewsController {
   @ApiOkResponse({ description: 'Generate AI analysis of reviews' })
   generateReviewSummary(@Param('id', ParseUUIDPipe) entityId: string) {
     return this.entityReviewsService.generateReviewSummary(ReviewDomainsEnum.EXPERIENCES, entityId);
+  }
+
+  @Get(':id/reviews/analytics/last-summary')
+  @ApiOkResponse({ description: 'Get the last stored Binntu review summary' })
+  getLastReviewSummary(@Param('id', ParseUUIDPipe) entityId: string) {
+    return this.entityReviewsService.getLastReviewSummary(ReviewDomainsEnum.EXPERIENCES, entityId);
   }
 }
 
@@ -829,6 +853,12 @@ export class TransportReviewsController {
   generateReviewSummary(@Param('id', ParseUUIDPipe) entityId: string) {
     return this.entityReviewsService.generateReviewSummary(ReviewDomainsEnum.TRANSPORT, entityId);
   }
+
+  @Get(':id/reviews/analytics/last-summary')
+  @ApiOkResponse({ description: 'Get the last stored Binntu review summary' })
+  getLastReviewSummary(@Param('id', ParseUUIDPipe) entityId: string) {
+    return this.entityReviewsService.getLastReviewSummary(ReviewDomainsEnum.TRANSPORT, entityId);
+  }
 }
 
 // * ----------------------------------------------------------------------------------------------------------------
@@ -939,6 +969,12 @@ export class GuideReviewsController {
   @ApiOkResponse({ description: 'Generate AI analysis of reviews' })
   generateReviewSummary(@Param('id', ParseUUIDPipe) entityId: string) {
     return this.entityReviewsService.generateReviewSummary(ReviewDomainsEnum.GUIDES, entityId);
+  }
+
+  @Get(':id/reviews/analytics/last-summary')
+  @ApiOkResponse({ description: 'Get the last stored Binntu review summary' })
+  getLastReviewSummary(@Param('id', ParseUUIDPipe) entityId: string) {
+    return this.entityReviewsService.getLastReviewSummary(ReviewDomainsEnum.GUIDES, entityId);
   }
 
   // * ----------------------------------------------------------------------------------------------------------------
