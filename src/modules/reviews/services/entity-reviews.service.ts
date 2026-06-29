@@ -498,7 +498,8 @@ export class EntityReviewsService {
 
     const counts: Record<number, number> = { 5: 0, 4: 0, 3: 0, 2: 0, 1: 0 };
     for (const review of reviews) {
-      if (review.rating && counts[review.rating] !== undefined) {
+      // D-13: exclude unrated (null) and 0-star reviews for cross-source consistency with Google pipeline
+      if (review.rating != null && review.rating >= 1 && counts[review.rating] !== undefined) {
         counts[review.rating]++;
       }
     }
@@ -628,15 +629,15 @@ export class EntityReviewsService {
       };
     }
 
-    // Calculate average rating
-    const validRatings = reviews.filter(r => r.rating != null);
+    // Calculate average rating — D-13: exclude rating < 1 (null and 0-star) for cross-source parity with Google
+    const validRatings = reviews.filter(r => r.rating != null && r.rating >= 1);
     const totalRating = validRatings.reduce((sum, r) => sum + r.rating, 0);
     const averageRating = Number((totalRating / validRatings.length).toFixed(2));
 
-    // Calculate distribution
+    // Calculate distribution — D-13: exclude 0-star from distribution buckets
     const distribution: Record<number, number> = { 5: 0, 4: 0, 3: 0, 2: 0, 1: 0 };
     for (const review of reviews) {
-      if (review.rating != null && distribution[review.rating] !== undefined) {
+      if (review.rating != null && review.rating >= 1 && distribution[review.rating] !== undefined) {
         distribution[review.rating]++;
       }
     }

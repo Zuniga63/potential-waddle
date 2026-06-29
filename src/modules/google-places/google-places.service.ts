@@ -17,6 +17,7 @@ import { GoogleReviewInterface } from './interfaces/google-review.interface';
 import { GoogleGenerativeAI, GenerativeModel } from '@google/generative-ai';
 import { GoogleReviewSummary } from './entities/google-review-summary.entity';
 import { reviewAnalysisPrompt } from '../ai/lib/gemini/review-analysis-prompts';
+import { structuredReviewAnalysisSchema } from '../ai/lib/gemini/structured-review-analysis.schema';
 @Injectable()
 export class GooglePlacesService {
   private readonly logger = new Logger(GooglePlacesService.name);
@@ -491,9 +492,21 @@ export class GooglePlacesService {
       const contextMessage = JSON.stringify(reviewsData, null, 2);
       const prompt = `${reviewAnalysisPrompt}\n\n## RESEÑAS A ANALIZAR (${reviews.length} total):\n${contextMessage}`;
 
-      // Send to Gemini
-      this.logger.log(`🤖 Sending request to GEMINI 2.0 Flash...`);
-      const result = await this.geminiModel.generateContent(prompt);
+      // Send to Gemini — build a per-call model with structured JSON output.
+      // GenerativeModel.apiKey and .model are public fields per the SDK type definition,
+      // so we can create a fresh GoogleGenerativeAI + structured model without storing
+      // the raw key as a separate class field.
+      this.logger.log(`🤖 Sending request to Gemini (structured JSON)...`);
+      const structuredModel = new GoogleGenerativeAI(this.geminiModel.apiKey).getGenerativeModel({
+        model: this.geminiModel.model,
+        generationConfig: {
+          temperature: 0.7,
+          maxOutputTokens: 8000,
+          responseMimeType: 'application/json',
+          responseSchema: structuredReviewAnalysisSchema,
+        },
+      });
+      const result = await structuredModel.generateContent(prompt);
       const responseText = result.response.text();
       this.logger.log(`✅ GEMINI response received (${responseText.length} chars)`);
 
